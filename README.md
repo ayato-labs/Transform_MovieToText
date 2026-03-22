@@ -61,6 +61,9 @@
 git clone https://github.com/Ayato-AI-for-Auto/Transform_MovieToText.git
 cd Transform_MovieToText
 
+![Luxurious CI](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/ci.yml/badge.svg)
+![Build Installer](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/build-exe.yml/badge.svg)
+
 # uvを利用したローカルインストール
 uv pip install -e .
 
