@@ -77,8 +77,8 @@ class _BaseRecorder:
         for f in self.output_dir.glob("*.*"):
             try:
                 f.unlink()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to unlink {f}: {e}")
 
 
 class FFmpegRecorder(_BaseRecorder):
@@ -183,11 +183,11 @@ class FFmpegRecorder(_BaseRecorder):
                 try:
                     self.process.terminate()
                     self.process.wait(timeout=2)
-                except Exception:
+                except Exception as e:
                     try:
                         self.process.kill()
-                    except Exception:
-                        pass
+                    except Exception as e2:
+                        logger.debug(f"Process kill failed: {e2}")
                 logger.info("FFmpeg process terminated.")
             if self.current_samples_count > 0:
                 try:
@@ -243,8 +243,8 @@ class AudioRecorder(_BaseRecorder):
             self.mp3_process.terminate()
             try:
                 self.mp3_process.wait(timeout=2)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"MP3 process wait failed: {e}")
         if self.recorder_thread:
             self.recorder_thread.join(timeout=2)
         logger.info(f"{self.__class__.__name__} stopped.")

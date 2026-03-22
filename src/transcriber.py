@@ -48,8 +48,8 @@ class WhisperTranscriber:
             if result.returncode == 0 and result.stdout.strip():
                 vram_mb = float(result.stdout.strip().split("\n")[0])
                 return round(vram_mb / 1024, 1)
-        except (FileNotFoundError, subprocess.TimeoutExpired, ValueError):
-            pass
+        except (FileNotFoundError, subprocess.TimeoutExpired, ValueError) as e:
+            logger.debug(f"nvidia-smi check failed: {e}")
         return 0.0
 
     def get_hardware_info(self):

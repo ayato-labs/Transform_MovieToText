@@ -74,8 +74,14 @@ class LiveTranscriptionManager:
 
                 self._handle_audio_data(audio_data)
                 self.recorder.chunk_queue.task_done()
-            except Exception:  # timeout or other errors
-                # If we are stopping and queue is empty, exit
+            except queue.Empty:
+                # Normal timeout waiting for data
+                if self.stop_event.is_set() and self.recorder.chunk_queue.empty():
+                    break
+                continue
+            except Exception as e:
+                self.total_errors += 1
+                logger.error(f"Error in transcription loop: {e}\n{traceback.format_exc()}")
                 if self.stop_event.is_set() and self.recorder.chunk_queue.empty():
                     break
                 continue

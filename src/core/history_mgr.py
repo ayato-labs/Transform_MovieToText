@@ -33,9 +33,11 @@ class HistoryManager:
                 )
             """)
             logger.info("History database initialized.")
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database operational error during init: {e}")
         except Exception as e:
             logger.error(f"Failed to initialize database: {e}")
-        finally:
+    finally:
             conn.close()
 
     def add_meeting(self, title, transcript, audio_path, model_info=""):
@@ -50,6 +52,9 @@ class HistoryManager:
             meeting_id = cursor.lastrowid
             logger.info(f"Meeting record added with ID: {meeting_id}")
             return meeting_id
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database is locked or busy (add_meeting): {e}")
+            return None
         except Exception as e:
             logger.error(f"Failed to add meeting record: {e}")
             return None
@@ -63,6 +68,8 @@ class HistoryManager:
             conn.execute("UPDATE meetings SET minutes = ? WHERE id = ?", (minutes, meeting_id))
             conn.commit()
             logger.info(f"Updated minutes for meeting ID: {meeting_id}")
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database is locked or busy (update_minutes): {e}")
         except Exception as e:
             logger.error(f"Failed to update minutes: {e}")
         finally:
@@ -75,6 +82,9 @@ class HistoryManager:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute("SELECT * FROM meetings ORDER BY timestamp DESC")
             return [dict(row) for row in cursor.fetchall()]
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database is locked or busy (get_all_meetings): {e}")
+            return []
         except Exception as e:
             logger.error(f"Failed to fetch meetings: {e}")
             return []
@@ -89,6 +99,9 @@ class HistoryManager:
             cursor = conn.execute("SELECT * FROM meetings WHERE id = ?", (meeting_id,))
             row = cursor.fetchone()
             return dict(row) if row else None
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database is locked or busy (get_meeting {meeting_id}): {e}")
+            return None
         except Exception as e:
             logger.error(f"Failed to fetch meeting {meeting_id}: {e}")
             return None

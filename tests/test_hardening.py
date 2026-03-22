@@ -29,8 +29,8 @@ def test_history_mgr_db_locked():
         if os.path.exists(db_path):
             try:
                 os.remove(db_path)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Cleanup warning (lock_test.db): {e}")
 
 
 def test_recorder_io_error_on_start():
