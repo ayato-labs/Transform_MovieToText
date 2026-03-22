@@ -98,5 +98,5 @@ def test_history_mgr_scaling():
     if os.path.exists(db_path):
         try:
             os.remove(db_path)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Cleanup warning (test DB): {e}")
