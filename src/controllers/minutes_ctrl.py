@@ -25,11 +25,19 @@ class MinutesController:
 
         def _worker():
             try:
-                # Initialize or get client
+                # 1. Initialize or get client
                 conf = self.config_mgr.get_provider_config(provider)
                 client = LLMFactory.create_client(provider_name=provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
 
-                res = client.generate_minutes(transcript, model)
+                # 2. v3.0.0: Fetch Visual Context from DB
+                meeting_id = state.get("current_meeting_id")
+                visual_contexts = []
+                if meeting_id:
+                    visual_contexts = history_mgr.get_visual_contexts(meeting_id)
+                    logger.info(f"Retrieved {len(visual_contexts)} visual contexts for meeting {meeting_id}")
+
+                # 3. Generate multimodal minutes
+                res = client.generate_minutes(transcript, model, visual_contexts=visual_contexts)
                 state.set("minutes_text", res)
 
                 # Update history if we have a current meeting ID

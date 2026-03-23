@@ -2,11 +2,17 @@ import json
 import logging
 import os
 
+from dotenv import load_dotenv
+
+from .core.constants import DEFAULT_ACTIVE_PROVIDER, DEFAULT_CONFIG_PATH, DEFAULT_WHISPER_MODEL
+from .core.migrator import ConfigMigrator
+
 logger = logging.getLogger(__name__)
 
 
 class ConfigManager:
-    def __init__(self, config_path="config.json"):
+    def __init__(self, config_path=DEFAULT_CONFIG_PATH):
+        load_dotenv()  # Load environment variables from .env if it exists
         self.config_path = config_path
         self.config = self.load_config()
         self._migrate_config()
@@ -29,60 +35,12 @@ class ConfigManager:
             logger.error(f"Error saving config: {e}", exc_info=True)
 
     def _migrate_config(self):
-        """Migrates old config structure to new provider-based structure."""
-        changed = False
-
-        # Default providers structure
-        default_providers = {
-            "gemini": {"api_key": ""},
-            "ollama_local": {"api_key": "", "base_url": "http://localhost:11434"},
-            "ollama_cloud": {"api_key": "", "base_url": "https://ollama.com"},
-        }
-
-        if "providers" not in self.config:
-            self.config["providers"] = default_providers
-            self.config["active_provider"] = "gemini"
-            changed = True
-        else:
-            # Remove openai_custom
-            if "openai_custom" in self.config["providers"]:
-                logger.info("Removing legacy 'openai_custom' provider from config.")
-                self.config["providers"].pop("openai_custom")
-                changed = True
-
-            # Ensure ollama_local exists
-            if "ollama_local" not in self.config["providers"]:
-                self.config["providers"]["ollama_local"] = default_providers["ollama_local"]
-                changed = True
-
-            # Ensure ollama_cloud exists and fix legacy host if it was local
-            if "ollama_cloud" not in self.config["providers"]:
-                self.config["providers"]["ollama_cloud"] = default_providers["ollama_cloud"]
-                changed = True
-            elif self.config["providers"]["ollama_cloud"].get("base_url") == "http://localhost:11434/v1":
-                # If it was migrated to local in previous step, move it to cloud default
-                self.config["providers"]["ollama_cloud"]["base_url"] = "https://ollama.com"
-                changed = True
-
-            # Ensure gemini exists
-            if "gemini" not in self.config["providers"]:
-                self.config["providers"]["gemini"] = default_providers["gemini"]
-                changed = True
-
-        # Check active provider validity
-        active = self.config.get("active_provider")
-        if active == "openai_custom":
-            self.config["active_provider"] = "gemini"
-            changed = True
-        elif active == "ollama":
-            self.config["active_provider"] = "ollama_local"
-            changed = True
-
-        if changed:
+        """Migrates old config structure using ConfigMigrator."""
+        if ConfigMigrator.migrate(self.config):
             self.save_config()
 
     def get_active_provider(self):
-        return self.config.get("active_provider", "gemini")
+        return self.config.get("active_provider", DEFAULT_ACTIVE_PROVIDER)
 
     def set_active_provider(self, provider_name):
         old = self.get_active_provider()
@@ -92,7 +50,16 @@ class ConfigManager:
             self.save_config()
 
     def get_provider_config(self, provider_name):
-        return self.config.get("providers", {}).get(provider_name, {})
+        conf = self.config.get("providers", {}).get(provider_name, {}).copy()
+
+        # Override with environment variables if present
+        env_key = f"{provider_name.upper()}_API_KEY"
+        env_val = os.getenv(env_key)
+        if env_val:
+            logger.debug(f"Using API key from environment for {provider_name}")
+            conf["api_key"] = env_val
+
+        return conf
 
     def set_provider_config(self, provider_name, provider_config):
         if "providers" not in self.config:
@@ -122,7 +89,7 @@ class ConfigManager:
         self.save_config()
 
     def get_whisper_model(self):
-        return self.config.get("whisper_model", "base")
+        return self.config.get("whisper_model", DEFAULT_WHISPER_MODEL)
 
     def set_whisper_model(self, model_name):
         old = self.get_whisper_model()
@@ -151,4 +118,16 @@ class ConfigManager:
         if old != source:
             self.config["audio_source"] = source
             logger.info(f"Audio source changed: {old} -> {source}")
+            self.save_config()
+
+    def get_visual_capture_enabled(self):
+        """Returns whether screen capture is enabled."""
+        return self.config.get("visual_capture_enabled", True)
+
+    def set_visual_capture_enabled(self, enabled):
+        """Sets whether screen capture is enabled."""
+        old = self.get_visual_capture_enabled()
+        if old != enabled:
+            self.config["visual_capture_enabled"] = enabled
+            logger.info(f"Visual capture setting changed: {old} -> {enabled}")
             self.save_config()

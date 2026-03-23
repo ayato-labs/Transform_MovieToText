@@ -1,7 +1,10 @@
 import logging
+import queue
 import threading
 import time
 import traceback
+
+import numpy as np
 
 from src.recorder import create_recorder
 from src.transcriber import WhisperTranscriber
@@ -17,10 +20,13 @@ class LiveTranscriptionManager:
     Updated to remove WAV/BytesIO overhead, processing numpy arrays directly.
     """
 
-    def __init__(self, transcriber: WhisperTranscriber, model_name="base", force_gpu=False, on_text_added=None, source="system", mp3_path=None):
+    def __init__(
+        self, transcriber: WhisperTranscriber, model_name="base", force_gpu=False, on_text_added=None, source="system", mp3_path=None, language="ja"
+    ):
         self.transcriber = transcriber
         self.model_name = model_name
         self.force_gpu = force_gpu
+        self.language = language
         self.on_text_added = on_text_added  # Callback function(text)
         self.mp3_path = mp3_path
         # Reduced segment_time for better responsiveness
@@ -100,7 +106,16 @@ class LiveTranscriptionManager:
                 return
 
             # Pass numpy array directly to transcriber
-            text = self.transcriber.transcribe(audio_data, model_name=self.model_name, force_gpu=self.force_gpu)
+            peak = np.abs(audio_data).max()
+            rms = np.sqrt(np.mean(audio_data**2))
+            logger.info(f"Chunk Stats - Peak: {peak:.6f}, RMS: {rms:.6f}, Duration: {duration:.1f}s")
+
+            # Strict silence suppression to prevent Whisper from hallucinating on digital noise
+            if peak < 0.01 or rms < 0.001:
+                logger.debug(f"Chunk is too quiet (Peak: {peak:.4f}, RMS: {rms:.4f}), skipping transcription.")
+                return
+
+            text = self.transcriber.transcribe(audio_data, model_name=self.model_name, force_gpu=self.force_gpu, language=self.language)
 
             if text:
                 logger.info(f"Transcribed chunk: {text[:50]}...")

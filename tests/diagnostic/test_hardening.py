@@ -35,7 +35,7 @@ def test_history_mgr_db_locked():
 
 def test_recorder_io_error_on_start():
     """Tests FFmpegRecorder when directory creation fails."""
-    with patch("src.recorder.Path.mkdir") as mock_mkdir:
+    with patch("src.recorder.base.Path.mkdir") as mock_mkdir:
         mock_mkdir.side_effect = OSError("Permission Denied")
 
         recorder = FFmpegRecorder(mp3_path="error_test/audio.mp3")

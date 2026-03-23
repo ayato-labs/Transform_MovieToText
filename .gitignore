@@ -41,3 +41,13 @@ temp_chunks/
 recordings/
 ruff_errors.txt
 report_*.txt
+.env
+.env.*
+
+# Media and Diagnostics
+*.wav
+*.mp3
+tests/diagnostic/*.wav
+tests/diagnostic/*.mp3
+tests/diagnostic/*.log
+tests/diagnostic/*.txt

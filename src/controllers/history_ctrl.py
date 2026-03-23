@@ -12,8 +12,16 @@ class HistoryController:
         pass
 
     def get_meetings(self):
-        """Fetches all meetings from the history manager."""
+        """Fetches all meetings."""
         return history_mgr.get_all_meetings()
+
+    def search_meetings(self, query):
+        """Performs full-text search."""
+        return history_mgr.search_meetings(query)
+
+    def get_projects(self):
+        """Fetches unique project names."""
+        return history_mgr.get_projects()
 
     def export_audio(self, meeting_id, target_dir):
         """Copies the audio file of a meeting to a target directory."""

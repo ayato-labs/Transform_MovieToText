@@ -19,19 +19,47 @@ class HistoryView(ft.Column):
 
         self.history_list = ft.ListView(expand=True, spacing=10, padding=10)
 
+        self.search_field = ft.TextField(
+            label="キーワード検索 (FTS5)",
+            hint_text="プロジェクト名、内容、キーワードで検索...",
+            prefix_icon=ft.Icons.SEARCH,
+            expand=True,
+            on_submit=lambda _: self._refresh_history(),
+        )
+
+        self.project_dropdown = ft.Dropdown(label="プロジェクトで絞り込み", width=250, on_change=lambda _: self._on_project_filter_change())
+
         self.controls = [
             ft.Text("会議履歴", size=24, weight="bold"),
             ft.Text("過去の録音と議事録を確認・書き出せます。"),
+            ft.Row([self.search_field, ft.IconButton(ft.Icons.REFRESH, on_click=lambda _: self._refresh_history())]),
+            ft.Row([self.project_dropdown]),
             ft.Divider(),
             self.history_list,
         ]
 
     def init_view(self):
+        self._update_projects_list()
         self._refresh_history()
 
-    def _refresh_history(self):
+    def _update_projects_list(self):
+        projects = self.controller.get_projects()
+        self.project_dropdown.options = [ft.dropdown.Option(key="", text="全プロジェクト")]
+        for p in projects:
+            self.project_dropdown.options.append(ft.dropdown.Option(key=p, text=p))
+        if self.page:
+            self.update()
+
+    def _refresh_history(self, search_query=None):
         self.history_list.controls.clear()
-        meetings = self.controller.get_meetings()
+
+        query = search_query or self.search_field.value
+
+        if query:
+            logger.info(f"Filtering history with query: {query}")
+            meetings = self.controller.search_meetings(query)
+        else:
+            meetings = self.controller.get_meetings()
 
         if not meetings:
             self.history_list.controls.append(ft.Text("履歴がありません。", italic=True, color="grey500"))
@@ -41,6 +69,14 @@ class HistoryView(ft.Column):
 
         if self.page:
             self.update()
+
+    def _on_project_filter_change(self):
+        selected = self.project_dropdown.value
+        if selected:
+            # Full-text search can also handle exact project names
+            self._refresh_history(search_query=selected)
+        else:
+            self._refresh_history()
 
     def _build_meeting_card(self, meeting):
         meeting_id = meeting["id"]
@@ -54,16 +90,29 @@ class HistoryView(ft.Column):
                 content=ft.Column(
                     [
                         ft.ListTile(
-                            leading=ft.Icon(ft.icons.RECORD_VOICE_OVER if not has_minutes else ft.icons.DESCRIPTION),
+                            leading=ft.Icon(ft.Icons.RECORD_VOICE_OVER if not has_minutes else ft.Icons.DESCRIPTION),
                             title=ft.Text(f"{title}"),
-                            subtitle=ft.Text(f"日時: {timestamp}"),
+                            subtitle=ft.Column(
+                                [
+                                    ft.Text(f"日時: {timestamp}", size=12),
+                                    ft.Row(
+                                        [
+                                            ft.Badge(content=ft.Text(meeting["project_name"] or "未分類", size=10), bgcolor="blue700")
+                                            if meeting.get("project_name")
+                                            else ft.Container(),
+                                            ft.Text(f" {meeting['category'] or ''}", size=10, italic=True),
+                                        ],
+                                        spacing=5,
+                                    ),
+                                ]
+                            ),
                         ),
                         ft.Row(
                             [
-                                ft.TextButton("詳細を表示", icon=ft.icons.BROWSE_GALLERY, on_click=lambda _: self._show_details(meeting)),
+                                ft.TextButton("詳細を表示", icon=ft.Icons.BROWSE_GALLERY, on_click=lambda _: self._show_details(meeting)),
                                 ft.TextButton(
                                     "音声を書き出し",
-                                    icon=ft.icons.DOWNLOAD,
+                                    icon=ft.Icons.DOWNLOAD,
                                     on_click=lambda _: self._start_export(meeting_id),
                                     visible=bool(audio_path),
                                 ),

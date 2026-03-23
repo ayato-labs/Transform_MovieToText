@@ -20,6 +20,7 @@ class TranscriptionView(ft.Column):
         self.whisper_model_dropdown = ft.Dropdown(label="Whisperモデル", width=250, on_change=self._on_model_change)
 
         self.force_gpu_checkbox = ft.Checkbox(label="GPUを強制使用する", on_change=self._on_force_gpu_change)
+        self.visual_capture_checkbox = ft.Checkbox(label="映像も記録する", value=True, on_change=self._on_visual_capture_change)
 
         self.audio_source_radio = ft.RadioGroup(
             content=ft.Row(
@@ -29,6 +30,14 @@ class TranscriptionView(ft.Column):
                 ]
             ),
             on_change=self._on_source_change,
+        )
+
+        self.project_name_field = ft.TextField(
+            label="プロジェクト名 (空欄で「その他」)", hint_text="例: AI研究プロジェクト", width=300, on_change=self._on_project_change
+        )
+
+        self.category_field = ft.TextField(
+            label="大分類 (空欄でAI自動生成)", hint_text="例: AI, Python, 議事録", width=300, on_change=self._on_category_change
         )
 
         self.transcribe_btn = ft.ElevatedButton(
@@ -72,8 +81,9 @@ class TranscriptionView(ft.Column):
             ),
             ft.Column(
                 [
-                    ft.Row([self.whisper_model_dropdown, self.force_gpu_checkbox]),
+                    ft.Row([self.whisper_model_dropdown, self.force_gpu_checkbox, self.visual_capture_checkbox]),
                     ft.Row([ft.Text("録音ソース: ", weight="bold"), self.audio_source_radio]),
+                    ft.Row([self.project_name_field, self.category_field]),
                     ft.Row([self.transcribe_btn, self.live_record_btn]),
                     self.status_text,
                     self.gpu_warning_text,
@@ -154,6 +164,16 @@ class TranscriptionView(ft.Column):
         state.set("audio_source", e.control.value)
         self.controller.config_mgr.set_audio_source(e.control.value)
 
+    def _on_project_change(self, e):
+        state.set("project_name", e.control.value)
+
+    def _on_category_change(self, e):
+        state.set("category", e.control.value)
+
+    def _on_visual_capture_change(self, e):
+        state.set("visual_capture_enabled", e.control.value)
+        self.controller.config_mgr.set_visual_capture_enabled(e.control.value)
+
     def _on_transcribe_click(self, e):
         path = state.get("selected_file_path")
         model = state.get("whisper_model")
@@ -177,10 +197,12 @@ class TranscriptionView(ft.Column):
         self.whisper_model_dropdown.options = model_options
         self.whisper_model_dropdown.value = self.controller.config_mgr.get_whisper_model()
         self.force_gpu_checkbox.value = self.controller.config_mgr.get_force_gpu()
+        self.visual_capture_checkbox.value = self.controller.config_mgr.get_visual_capture_enabled()
         self.audio_source_radio.value = self.controller.config_mgr.get_audio_source()
         # Set initial state
         state.set("whisper_model", self.whisper_model_dropdown.value, notify=False)
         state.set("force_gpu", self.force_gpu_checkbox.value, notify=False)
+        state.set("visual_capture_enabled", self.visual_capture_checkbox.value, notify=False)
         state.set("audio_source", self.audio_source_radio.value, notify=False)
         if self.page:
             self.update()

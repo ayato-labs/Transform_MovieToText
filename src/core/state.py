@@ -12,14 +12,19 @@ class AppState:
 
     def __init__(self):
         self._state: Dict[str, Any] = {
-            "selected_file_path": "",
+            "is_processing": False,
+            "status_text": "準備完了",
             "transcript_text": "",
             "minutes_text": "",
-            "status_text": "待機中",
-            "is_recording": False,
-            "is_processing": False,
+            "error_message": "",
             "gpu_warning": "",
             "progress_visible": False,
+            "is_recording": False,
+            "current_meeting_id": None,
+            "selected_file_path": None,
+            "current_mp3_path": None,
+            "project_name": "",
+            "category": "",
             "audio_source": "system",
             "whisper_model": "base",
             "llm_provider": "gemini",

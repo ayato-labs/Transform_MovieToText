@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "transform-movie-to-text"
-version = "2.1.5"
+version = "2.2.0"
 description = "A UI app to extract text from video files using Whisper."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -20,7 +20,10 @@ dependencies = [
     "torchaudio",
     "ollama",
     "openai",
-    "soundcard",
+    "PyAudioWPatch",
+    "python-dotenv",
+    "pyautogui",
+    "opencv-python",
 ]
 
 [project.optional-dependencies]

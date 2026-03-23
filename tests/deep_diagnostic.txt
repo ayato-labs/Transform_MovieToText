@@ -1,0 +1,31 @@
+=== Deep Audio Diagnostic ===
+Found 2 devices
+
+--- Device [0]: スピーカー (Realtek(R) Audio) ---
+  raw_chunk.shape: (4800, 2)
+  raw_chunk.dtype: float32
+  raw_chunk.min(): -0.036838
+  raw_chunk.max(): 0.036269
+  raw_chunk.mean(): 0.000661
+  raw_chunk[0:5]: [[-0.03247258439660072, -0.03235781937837601], [-0.028006315231323242, -0.027895832434296608], [-0.02584403194487095, -0.025738021358847618], [-0.028732584789395332, -0.028631316497921944], [-0.022994225844740868, -0.022897837683558464]]
+  channels: 2
+  full_raw.shape: (201600, 2)
+  full_raw.dtype: float32
+  Saved RAW 2ch WAV to tests/raw_dev0.wav
+  Saved MONO WAV to tests/mono_dev0.wav
+
+--- Device [1]: マイク配列 (デジタルマイク向けインテル® スマート・サウンド・テクノロジー) ---
+  raw_chunk.shape: (4800, 2)
+  raw_chunk.dtype: float32
+  raw_chunk.min(): -0.000000
+  raw_chunk.max(): 0.000000
+  raw_chunk.mean(): 0.000000
+  raw_chunk[0:5]: [[2.000000026702864e-10, -4.931703934119014e-10], [3.931703851378643e-10, 5.931704016859385e-10], [0.0, 0.0], [3.931703851378643e-10, -1.000000013351432e-10], [4.000000053405728e-10, -5.931704016859385e-10]]
+  channels: 2
+  full_raw.shape: (196800, 2)
+  full_raw.dtype: float32
+  Saved RAW 2ch WAV to tests/raw_dev1.wav
+  Saved MONO WAV to tests/mono_dev1.wav
+
+=== Done. Please check tests/raw_dev*.wav and tests/mono_dev*.wav ===
+Full log saved to tests/deep_diagnostic.txt

@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-from src.recorder import AudioRecorder, FFmpegRecorder
+from src.recorder.audio_recorder import AudioRecorder
+from src.recorder.ffmpeg import FFmpegRecorder
 
 
 def test_ffmpeg_recorder_command():

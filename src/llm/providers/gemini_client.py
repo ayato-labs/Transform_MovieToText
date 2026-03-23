@@ -1,8 +1,10 @@
 import logging
+import os
 import time
 
 from google import genai
 from google.genai import types
+from PIL import Image
 
 from src.llm.base_client import BaseLLMClient
 
@@ -37,21 +39,43 @@ class GeminiLLMClient(BaseLLMClient):
             logger.error(f"Failed to fetch Gemini models: {e}")
             raise Exception(f"Failed to fetch models: {str(e)}")
 
-    def generate_minutes(self, transcript: str, model_name: str) -> str:
-        """Generates meeting minutes using Gemini."""
-        logger.info(f"Generating minutes using Gemini model: {model_name}...")
-        prompt = (
-            "以下の文字起こしテキストを元に、構造化された議事録をMarkdown形式で作成してください。\n"
-            "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なヘッダーやリスト（# や -）を使用してください。\n\n"
-            f"--- 文字起こしテキスト ---\n{transcript}"
+    def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
+        """Generates meeting minutes using Gemini, with optional multimodal context."""
+        logger.info(f"Generating minutes using Gemini model: {model_name} (Visual Contexts: {len(visual_contexts) if visual_contexts else 0})...")
+
+        system_instruction = (
+            "あなたはプロの書記です。提供された音声の文字起こしテキストと、会議中のスクリーンショット画像（タイムスタンプ付き）を組み合わせて、"
+            "非常に詳細で正確なMarkdown形式の議事録を作成してください。\n"
+            "画像にはスライドやデモ、ホワイトボードの内容が含まれている可能性があるため、それらを「視覚情報」として議事録の内容に反映させてください。\n"
+            "項目は「会議の概要」「詳細内容（視覚情報を含む）」「決定事項」「ネクストアクション」を含めてください。"
         )
+
+        contents = []
+
+        # 1. Add Visual Contexts if available
+        if visual_contexts:
+            contents.append("以下は会議中にキャプチャされた視覚的なコンテキストです：\n")
+            for ctx in visual_contexts:
+                img_path = ctx.get("image_path")
+                ts = ctx.get("timestamp_sec", 0)
+                if img_path and os.path.exists(img_path):
+                    try:
+                        img = Image.open(img_path)
+                        contents.append(f"--- タイムスタンプ: {ts:.1f}秒のスクリーンショット ---")
+                        contents.append(img)
+                    except Exception as e:
+                        logger.warning(f"Failed to load image {img_path}: {e}")
+
+        # 2. Add Transcript
+        contents.append(f"\n--- 音声文字起こしテキスト ---\n{transcript}")
 
         try:
             start_time = time.time()
             response = self.client.models.generate_content(
                 model=model_name,
-                contents=prompt,
+                contents=contents,
                 config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
                     temperature=0.7,
                 ),
             )
@@ -61,3 +85,29 @@ class GeminiLLMClient(BaseLLMClient):
         except Exception as e:
             logger.error(f"Gemini generation failed: {e}")
             raise Exception(f"Failed to generate minutes: {str(e)}")
+
+    def extract_category(self, transcript: str, model_name: str) -> str:
+        """Extracts a short category/label (1-3 keywords) from the transcript."""
+        logger.info(f"Extracting category using Gemini model: {model_name}...")
+
+        prompt = (
+            "以下の文字起こしテキストから、その内容を最もよく表す1〜3個の日本語キーワード、または"
+            "短いカテゴリー名（例：AI技術, プロジェクト進捗, 顧客ヒアリング）を抽出してください。\n"
+            "出力はキーワードのみ（カンマ区切り）とし、余計な説明は一切含めないでください。\n\n"
+            f"--- テキスト ---\n{transcript}"
+        )
+
+        try:
+            response = self.client.models.generate_content(
+                model=model_name,
+                contents=[prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.3,  # Low temperature for more consistent labels
+                ),
+            )
+            category = response.text.strip().replace("\n", "")
+            logger.info(f"Extracted category: {category}")
+            return category
+        except Exception as e:
+            logger.error(f"Gemini category extraction failed: {e}")
+            return "未分類"  # Fallback

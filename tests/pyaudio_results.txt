@@ -1,0 +1,24 @@
+﻿=== PyAudioWPatch WASAPI Loopback Test ===
+Default Speaker: 繧ｹ繝斐・繧ｫ繝ｼ (Realtek(R) Audio)
+  Sample Rate: 48000Hz
+  Channels: 0
+Loopback Device: 繧ｹ繝斐・繧ｫ繝ｼ (Realtek(R) Audio) [Loopback]
+
+Recording 5.0s at 48000Hz, 2ch...
+[!] PLAY AUDIO NOW (YouTube etc.)
+Saved WAV: tests/pyaudio_loopback.wav
+
+Audio Stats:
+  Peak: 0.98505
+  RMS:  0.18106
+  Samples: 239616
+
+Loading Whisper model...
+  Resampled: 48000Hz -> 16000Hz (79872 samples)
+Transcribing...
+
+[TRANSCRIPTION RESULT]
+縺薙・繝医Λ繝ｳ繝励＆繧薙・逋ｺ險縺ｯ譌･縺ｫ譌･縺ｫ螟峨ｏ繧翫∪縺吶＠
+
+=== DONE === 
+Please also listen to tests/pyaudio_loopback.wav to verify it sounds correct!
