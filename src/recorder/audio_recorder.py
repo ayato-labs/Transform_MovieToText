@@ -58,15 +58,9 @@ class AudioRecorder(_BaseRecorder):
 
             self.last_save_time = time.time()
             self.chunk_index = 0
-            
+
             # 16kHz, Mono, Int16 (Whisper standard)
-            self._stream = self._pa.open(
-                format=pyaudio.paInt16,
-                channels=1,
-                rate=self.sample_rate,
-                input=True,
-                frames_per_buffer=1024
-            )
+            self._stream = self._pa.open(format=pyaudio.paInt16, channels=1, rate=self.sample_rate, input=True, frames_per_buffer=1024)
 
             while self.is_recording and not self.stop_event.is_set():
                 try:

@@ -11,8 +11,9 @@ class TestLiveProcessor(unittest.TestCase):
         self.mock_transcriber = MagicMock()
         self.mock_recorder = MagicMock()
         import queue
+
         self.mock_recorder.chunk_queue = queue.Queue()
-        
+
         with patch("src.live_processor.create_recorder", return_value=self.mock_recorder):
             self.manager = LiveTranscriptionManager(transcriber=self.mock_transcriber, on_text_added=MagicMock())
 

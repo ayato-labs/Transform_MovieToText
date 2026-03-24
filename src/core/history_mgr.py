@@ -132,9 +132,8 @@ class HistoryManager:
 
             # Explicitly sync FTS because external content triggers can be finicky in some environments
             conn.execute(
-                "INSERT INTO meetings_fts(rowid, title, transcript, project_name, category, minutes_model) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
-                (meeting_id, title, transcript, project_name, category, "")
+                "INSERT INTO meetings_fts(rowid, title, transcript, project_name, category, minutes_model) VALUES (?, ?, ?, ?, ?, ?)",
+                (meeting_id, title, transcript, project_name, category, ""),
             )
             conn.commit()
 
