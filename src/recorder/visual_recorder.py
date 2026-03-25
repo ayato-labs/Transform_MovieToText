@@ -5,7 +5,12 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import pyautogui
+
+try:
+    import pyautogui
+except Exception:
+    # Handle headless environments (Linux CI without DISPLAY)
+    pyautogui = None
 
 from src.core.history_mgr import history_mgr
 
@@ -57,6 +62,11 @@ class VisualRecorder:
 
     def _capture_loop(self):
         """Background loop for capturing and comparing frames."""
+        if pyautogui is None:
+            logger.warning("VisualRecorder: pyautogui is not available (headless environment). Recording disabled.")
+            self.is_recording = False
+            return
+
         try:
             while self.is_recording:
                 loop_start = time.time()
