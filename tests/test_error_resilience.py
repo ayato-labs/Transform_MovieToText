@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from src.core.history_mgr import HistoryManager
+from src.core.history_mgr import HistoryError, HistoryManager
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def test_database_lock_resilience(temp_db):
     conn.execute("BEGIN EXCLUSIVE")
 
     # 2. Try to add a meeting from the manager while DB is locked
-    with pytest.raises(sqlite3.OperationalError):
+    with pytest.raises(HistoryError):
         mgr.add_meeting("Locked Meeting", "Transcript", "path/to/audio")
 
     conn.rollback()
@@ -37,7 +37,7 @@ def test_whisper_invalid_model_handling():
 
     transcriber = WhisperTranscriber()
 
-    with pytest.raises(RuntimeError):  # Whisper usually raises RuntimeError for missing models
+    with pytest.raises(ValueError):  # faster-whisper raises ValueError for unknown sizes
         transcriber.load_model("totally-invalid-model-name")
 
 

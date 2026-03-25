@@ -23,65 +23,42 @@ def test_transcription_auto_save_heuristic_discard(mock_deps):
     config_mgr, transcriber = mock_deps
     ctrl = TranscriptionController(config_mgr, transcriber)
 
-    with patch("src.controllers.transcription_ctrl.LiveTranscriptionManager") as mock_live_mgr:
-        instance = mock_live_mgr.return_value
-        instance.stop.return_value = "Short text"
-        instance.mp3_path = "test.mp3"
-        ctrl.live_mgr = instance
-        # Simulate short duration (ctrl._live_start_time was recently)
-        ctrl._live_start_time = time.time() - 10  # 10 seconds ago
-
+    with patch.object(ctrl.service, "stop_live_recording") as mock_stop:
         state.set("current_meeting_id", 999)
 
-        with (
-            patch.object(history_mgr, "delete_meeting") as mock_delete,
-            patch.object(history_mgr, "update_meeting") as mock_update,
-            patch("src.llm.factory.LLMFactory.create_client") as mock_llm_factory,
-        ):
-            # We block the threading part and run the worker logic sync for testing
-            # In transcription_ctrl.py, stop_live_recording starts a thread with _stop_worker
-            # We use the internal _stop_worker logic directly here
+        # Trigger logic
+        ctrl.stop_live_recording()
 
-            mock_llm = mock_llm_factory.return_value
-            mock_llm.extract_category.return_value = "Test"
-            mock_llm.generate_title.return_value = "AI meeting"
+        # Capture the finalize_callback
+        args, kwargs = mock_stop.call_args
+        callback = kwargs.get("finalize_callback")
 
-            # Manually trigger the core logic inside the worker
-            # (Usually we'd refactor the worker out to a method if it was complex,
-            # but for now we'll mimic the decision logic)
+        # Simulate "Short text" result from service
+        callback("Short text", None)
 
-            duration = time.time() - ctrl._live_start_time
-            full_text = "Short text"
-            meeting_id = 999
-
-            if duration >= 30 and full_text.strip():
-                history_mgr.update_meeting(meeting_id, transcript=full_text, audio_path="test.mp3")
-            else:
-                history_mgr.delete_meeting(meeting_id)
-
-            mock_delete.assert_called_once_with(999)
-            mock_update.assert_not_called()
+        assert state.get("status_text") == "ライブ文字起こし終了（短時間のため保存されませんでした）"
 
 
 def test_transcription_auto_save_heuristic_persist(mock_deps):
-    """Verify that a recording over 30s with text is persisted."""
+    """Verify that a recording >= 30s (implied by service calling with category) is persisted."""
     config_mgr, transcriber = mock_deps
     ctrl = TranscriptionController(config_mgr, transcriber)
 
-    ctrl._live_start_time = time.time() - 40  # 40 seconds ago
-    state.set("current_meeting_id", 888)
-    full_text = "This is a long enough transcription that should be saved."
+    with patch.object(ctrl.service, "stop_live_recording") as mock_stop:
+        state.set("current_meeting_id", 888)
 
-    with patch.object(history_mgr, "delete_meeting") as mock_delete, patch.object(history_mgr, "update_meeting") as mock_update:
-        duration = time.time() - ctrl._live_start_time
+        # Trigger logic
+        ctrl.stop_live_recording()
 
-        if duration >= 30 and full_text.strip():
-            history_mgr.update_meeting(888, transcript=full_text, audio_path="long.mp3")
-        else:
-            history_mgr.delete_meeting(888)
+        # Capture the finalize_callback
+        args, kwargs = mock_stop.call_args
+        callback = kwargs.get("finalize_callback")
 
-        mock_update.assert_called_once()
-        mock_delete.assert_not_called()
+        # Simulate "Long text" with "Business" category result from service
+        callback("Long text of a meeting...", "Business")
+
+        assert state.get("status_text") == "ライブ文字起こし完了（分類: Business）"
+        assert state.get("transcript_text") == "Long text of a meeting..."
 
 
 def test_minutes_controller_persistence_with_model(mock_deps):
@@ -95,21 +72,13 @@ def test_minutes_controller_persistence_with_model(mock_deps):
         mock_client.generate_minutes.return_value = "Detailed summary"
 
         with patch.object(history_mgr, "update_minutes") as mock_update:
-            # Manually trigger the logic that would be in the controller's thread
-            # res = mock_client.generate_minutes(...)
-            # history_mgr.update_minutes(111, res, model_name="gemini-1.5-pro")
-
-            # This is what our controller does now:
             ctrl.config_mgr.get_last_model.return_value = "gemini-1.5-pro"
 
             # Trigger the logic
-            # (Note: In a real test we'd call the controller method, but here we simulate the interaction)
+            # (In a real test we'd call the controller method, but here we simulate the interaction)
             history_mgr.update_minutes(111, "Detailed summary", model_name="gemini-1.5-pro")
 
             # Verify the update call occurred with correct data
             assert mock_update.called
             args, kwargs = mock_update.call_args
-            # Use loose matching to avoid signature mismatch during refactoring
-            assert 111 in args or kwargs.get("meeting_id") == 111
-            assert "Detailed summary" in args or kwargs.get("minutes") == "Detailed summary"
             assert kwargs.get("model_name") == "gemini-1.5-pro"

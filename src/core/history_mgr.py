@@ -22,7 +22,11 @@ class HistoryManager:
         self.db_path = Path(db_path)
         self.timeout = timeout
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._init_db()
+        try:
+            self._init_db()
+        except sqlite3.Error as e:
+            logger.error(f"Failed to initialize database: {e}")
+            raise HistoryError(f"Database initialization failed: {e}") from e
 
     def _get_connection(self) -> sqlite3.Connection:
         """Helper to get a connection with Row factory."""
