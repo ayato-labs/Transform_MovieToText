@@ -257,5 +257,12 @@ class HistoryManager:
                 return json.loads(row[0])
             return None
 
+    def delete_embeddings(self, meeting_id: int):
+        """Manually deletes all embeddings for a meeting (though ON DELETE CASCADE handles this)."""
+        from contextlib import closing
+        with closing(self._get_connection()) as conn:
+            conn.execute("DELETE FROM meeting_embeddings WHERE meeting_id = ?", (meeting_id,))
+            conn.commit()
+
 # Singleton instance
 history_mgr = HistoryManager()
