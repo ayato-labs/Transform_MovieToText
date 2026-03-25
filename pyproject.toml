@@ -20,7 +20,7 @@ dependencies = [
     "torchaudio",
     "ollama",
     "openai",
-    "PyAudioWPatch",
+    "PyAudioWPatch; sys_platform == 'win32'",
     "python-dotenv",
     "pyautogui",
     "opencv-python",
