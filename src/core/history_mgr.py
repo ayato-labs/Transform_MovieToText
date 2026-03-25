@@ -169,10 +169,7 @@ class HistoryManager:
                         "VALUES (?, ?, ?, ?, ?, ?, ?)",
                         (meeting_id, row["title"], row["transcript"], row["minutes"], row["project_name"], row["category"], row["minutes_model"]),
                     )
-                    logger.debug(
-                        "Synchronized FTS5: meeting_id=%d title=%s minutes_model=%s",
-                        meeting_id, row['title'], row['minutes_model']
-                    )
+                    logger.debug("Synchronized FTS5: meeting_id=%d title=%s minutes_model=%s", meeting_id, row["title"], row["minutes_model"])
 
                 conn.commit()
             except sqlite3.Error as e:

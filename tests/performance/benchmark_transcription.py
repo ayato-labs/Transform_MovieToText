@@ -10,6 +10,7 @@ from src.transcriber import WhisperTranscriber
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def benchmark_whisper_performance():
     """
     Benchmarks RAM and VRAM usage during the transcription of a synthetic audio buffer.
