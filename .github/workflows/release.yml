@@ -1,0 +1,56 @@
+name: Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    concurrency: release
+    # permissions needed to push tags and create releases
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          uv pip install .[dev]
+
+      - name: Python Semantic Release
+        id: release
+        run: |
+          # Set git user for commits if needed (automated by some actions, but good to be explicit)
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          
+          # Run semantic-release
+          # This will:
+          # 1. Analyze commits since last tag
+          # 2. Bump version in pyproject.toml
+          # 3. Generate CHANGELOG.md
+          # 4. Create git tag
+          # 5. Push changes and tag back to main
+          uv run semantic-release version
+          uv run semantic-release publish
+
+      # Optional: You can add steps here to trigger other workflows (like build-exe.yml)
+      # when a new release is created.

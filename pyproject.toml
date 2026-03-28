@@ -33,6 +33,7 @@ dev = [
     "pytest-mock",
     "pytest-cov",
     "ruff",
+    "python-semantic-release",
 ]
 
 [tool.ruff]
@@ -59,3 +60,17 @@ index = [
 torch = { index = "pytorch" }
 torchvision = { index = "pytorch" }
 torchaudio = { index = "pytorch" }
+
+[tool.semantic_release]
+version_variable = [
+    "pyproject.toml:version"
+]
+branch = "main"
+upload_to_pypi = false
+upload_to_release = true
+build_command = "uv build"
+commit_message = "chore(release): {version} [skip ci]"
+commit_parser = "angular"
+logging_use_named_masks = true
+major_on_zero = false
+tag_format = "v{version}"
