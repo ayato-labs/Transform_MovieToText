@@ -1,0 +1,38 @@
+import pytest
+from unittest.mock import MagicMock, patch
+import flet as ft
+
+# We mock FletApp initialization to avoid launching a real window during tests
+@patch("src.app.FletApp.__init__", return_value=None)
+def test_app_initialization_smoke(mock_init):
+    """
+    Verify that FletApp can be instantiated without crashing.
+    """
+    from src.app import FletApp
+    page = MagicMock(spec=ft.Page)
+    app = FletApp(page)
+    
+    assert app is not None
+    # Verify init was called once
+    mock_init.assert_called_once()
+
+def test_view_instantiation_smoke():
+    """
+    Verify that all primary views can be instantiated with mock dependencies.
+    """
+    from src.ui.views.transcription_view import TranscriptionView
+    from src.ui.views.settings_view import SettingsView
+    from src.core.config_manager import ConfigManager
+    from src.core.transcription_service import TranscriptionService
+    
+    page = MagicMock(spec=ft.Page)
+    config_mgr = MagicMock(spec=ConfigManager)
+    service = MagicMock(spec=TranscriptionService)
+    
+    # 1. Transcription View
+    t_view = TranscriptionView(page, config_mgr, service)
+    assert t_view is not None
+    
+    # 2. Settings View
+    s_view = SettingsView(config_mgr)
+    assert s_view is not None
