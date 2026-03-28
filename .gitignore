@@ -37,8 +37,6 @@ Desktop.ini
 # App specific
 *.log
 *.db
-temp_chunks/
-recordings/
 ruff_errors.txt
 report_*.txt
 .env
@@ -51,3 +49,11 @@ tests/diagnostic/*.wav
 tests/diagnostic/*.mp3
 tests/diagnostic/*.log
 tests/diagnostic/*.txt
+
+# Data and Models [IMPORTANT: DO NOT PUSH MODELS]
+data/
+temp_chunks/
+recordings/
+
+# SharedMemoryServer local data
+.shared_memory/
