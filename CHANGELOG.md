@@ -1,3 +1,10 @@
+## [2.4.1](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.4.0...v2.4.1) (2026-03-28)
+
+
+### Bug Fixes
+
+* remove unused imports in transcription_view.py ([d0cf5ae](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/d0cf5ae08e22642e965f0b2542d221b5fcceaa9e))
+
 # [2.4.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.3.0...v2.4.0) (2026-03-28)
 
 
