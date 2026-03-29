@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")
 import numpy as np
 import psutil
 import torch
-from src.transcriber import WhisperTranscriber
+from src.core.whisper_transcriber import WhisperTranscriber
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
