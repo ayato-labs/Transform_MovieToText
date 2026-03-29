@@ -64,7 +64,7 @@ class FletApp:
         self.file_trans_view = FileTranscriptionView(self.page, self.config_mgr, self.trans_ctrl, self.hw_info)
         self.live_trans_view = LiveTranscriptionView(self.page, self.config_mgr, self.trans_ctrl, self.hw_info)
         self.settings_view = SettingsView(self.config_mgr, self.hw_info, self.transcriber.MODEL_REQUIREMENTS)
-        self.history_view = HistoryView(self.history_ctrl, self.config_mgr, self.folder_picker)
+        self.history_view = HistoryView(self.history_ctrl, self.config_mgr, self.folder_picker, self.page)
 
         # Build Main UI
         logger.info("FletApp: Building UI...")

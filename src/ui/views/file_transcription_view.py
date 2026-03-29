@@ -20,7 +20,7 @@ class FileTranscriptionView(ft.Column):
 
     def __init__(self, page: ft.Page, config_mgr: ConfigManager, ctrl: TranscriptionController, hw_info: dict):
         super().__init__(expand=True, scroll=ft.ScrollMode.ADAPTIVE, spacing=10)
-        self.page = page
+        self._page = page
         self.config_mgr = config_mgr
         self.ctrl = ctrl
         self.hw_info = hw_info
@@ -30,8 +30,8 @@ class FileTranscriptionView(ft.Column):
         # File Pickers
         self.file_picker = ft.FilePicker(on_result=self._on_file_picked)
         self.save_picker = ft.FilePicker(on_result=self._on_save_picked)
-        if self.page:
-            self.page.overlay.extend([self.file_picker, self.save_picker])
+        if self._page:
+            self._page.overlay.extend([self.file_picker, self.save_picker])
 
         # --- Top Selection Area ---
         self.dd_whisper = ft.Dropdown(
@@ -60,7 +60,7 @@ class FileTranscriptionView(ft.Column):
             options=[],  # Filled dynamically
             on_change=self._on_llm_change,
         )
-        sync_llm_models(self.page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
+        sync_llm_models(self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
 
         self.sw_visual = ft.Switch(
             label="映像情報を使用", value=False, tooltip="動画ファイルから10秒ごとに画像を抽出してAIに送信します（分析精度が向上します）"
@@ -153,7 +153,7 @@ class FileTranscriptionView(ft.Column):
 
     def _on_provider_change(self, e):
         self.config_mgr.set_active_provider(self.dd_provider.value)
-        sync_llm_models(self.page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
+        sync_llm_models(self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
         self.update()
 
     def _on_llm_change(self, e):

@@ -1,7 +1,11 @@
+import sys
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+
+# Pre-mock fastembed to avoid import-time re.error on Windows
+sys.modules["fastembed"] = MagicMock()
 
 from src.core.embeddings import FastEmbedProvider
 

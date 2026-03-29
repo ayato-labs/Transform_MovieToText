@@ -19,7 +19,7 @@ class LiveTranscriptionView(ft.Column):
 
     def __init__(self, page: ft.Page, config_mgr: ConfigManager, ctrl: TranscriptionController, hw_info: dict):
         super().__init__(expand=True, scroll=ft.ScrollMode.ADAPTIVE, spacing=10)
-        self.page = page
+        self._page = page
         self.config_mgr = config_mgr
         self.ctrl = ctrl
         self.hw_info = hw_info
@@ -69,7 +69,7 @@ class LiveTranscriptionView(ft.Column):
             options=[],  # Filled dynamically
             on_change=self._on_llm_change,
         )
-        sync_llm_models(self.page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
+        sync_llm_models(self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
 
         # Text Areas Container
         self.result_text = ft.TextField(
@@ -154,7 +154,7 @@ class LiveTranscriptionView(ft.Column):
 
     def _on_provider_change(self, e):
         self.config_mgr.set_active_provider(self.dd_provider.value)
-        sync_llm_models(self.page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
+        sync_llm_models(self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
         self.update()
 
     def _on_llm_change(self, e):

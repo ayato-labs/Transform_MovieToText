@@ -1,0 +1,247 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.10.17, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\saiha\My_Service\programing\Trancform_MovieToText
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.12.1, langsmith-0.7.22, cov-7.1.0, mock-3.15.1
+collected 54 items
+
+tests\e2e\test_app_launch.py ..                                          [  3%]
+tests\integration\test_config_sync.py ..                                 [  7%]
+tests\integration\test_history_persistence.py ...                        [ 12%]
+tests\test_error_resilience.py ...                                       [ 18%]
+tests\test_fastembed_provider_pytest.py EE                               [ 22%]
+tests\test_history_embeddings.py ..                                      [ 25%]
+tests\test_ollama_provider_pytest.py ...                                 [ 31%]
+tests\unit\core\test_config_manager.py ..                                [ 35%]
+tests\unit\core\test_history_cockpit.py ....                             [ 42%]
+tests\unit\core\test_history_mgr.py ......                               [ 53%]
+tests\unit\core\test_history_mgr_rigorous.py .........                   [ 70%]
+tests\unit\core\test_live_processor.py ..                                [ 74%]
+tests\unit\core\test_recorder.py ..                                      [ 77%]
+tests\unit\core\test_whisper_hardening.py .                              [ 79%]
+tests\unit\llm\test_gemini_client.py ..                                  [ 83%]
+tests\unit\llm\test_ollama_clients.py ..                                 [ 87%]
+tests\unit\ui\test_controllers.py ...                                    [ 92%]
+tests\unit\ui\test_ui_utils.py ....                                      [100%]
+
+=================================== ERRORS ====================================
+_________________ ERROR at setup of test_fastembed_embed_text _________________
+
+    @pytest.fixture
+    def mock_fastembed():
+>       with patch("fastembed.TextEmbedding") as mock_class:
+
+tests\test_fastembed_provider_pytest.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\unittest\mock.py:1431: in __enter__
+    self.target = self.getter()
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\unittest\mock.py:1618: in <lambda>
+    getter = lambda: _importer(target)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\unittest\mock.py:1257: in _importer
+    thing = __import__(import_path)
+.venv\lib\site-packages\fastembed\__init__.py:6: in <module>
+    from fastembed.sparse import SparseEmbedding, SparseTextEmbedding
+.venv\lib\site-packages\fastembed\sparse\__init__.py:2: in <module>
+    from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
+.venv\lib\site-packages\fastembed\sparse\sparse_text_embedding.py:6: in <module>
+    from fastembed.sparse.bm25 import Bm25
+.venv\lib\site-packages\fastembed\sparse\bm25.py:21: in <module>
+    from fastembed.sparse.utils.tokenizer import SimpleTokenizer
+.venv\lib\site-packages\fastembed\sparse\utils\tokenizer.py:15: in <module>
+    class WordTokenizer:
+.venv\lib\site-packages\fastembed\sparse\utils\tokenizer.py:31: in WordTokenizer
+    (re.compile("([ﾂｻ窶昶兢)", re.U), r" \1 "),
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\re.py:251: in compile
+    return _compile(pattern, flags)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\re.py:303: in _compile
+    p = sre_compile.compile(pattern, flags)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_compile.py:788: in compile
+    p = sre_parse.parse(p, flags)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:955: in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:444: in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:841: in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:444: in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+source = <sre_parse.Tokenizer object at 0x0000026FB72E8D30>
+state = <sre_parse.State object at 0x0000026FB72E8FD0>, verbose = 0, nested = 3
+first = False
+
+    def _parse(source, state, verbose, nested, first=False):
+        # parse a simple pattern
+        subpattern = SubPattern(state)
+    
+        # precompute constants into local variables
+        subpatternappend = subpattern.append
+        sourceget = source.get
+        sourcematch = source.match
+        _len = len
+        _ord = ord
+    
+        while True:
+    
+            this = source.next
+            if this is None:
+                break # end of pattern
+            if this in "|)":
+                break # end of subpattern
+            sourceget()
+    
+            if verbose:
+                # skip whitespace and comments
+                if this in WHITESPACE:
+                    continue
+                if this == "#":
+                    while True:
+                        this = sourceget()
+                        if this is None or this == "\n":
+                            break
+                    continue
+    
+            if this[0] == "\\":
+                code = _escape(source, this, state)
+                subpatternappend(code)
+    
+            elif this not in SPECIAL_CHARS:
+                subpatternappend((LITERAL, _ord(this)))
+    
+            elif this == "[":
+                here = source.tell() - 1
+                # character set
+                set = []
+                setappend = set.append
+    ##          if sourcematch(":"):
+    ##              pass # handle character classes
+                if source.next == '[':
+                    import warnings
+                    warnings.warn(
+                        'Possible nested set at position %d' % source.tell(),
+                        FutureWarning, stacklevel=nested + 6
+                    )
+                negate = sourcematch("^")
+                # check remaining characters
+                while True:
+                    this = sourceget()
+                    if this is None:
+>                       raise source.error("unterminated character set",
+                                           source.tell() - here)
+E                       re.error: unterminated character set at position 1
+
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:550: error
+________________ ERROR at setup of test_fastembed_embed_batch _________________
+
+    @pytest.fixture
+    def mock_fastembed():
+>       with patch("fastembed.TextEmbedding") as mock_class:
+
+tests\test_fastembed_provider_pytest.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\unittest\mock.py:1431: in __enter__
+    self.target = self.getter()
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\unittest\mock.py:1618: in <lambda>
+    getter = lambda: _importer(target)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\unittest\mock.py:1257: in _importer
+    thing = __import__(import_path)
+.venv\lib\site-packages\fastembed\__init__.py:6: in <module>
+    from fastembed.sparse import SparseEmbedding, SparseTextEmbedding
+.venv\lib\site-packages\fastembed\sparse\__init__.py:2: in <module>
+    from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
+.venv\lib\site-packages\fastembed\sparse\sparse_text_embedding.py:6: in <module>
+    from fastembed.sparse.bm25 import Bm25
+.venv\lib\site-packages\fastembed\sparse\bm25.py:21: in <module>
+    from fastembed.sparse.utils.tokenizer import SimpleTokenizer
+.venv\lib\site-packages\fastembed\sparse\utils\tokenizer.py:15: in <module>
+    class WordTokenizer:
+.venv\lib\site-packages\fastembed\sparse\utils\tokenizer.py:31: in WordTokenizer
+    (re.compile("([ﾂｻ窶昶兢)", re.U), r" \1 "),
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\re.py:251: in compile
+    return _compile(pattern, flags)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\re.py:303: in _compile
+    p = sre_compile.compile(pattern, flags)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_compile.py:788: in compile
+    p = sre_parse.parse(p, flags)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:955: in parse
+    p = _parse_sub(source, state, flags & SRE_FLAG_VERBOSE, 0)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:444: in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:841: in _parse
+    p = _parse_sub(source, state, sub_verbose, nested + 1)
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:444: in _parse_sub
+    itemsappend(_parse(source, state, verbose, nested + 1,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+source = <sre_parse.Tokenizer object at 0x0000026FB771D030>
+state = <sre_parse.State object at 0x0000026FB771CEB0>, verbose = 0, nested = 3
+first = False
+
+    def _parse(source, state, verbose, nested, first=False):
+        # parse a simple pattern
+        subpattern = SubPattern(state)
+    
+        # precompute constants into local variables
+        subpatternappend = subpattern.append
+        sourceget = source.get
+        sourcematch = source.match
+        _len = len
+        _ord = ord
+    
+        while True:
+    
+            this = source.next
+            if this is None:
+                break # end of pattern
+            if this in "|)":
+                break # end of subpattern
+            sourceget()
+    
+            if verbose:
+                # skip whitespace and comments
+                if this in WHITESPACE:
+                    continue
+                if this == "#":
+                    while True:
+                        this = sourceget()
+                        if this is None or this == "\n":
+                            break
+                    continue
+    
+            if this[0] == "\\":
+                code = _escape(source, this, state)
+                subpatternappend(code)
+    
+            elif this not in SPECIAL_CHARS:
+                subpatternappend((LITERAL, _ord(this)))
+    
+            elif this == "[":
+                here = source.tell() - 1
+                # character set
+                set = []
+                setappend = set.append
+    ##          if sourcematch(":"):
+    ##              pass # handle character classes
+                if source.next == '[':
+                    import warnings
+                    warnings.warn(
+                        'Possible nested set at position %d' % source.tell(),
+                        FutureWarning, stacklevel=nested + 6
+                    )
+                negate = sourcematch("^")
+                # check remaining characters
+                while True:
+                    this = sourceget()
+                    if this is None:
+>                       raise source.error("unterminated character set",
+                                           source.tell() - here)
+E                       re.error: unterminated character set at position 1
+
+..\..\..\AppData\Roaming\uv\python\cpython-3.10.17-windows-x86_64-none\lib\sre_parse.py:550: error
+- generated xml file: C:\Users\saiha\My_Service\programing\Trancform_MovieToText\reports\junit-local.xml -
+=========================== short test summary info ===========================
+ERROR tests/test_fastembed_provider_pytest.py::test_fastembed_embed_text - re...
+ERROR tests/test_fastembed_provider_pytest.py::test_fastembed_embed_batch - r...
+======================== 52 passed, 2 errors in 13.41s ========================

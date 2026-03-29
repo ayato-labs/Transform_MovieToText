@@ -20,7 +20,7 @@ class TranscriptionView(ft.Column):
 
     def __init__(self, page: ft.Page, config_mgr: ConfigManager, service: TranscriptionService):
         super().__init__(expand=True, scroll=ft.ScrollMode.ADAPTIVE, spacing=10)
-        self.page = page
+        self._page = page
         self.config_mgr = config_mgr
         self.service = service
         self.router = IntentRouter(config_mgr)
@@ -28,8 +28,8 @@ class TranscriptionView(ft.Column):
         # File Pickers
         self.file_picker = ft.FilePicker(on_result=self._on_file_picked)
         self.save_picker = ft.FilePicker(on_result=self._on_save_picked)
-        if self.page:
-            self.page.overlay.extend([self.file_picker, self.save_picker])
+        if self._page:
+            self._page.overlay.extend([self.file_picker, self.save_picker])
 
         # Status & Progress
         self.status_text = ft.Text("待機中...", color=ft.Colors.GREY_500)

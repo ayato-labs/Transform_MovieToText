@@ -2826,7 +2826,7 @@ wheels = [
 
 [[package]]
 name = "transform-movie-to-text"
-version = "2.5.1"
+version = "2.5.2"
 source = { editable = "." }
 dependencies = [
     { name = "fastembed" },

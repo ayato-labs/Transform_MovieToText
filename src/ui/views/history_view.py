@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class HistoryView(ft.Column):
-    def __init__(self, controller: HistoryController, config_mgr: ConfigManager, folder_picker: ft.FilePicker):
+    def __init__(self, controller: HistoryController, config_mgr: ConfigManager, folder_picker: ft.FilePicker, page: ft.Page = None):
         super().__init__(expand=True, scroll="auto")
+        self._page = page
         self.controller = controller
         self.config_mgr = config_mgr
         self.folder_picker = folder_picker
@@ -52,7 +53,7 @@ class HistoryView(ft.Column):
         self.project_dropdown.options = [ft.dropdown.Option(key="", text="全プロジェクト")]
         for p in projects:
             self.project_dropdown.options.append(ft.dropdown.Option(key=p, text=p))
-        if self.page:
+        if self._page:
             self.update()
 
     def _refresh_history(self, search_query=None):
@@ -72,7 +73,7 @@ class HistoryView(ft.Column):
             for m in meetings:
                 self.history_list.controls.append(self._build_meeting_card(m))
 
-        if self.page:
+        if self._page:
             self.update()
 
     def _on_project_filter_change(self):
@@ -195,7 +196,7 @@ class HistoryView(ft.Column):
 
         def on_provider_change(e):
             new_provider = e.control.value
-            sync_llm_models(self.page, self.config_mgr, new_provider, dd_model)
+            sync_llm_models(self._page, self.config_mgr, new_provider, dd_model)
 
         dd_provider = ft.Dropdown(
             label="プロバイダー",
@@ -216,7 +217,7 @@ class HistoryView(ft.Column):
         )
 
         # Initial sync for the first load
-        sync_llm_models(self.page, self.config_mgr, initial_provider, dd_model)
+        sync_llm_models(self._page, self.config_mgr, initial_provider, dd_model)
 
         initial_provider = dd_provider.value or "gemini"
 
@@ -237,21 +238,21 @@ class HistoryView(ft.Column):
         )
 
         def on_copy_transcript(e):
-            self.page.set_clipboard(transcript_control.value)
-            self.page.snack_bar = ft.SnackBar(ft.Text("文字起こしをコピーしました"))
-            self.page.snack_bar.open = True
-            self.page.update()
+            self._page.set_clipboard(transcript_control.value)
+            self._page.snack_bar = ft.SnackBar(ft.Text("文字起こしをコピーしました"))
+            self._page.snack_bar.open = True
+            self._page.update()
 
         def on_copy_minutes(e):
-            self.page.set_clipboard(minutes_control.value)
-            self.page.snack_bar = ft.SnackBar(ft.Text("議事録をコピーしました"))
-            self.page.snack_bar.open = True
-            self.page.update()
+            self._page.set_clipboard(minutes_control.value)
+            self._page.snack_bar = ft.SnackBar(ft.Text("議事録をコピーしました"))
+            self._page.snack_bar.open = True
+            self._page.update()
 
         def on_regenerate(e):
             e.control.disabled = True
             e.control.text = "生成中..."
-            self.page.update()
+            self._page.update()
 
             try:
                 cfg = ConfigManager()
@@ -260,19 +261,19 @@ class HistoryView(ft.Column):
 
                 new_minutes = self.controller.regenerate_minutes(m["id"], m["transcript"], svc, provider=dd_provider.value, model=dd_model.value)
                 minutes_control.value = new_minutes
-                self.page.snack_bar = ft.SnackBar(ft.Text(f"議事録を再生成しました ({dd_model.value})"))
+                self._page.snack_bar = ft.SnackBar(ft.Text(f"議事録を再生成しました ({dd_model.value})"))
             except Exception as ex:
-                self.page.snack_bar = ft.SnackBar(ft.Text(f"エラー: {ex}"), bgcolor=ft.Colors.RED_400)
+                self._page.snack_bar = ft.SnackBar(ft.Text(f"エラー: {ex}"), bgcolor=ft.Colors.RED_400)
 
             e.control.disabled = False
             e.control.text = "AI議事録を再生成"
-            self.page.snack_bar.open = True
-            self.page.update()
+            self._page.snack_bar.open = True
+            self._page.update()
 
         def close_details(e):
-            if self.page.dialog:
-                self.page.dialog.open = False
-            self.page.update()
+            if self._page.dialog:
+                self._page.dialog.open = False
+            self._page.update()
 
         dlg = ft.AlertDialog(
             title=ft.Row(
@@ -379,12 +380,12 @@ class HistoryView(ft.Column):
             ),
         )
 
-        if self.page:
+        if self._page:
             logger.info("Opening detail dialog via page.open()")
-            self.page.open(dlg)
-            self.page.update()
+            self._page.open(dlg)
+            self._page.update()
         else:
-            logger.error("Cannot show details: self.page is None")
+            logger.error("Cannot show details: self._page is None")
 
     def _generate_minutes(self, meeting):
         logger.info(f"Generating minutes for meeting ID: {meeting['id']} (Legacy trigger)")
@@ -393,9 +394,9 @@ class HistoryView(ft.Column):
         # Based on src/app.py, HistoryView is part of MainWindow
         if hasattr(self.parent, "switch_tab"):
             self.parent.switch_tab(1)  # 1 is AI Minutes tab
-        elif hasattr(self.page, "main_window"):
+        elif hasattr(self._page, "main_window"):
             # Fallback if parent is not main_window directly
-            self.page.main_window.switch_tab(1)
+            self._page.main_window.switch_tab(1)
 
     def _start_export(self, meeting_id):
         self.selected_meeting_id = meeting_id
@@ -407,10 +408,10 @@ class HistoryView(ft.Column):
 
         success, message = self.controller.export_audio(self.selected_meeting_id, e.path)
 
-        if self.page:
-            self.page.snack_bar = ft.SnackBar(ft.Text(message))
-            self.page.snack_bar.open = True
-            self.page.update()
+        if self._page:
+            self._page.snack_bar = ft.SnackBar(ft.Text(message))
+            self._page.snack_bar.open = True
+            self._page.update()
 
         self.selected_meeting_id = None
 
@@ -418,21 +419,21 @@ class HistoryView(ft.Column):
         logger.info(f"Opening delete confirmation for ID: {meeting_id}")
 
         def close_dlg(e):
-            self.page.close(confirm_dlg)
+            self._page.close(confirm_dlg)
 
         def do_delete(e):
-            self.page.close(confirm_dlg)
+            self._page.close(confirm_dlg)
             if self.controller.delete_meeting(meeting_id):
                 self._refresh_history()
-                if self.page:
-                    self.page.snack_bar = ft.SnackBar(ft.Text(f"「{title}」を削除しました"))
-                    self.page.snack_bar.open = True
+                if self._page:
+                    self._page.snack_bar = ft.SnackBar(ft.Text(f"「{title}」を削除しました"))
+                    self._page.snack_bar.open = True
             else:
-                if self.page:
-                    self.page.snack_bar = ft.SnackBar(ft.Text("削除に失敗しました"), bgcolor=ft.Colors.RED_400)
-                    self.page.snack_bar.open = True
-            if self.page:
-                self.page.update()
+                if self._page:
+                    self._page.snack_bar = ft.SnackBar(ft.Text("削除に失敗しました"), bgcolor=ft.Colors.RED_400)
+                    self._page.snack_bar.open = True
+            if self._page:
+                self._page.update()
 
         confirm_dlg = ft.AlertDialog(
             title=ft.Text("履歴の削除"),
@@ -444,9 +445,9 @@ class HistoryView(ft.Column):
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
-        if self.page:
+        if self._page:
             logger.info("Opening delete confirmation via page.open()")
-            self.page.open(confirm_dlg)
-            self.page.update()
+            self._page.open(confirm_dlg)
+            self._page.update()
         else:
-            logger.error("Cannot show delete dialog: self.page is None")
+            logger.error("Cannot show delete dialog: self._page is None")
