@@ -7,7 +7,7 @@ import pytest
 # Pre-mock fastembed to avoid import-time re.error on Windows
 sys.modules["fastembed"] = MagicMock()
 
-from src.core.embeddings import FastEmbedProvider
+from src.core.embeddings import FastEmbedProvider  # noqa: E402
 
 
 @pytest.fixture
