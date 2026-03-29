@@ -1,3 +1,10 @@
+## [2.5.2](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.5.1...v2.5.2) (2026-03-29)
+
+
+### Bug Fixes
+
+* CI tests recovery (Flet API, mock paths, assertions) ([2d0541c](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/2d0541c55f3e5fb82ce0c556d618f99f7f863977))
+
 ## [2.5.1](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.5.0...v2.5.1) (2026-03-29)
 
 
