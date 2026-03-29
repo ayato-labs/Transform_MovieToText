@@ -28,8 +28,10 @@ class FileTranscriptionView(ft.Column):
         self.router = IntentRouter(config_mgr)
 
         # File Pickers
-        self.file_picker = ft.FilePicker(on_result=self._on_file_picked)
-        self.save_picker = ft.FilePicker(on_result=self._on_save_picked)
+        self.file_picker = ft.FilePicker()
+        self.file_picker.on_result = self._on_file_picked
+        self.save_picker = ft.FilePicker()
+        self.save_picker.on_result = self._on_save_picked
         if self._page:
             self._page.overlay.extend([self.file_picker, self.save_picker])
 
