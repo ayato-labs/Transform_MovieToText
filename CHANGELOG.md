@@ -1,3 +1,10 @@
+## [2.5.1](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.5.0...v2.5.1) (2026-03-29)
+
+
+### Bug Fixes
+
+* resolve CI test collection errors (import paths and encoding) ([45cecfd](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/45cecfda489427879f83d5247e99dd5bac5674f1))
+
 # [2.5.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.4.1...v2.5.0) (2026-03-29)
 
 
