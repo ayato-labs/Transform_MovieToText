@@ -1,0 +1,118 @@
+name: Desktop Distribution Build
+
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Export requirements.txt
+        run: |
+          uv export --format requirements-txt -o requirements.txt
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Flet SDK
+        run: |
+          pip install flet[all]
+
+      - name: Build Windows App
+        run: |
+          flet build windows --no-rich-output
+
+      - name: Zip Windows App
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "build/windows/*" -DestinationPath "TransformMovieToText-Windows.zip"
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binary
+          path: TransformMovieToText-Windows.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Export requirements.txt
+        run: |
+          uv export --format requirements-txt -o requirements.txt
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Flet SDK
+        run: |
+          pip install flet[all]
+
+      - name: Build macOS App
+        run: |
+          flet build macos --no-rich-output
+
+      - name: Zip macOS App
+        run: |
+          zip -r TransformMovieToText-macOS.zip build/macos/*
+
+      - name: Upload macOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-binary
+          path: TransformMovieToText-macOS.zip
+
+  release:
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-binary
+
+      - name: Download macOS Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-binary
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            TransformMovieToText-Windows.zip
+            TransformMovieToText-macOS.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
