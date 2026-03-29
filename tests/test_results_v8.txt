@@ -1,0 +1,18 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.10.17, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\saiha\My_Service\programing\Trancform_MovieToText\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\saiha\My_Service\programing\Trancform_MovieToText
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.22, cov-7.1.0, mock-3.15.1
+collecting ... collected 8 items
+
+tests/unit/core/test_whisper_hardening.py::test_whisper_load_model_fallback PASSED [ 12%]
+tests/integration/test_history_persistence.py::test_add_and_get_meeting PASSED [ 25%]
+tests/integration/test_history_persistence.py::test_search_meetings PASSED [ 37%]
+tests/integration/test_history_persistence.py::test_update_minutes PASSED [ 50%]
+tests/integration/test_config_sync.py::test_config_persistence PASSED    [ 62%]
+tests/integration/test_config_sync.py::test_provider_specific_config PASSED [ 75%]
+tests/e2e/test_app_launch.py::test_app_initialization_smoke PASSED       [ 87%]
+tests/e2e/test_app_launch.py::test_view_instantiation_smoke PASSED       [100%]
+
+============================== 8 passed in 5.97s ==============================

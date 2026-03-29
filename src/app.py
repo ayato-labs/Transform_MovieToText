@@ -16,17 +16,17 @@ import logging
 
 import flet as ft
 
-from src.core.config_manager import ConfigManager
 from src.controllers.history_ctrl import HistoryController
 from src.controllers.minutes_ctrl import MinutesController
 from src.controllers.transcription_ctrl import TranscriptionController
+from src.core.config_manager import ConfigManager
 from src.core.state import state
-from src.transcriber import WhisperTranscriber
+from src.core.whisper_transcriber import WhisperTranscriber
 from src.ui.main_window import MainWindow
+from src.ui.views.file_transcription_view import FileTranscriptionView
 from src.ui.views.history_view import HistoryView
-from src.ui.views.minutes_view import MinutesView
+from src.ui.views.live_transcription_view import LiveTranscriptionView
 from src.ui.views.settings_view import SettingsView
-from src.ui.views.transcription_view import TranscriptionView
 
 logger = logging.getLogger(__name__)
 
@@ -61,14 +61,14 @@ class FletApp:
         self.page.overlay.extend([self.file_picker, self.save_picker, self.folder_picker])
 
         # Initialize Views
-        self.transcription_view = TranscriptionView(self.trans_ctrl, self.file_picker, self.save_picker)
-        self.minutes_view = MinutesView(self.minutes_ctrl, self.save_picker)
+        self.file_trans_view = FileTranscriptionView(self.page, self.config_mgr, self.trans_ctrl, self.hw_info)
+        self.live_trans_view = LiveTranscriptionView(self.page, self.config_mgr, self.trans_ctrl, self.hw_info)
         self.settings_view = SettingsView(self.config_mgr, self.hw_info, self.transcriber.MODEL_REQUIREMENTS)
-        self.history_view = HistoryView(self.history_ctrl, self.folder_picker)
+        self.history_view = HistoryView(self.history_ctrl, self.config_mgr, self.folder_picker)
 
         # Build Main UI
         logger.info("FletApp: Building UI...")
-        self.main_window = MainWindow(self.transcription_view, self.minutes_view, self.settings_view, self.history_view)
+        self.main_window = MainWindow(self.file_trans_view, self.live_trans_view, self.settings_view, self.history_view)
         self.page.add(self.main_window)
 
         # Initial View Setup
@@ -83,7 +83,8 @@ class FletApp:
             label = f"{model_name} ({device} - {req_gb:.0f}GB)"
             model_options.append(ft.dropdown.Option(key=model_name, text=label))
 
-        self.transcription_view.init_view(model_options)
+        # Individual view initialization is handled during construction or nav
+        # self.transcription_view.init_view(model_options)
         # Other views initialized on selection
 
     def _on_file_result(self, e):

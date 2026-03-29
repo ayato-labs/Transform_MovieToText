@@ -50,10 +50,25 @@ class OllamaLocalClient(BaseLLMClient):
         prompt = (
             "以下の文字起こしテキストを元に、構造化された議事録をMarkdown形式で作成してください。\n"
             "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なヘッダーやリスト（# や -）を使用してください。\n\n"
-            f"--- 文字起こしテキスト ---\n{transcript}"
         )
+        images = []
+        if visual_contexts:
+            import base64
+            import os
+
+            for ctx in visual_contexts:
+                img_path = ctx.get("image_path")
+                if img_path and os.path.exists(img_path):
+                    with open(img_path, "rb") as f:
+                        images.append(base64.b64encode(f.read()).decode("utf-8"))
+
+        prompt += f"--- 文字起こしテキスト ---\n{transcript}"
         try:
-            response = self.client.chat(model=model_name, messages=[{"role": "user", "content": prompt}])
+            # Pass images to ollama chat if any
+            msg = {"role": "user", "content": prompt}
+            if images:
+                msg["images"] = images
+            response = self.client.chat(model=model_name, messages=[msg])
             return response["message"]["content"]
         except Exception as e:
             logger.error(f"Ollama local generation failed: {e}")
@@ -137,10 +152,24 @@ class OllamaCloudClient(BaseLLMClient):
         prompt = (
             "以下の文字起こしテキストを元に、構造化された議事録をMarkdown形式で作成してください。\n"
             "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なヘッダーやリスト（# や -）を使用してください。\n\n"
-            f"--- 文字起こしテキスト ---\n{transcript}"
         )
+        images = []
+        if visual_contexts:
+            import base64
+            import os
+
+            for ctx in visual_contexts:
+                img_path = ctx.get("image_path")
+                if img_path and os.path.exists(img_path):
+                    with open(img_path, "rb") as f:
+                        images.append(base64.b64encode(f.read()).decode("utf-8"))
+
+        prompt += f"--- 文字起こしテキスト ---\n{transcript}"
         try:
-            response = self.client.chat(model=model_name, messages=[{"role": "user", "content": prompt}])
+            msg = {"role": "user", "content": prompt}
+            if images:
+                msg["images"] = images
+            response = self.client.chat(model=model_name, messages=[msg])
             return response["message"]["content"]
         except Exception as e:
             logger.error(f"Ollama Cloud generation error: {e}")

@@ -30,8 +30,13 @@ class TranscriptionService:
         self._current_mp3_path: str | None = None
 
     def transcribe_file_sync(
-        self, file_path: str, model_name: str, language: str | None = None, progress_callback: Callable[[float], None] | None = None
-    ) -> str:
+        self,
+        file_path: str,
+        model_name: str,
+        language: str | None = None,
+        progress_callback: Callable[[float], None] | None = None,
+        use_visual: bool = False,
+    ) -> dict:
         """Synchronously transcribes a file and saves it to history."""
         if not file_path or not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -42,6 +47,13 @@ class TranscriptionService:
         result = self.transcriber.transcribe(
             file_path, model_name=model_name, force_gpu=force_gpu, language=language, progress_callback=progress_callback
         )
+
+        visual_contexts = []
+        if use_visual and file_path.lower().endswith((".mp4", ".mov", ".avi", ".mkv")):
+            try:
+                visual_contexts = self.extract_visual_frames(file_path)
+            except Exception as e:
+                logger.warning(f"Failed to extract visual frames: {e}")
 
         # Auto-save to history
         base_name = os.path.basename(file_path)
@@ -55,8 +67,44 @@ class TranscriptionService:
 
         final_title = f"{ai_title} ({base_name})" if ai_title else f"ファイル文字起こし: {base_name}"
 
-        history_mgr.add_meeting(title=final_title, transcript=result, audio_path=file_path, model_info=model_name)
-        return result
+        meeting_id = history_mgr.add_meeting(title=final_title, transcript=result, audio_path=file_path, model_info=model_name)
+
+        # Save visual contexts if any
+        for ctx in visual_contexts:
+            history_mgr.add_visual_context(meeting_id=meeting_id, timestamp_sec=ctx["timestamp_sec"], image_path=ctx["image_path"])
+
+        return {"transcript": result, "visual_contexts": visual_contexts, "meeting_id": meeting_id}
+
+    def extract_visual_frames(self, video_path: str, interval_sec: float = 10.0) -> list[dict]:
+        """Extracts significant frames from a video file as visual context."""
+        from pathlib import Path
+
+        import cv2
+
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = total_frames / fps if fps > 0 else 0
+
+        temp_dir = Path("data/records/temp_video_frames")
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        contexts = []
+        curr_sec = 0.0
+        while curr_sec < duration:
+            cap.set(cv2.CAP_PROP_POS_MSEC, curr_sec * 1000)
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            frame_path = temp_dir / f"frame_{curr_sec:.1f}s.jpg"
+            cv2.imwrite(str(frame_path), frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+
+            contexts.append({"image_path": str(frame_path), "timestamp_sec": curr_sec})
+            curr_sec += interval_sec
+
+        cap.release()
+        return contexts
 
     def start_live_recording(
         self,
@@ -161,6 +209,27 @@ class TranscriptionService:
                 self._current_mp3_path = None
 
         threading.Thread(target=_finalize_worker, daemon=True).start()
+
+    def generate_minutes_for_meeting(self, meeting_id: int, transcript: str, provider: str | None = None, model: str | None = None) -> str:
+        """Generates minutes for an existing meeting and updates the record."""
+        if not transcript or len(transcript.strip()) < 50:
+            raise ValueError("文字起こしデータが不足しています（50文字以上必要です）。")
+
+        active_provider = provider or self.config_mgr.get_active_provider()
+        conf = self.config_mgr.get_provider_config(active_provider)
+        llm_client = LLMFactory.create_client(active_provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
+        llm_model = model or self.config_mgr.get_last_model()
+
+        # Fetch visual context if available
+        visual_contexts = history_mgr.get_visual_context(meeting_id)
+
+        # Generate minutes using the client directly
+        minutes = llm_client.generate_minutes(transcript=transcript, model_name=llm_model, visual_contexts=visual_contexts)
+
+        # Update history
+        history_mgr.update_minutes(meeting_id, minutes, model_name=llm_model)
+
+        return minutes
 
     def _extract_category_internal(self, text: str) -> str:
         provider = self.config_mgr.get_active_provider()

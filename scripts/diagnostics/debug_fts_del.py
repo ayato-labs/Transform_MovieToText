@@ -1,13 +1,15 @@
-
 import os
 import sqlite3
 
 db_path = "debug_fts_del.db"
-if os.path.exists(db_path): os.remove(db_path)
+if os.path.exists(db_path):
+    os.remove(db_path)
 
 conn = sqlite3.connect(db_path)
 conn.execute("CREATE TABLE meetings (id INTEGER PRIMARY KEY, title TEXT, transcript TEXT, project_name TEXT, category TEXT, minutes_model TEXT)")
-conn.execute("CREATE VIRTUAL TABLE meetings_fts USING fts5(title, transcript, project_name, category, minutes_model, content='meetings', content_rowid='id')")
+conn.execute(
+    "CREATE VIRTUAL TABLE meetings_fts USING fts5(title, transcript, project_name, category, minutes_model, content='meetings', content_rowid='id')"
+)
 
 # Triggers
 conn.execute("""
@@ -24,8 +26,9 @@ conn.execute("""
 """)
 
 # Insert
-conn.execute("INSERT INTO meetings (title, transcript, project_name, category, minutes_model) VALUES (?, ?, ?, ?, ?)", 
-             ("Secret", "Banana", "X", "Y", ""))
+conn.execute(
+    "INSERT INTO meetings (title, transcript, project_name, category, minutes_model) VALUES (?, ?, ?, ?, ?)", ("Secret", "Banana", "X", "Y", "")
+)
 conn.commit()
 
 # Check search before delete

@@ -52,3 +52,20 @@ class HistoryController:
         except Exception as e:
             logger.error(f"Failed to delete meeting {meeting_id}: {e}")
             return False
+
+    def get_meeting_details(self, meeting_id: int):
+        """Fetches full meeting data and related visual context."""
+        meeting = history_mgr.get_meeting(meeting_id)
+        if not meeting:
+            return None
+
+        visual_contexts = history_mgr.get_visual_context(meeting_id)
+        return {"meeting": meeting, "visual_contexts": visual_contexts}
+
+    def regenerate_minutes(self, meeting_id: int, transcript: str, service, provider: str | None = None, model: str | None = None):
+        """Triggers AI minutes re-generation via TranscriptionService."""
+        try:
+            return service.generate_minutes_for_meeting(meeting_id, transcript, provider=provider, model=model)
+        except Exception as e:
+            logger.error(f"Failed to regenerate minutes: {e}")
+            raise

@@ -1,5 +1,5 @@
 {
-    "whisper_model": "turbo",
+    "whisper_model": "large-v2",
     "providers": {
         "gemini": {
             "api_key": "AIzaSyCPaxkqF2bNQrd9m0-Y-qwT7uHcfiQsxlA"
@@ -12,13 +12,13 @@
             "base_url": "http://localhost:11434"
         }
     },
-    "active_provider": "ollama_cloud",
+    "active_provider": "ollama_local",
     "audio_source": "system",
     "force_gpu": true,
     "last_models": {
-        "ollama_local": "minimax-m2:cloud",
+        "ollama_local": "gemini-3-flash-preview:latest",
         "gemini": "gemini-3.1-flash-lite-preview"
     },
-    "visual_capture_enabled": false,
+    "visual_capture_enabled": true,
     "embedding_provider": "google"
 }

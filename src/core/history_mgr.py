@@ -29,9 +29,10 @@ class HistoryManager:
             raise HistoryError(f"Database initialization failed: {e}") from e
 
     def _get_connection(self) -> sqlite3.Connection:
-        """Helper to get a connection with Row factory."""
+        """Helper to get a connection with Row factory and Foreign Key support."""
         conn = sqlite3.connect(self.db_path, timeout=self.timeout)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
     def _init_db(self):
@@ -99,11 +100,18 @@ class HistoryManager:
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         meeting_id INTEGER,
                         timestamp REAL,
+                        image_path TEXT,
                         description TEXT,
                         ocr_text TEXT,
                         FOREIGN KEY(meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
                     )
                 """)
+
+                # Migration for image_path
+                cursor = conn.execute("PRAGMA table_info(visual_context)")
+                v_columns = [row[1] for row in cursor.fetchall()]
+                if "image_path" not in v_columns:
+                    conn.execute("ALTER TABLE visual_context ADD COLUMN image_path TEXT")
 
                 # 6. Multi-model Embeddings (v3.2)
                 conn.execute("""
@@ -149,6 +157,20 @@ class HistoryManager:
                 logger.error(f"Error adding meeting: {e}")
                 raise HistoryError(f"Meeting storage failed: {e}") from e
 
+    def add_visual_context(self, meeting_id: int, timestamp_sec: float, image_path: str, description: str = "", ocr_text: str = ""):
+        """Adds a visual context record for a meeting."""
+        from contextlib import closing
+
+        with closing(self._get_connection()) as conn:
+            try:
+                conn.execute(
+                    "INSERT INTO visual_context (meeting_id, timestamp, image_path, description, ocr_text) VALUES (?, ?, ?, ?, ?)",
+                    (meeting_id, timestamp_sec, image_path, description, ocr_text),
+                )
+                conn.commit()
+            except sqlite3.Error as e:
+                logger.error(f"Error adding visual context: {e}")
+
     def update_meeting(self, meeting_id: int, **kwargs):
         """Updates meeting fields. Manually updates FTS."""
         if not kwargs:
@@ -188,12 +210,15 @@ class HistoryManager:
         self.update_meeting(meeting_id, **data)
 
     def delete_meeting(self, meeting_id: int):
-        """Deletes a meeting from history and FTS index."""
+        """Deletes a meeting from history, FTS index, and associated visual context."""
         from contextlib import closing
 
         with closing(self._get_connection()) as conn:
             try:
+                # FTS doesn't support FK cascade, must delete manually
                 conn.execute("DELETE FROM meetings_fts WHERE rowid = ?", (meeting_id,))
+                # Visual context should cascade if PRAGMA foreign_keys=ON, but let's be explicit for safety
+                conn.execute("DELETE FROM visual_context WHERE meeting_id = ?", (meeting_id,))
                 conn.execute("DELETE FROM meetings WHERE id = ?", (meeting_id,))
                 conn.commit()
             except sqlite3.Error as e:
@@ -207,6 +232,14 @@ class HistoryManager:
             cursor = conn.execute("SELECT * FROM meetings WHERE id = ?", (meeting_id,))
             row = cursor.fetchone()
             return dict(row) if row else None
+
+    def get_visual_context(self, meeting_id: int) -> list[dict[str, Any]]:
+        """Retrieves all visual context for a specific meeting."""
+        from contextlib import closing
+
+        with closing(self._get_connection()) as conn:
+            cursor = conn.execute("SELECT * FROM visual_context WHERE meeting_id = ? ORDER BY timestamp ASC", (meeting_id,))
+            return [dict(row) for row in cursor.fetchall()]
 
     def get_all_meetings(self) -> list[dict[str, Any]]:
         from contextlib import closing

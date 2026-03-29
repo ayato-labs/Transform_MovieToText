@@ -1,7 +1,7 @@
 import logging
 import traceback
 
-from src.logger import setup_logger
+from src.utils.logger import setup_logger
 
 # Initialize logger as the very first thing (Highest Priority)
 setup_logger()

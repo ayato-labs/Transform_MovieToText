@@ -1,11 +1,11 @@
-
 import os
 import sqlite3
 
 from src.core.history_mgr import HistoryManager
 
 db_path = "debug_mgr_inspect.db"
-if os.path.exists(db_path): os.remove(db_path)
+if os.path.exists(db_path):
+    os.remove(db_path)
 
 mgr = HistoryManager(db_path=db_path)
 

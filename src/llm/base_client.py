@@ -39,3 +39,11 @@ class BaseLLMClient(ABC):
             model_name: The name of the LLM model to use.
         """
         pass
+
+    def transform(self, transcript: str, model_name: str, system_instruction: str, visual_contexts: list = None) -> str:
+        """
+        Unified transformation method. Higher-level than generate_minutes.
+        Can be used for any JSON-returning analysis or general text conversion.
+        """
+        # Default implementation calls generate_minutes if not overridden
+        return self.generate_minutes(transcript, model_name, visual_contexts)

@@ -1,10 +1,10 @@
-
 import os
 
 from src.core.history_mgr import HistoryManager
 
 db_path = "debug_mgr.db"
-if os.path.exists(db_path): os.remove(db_path)
+if os.path.exists(db_path):
+    os.remove(db_path)
 
 mgr = HistoryManager(db_path=db_path)
 

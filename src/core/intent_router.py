@@ -56,11 +56,7 @@ class IntentRouter:
             sample_text = transcript[:4000]
 
             # Use unified transform() method (Safe for Gemini and Ollama)
-            raw_output = client.transform(
-                transcript=f"Content to analyze:\n{sample_text}",
-                model_name=model,
-                system_instruction=system_prompt
-            )
+            raw_output = client.transform(transcript=f"Content to analyze:\n{sample_text}", model_name=model, system_instruction=system_prompt)
 
             # Defensive JSON extraction
             raw_json = raw_output.strip()

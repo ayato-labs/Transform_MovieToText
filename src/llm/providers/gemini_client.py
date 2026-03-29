@@ -132,3 +132,20 @@ class GeminiLLMClient(BaseLLMClient):
         except Exception as e:
             logger.error(f"Gemini title generation failed: {e}")
             return "タイトルなし"
+
+    def transform(self, transcript: str, model_name: str, system_instruction: str, visual_contexts: list = None) -> str:
+        """Overridden transform to use Gemini's native multimodal and system_instruction features."""
+        contents = []
+        if visual_contexts:
+            for ctx in visual_contexts:
+                img_path = ctx.get("image_path")
+                if img_path and os.path.exists(img_path):
+                    img = Image.open(img_path)
+                    contents.append(img)
+
+        contents.append(transcript)
+
+        response = self.client.models.generate_content(
+            model=model_name, contents=contents, config=types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.7)
+        )
+        return response.text

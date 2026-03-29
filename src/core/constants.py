@@ -16,7 +16,13 @@ DEFAULT_PROVIDERS = {
     "ollama_cloud": {"api_key": "", "base_url": "https://ollama.com"},
 }
 DEFAULT_ACTIVE_PROVIDER = "gemini"
+DEFAULT_LLM_MODELS = {
+    "gemini": ["gemini-1.5-flash", "gemini-1.5-pro"],
+    "ollama_local": ["llama3", "mistral", "gemma"],
+    "ollama_cloud": ["llama3", "mistral-large"],
+}
 DEFAULT_WHISPER_MODEL = "base"
+WHISPER_MODELS = ["tiny", "base", "small", "medium", "large-v2", "large-v3"]
 
 # Embedding Defaults
 DEFAULT_EMBEDDING_PROVIDER = "local"  # Default to local for privacy

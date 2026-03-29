@@ -2,19 +2,21 @@ import logging
 
 import flet as ft
 
+from src.ui.views.file_transcription_view import FileTranscriptionView
 from src.ui.views.history_view import HistoryView
-from src.ui.views.minutes_view import MinutesView
+from src.ui.views.live_transcription_view import LiveTranscriptionView
 from src.ui.views.settings_view import SettingsView
-from src.ui.views.transcription_view import TranscriptionView
 
 logger = logging.getLogger(__name__)
 
 
 class MainWindow(ft.Row):
-    def __init__(self, transcription_view: TranscriptionView, minutes_view: MinutesView, settings_view: SettingsView, history_view: HistoryView):
+    def __init__(
+        self, file_trans_view: FileTranscriptionView, live_trans_view: LiveTranscriptionView, settings_view: SettingsView, history_view: HistoryView
+    ):
         super().__init__(expand=True)
-        self.transcription_view = transcription_view
-        self.minutes_view = minutes_view
+        self.file_trans_view = file_trans_view
+        self.live_trans_view = live_trans_view
         self.settings_view = settings_view
         self.history_view = history_view
 
@@ -26,19 +28,20 @@ class MainWindow(ft.Row):
             min_extended_width=200,
             group_alignment=-0.9,
             destinations=[
-                ft.NavigationRailDestination(icon="mic", selected_icon="mic", label="文字起こし"),
-                ft.NavigationRailDestination(icon="stars", selected_icon="stars", label="AI議事録"),
-                ft.NavigationRailDestination(icon="history", selected_icon="history", label="履歴"),
-                ft.NavigationRailDestination(icon="settings", selected_icon="settings", label="設定"),
+                ft.NavigationRailDestination(icon=ft.Icons.ATTACH_FILE, selected_icon=ft.Icons.ATTACH_FILE, label="ファイル文字起こし"),
+                ft.NavigationRailDestination(icon=ft.Icons.MIC, selected_icon=ft.Icons.MIC, label="リアルタイム"),
+                ft.NavigationRailDestination(icon=ft.Icons.HISTORY, selected_icon=ft.Icons.HISTORY, label="履歴"),
+                ft.NavigationRailDestination(icon=ft.Icons.SETTINGS, selected_icon=ft.Icons.SETTINGS, label="設定"),
             ],
             on_change=self._on_nav_change,
         )
 
         # Content Container
         self.content_container = ft.Container(
-            content=self.transcription_view,
+            content=self.file_trans_view,
             expand=True,
             padding=20,
+            alignment=ft.alignment.top_left,
         )
 
         self.controls = [
@@ -57,11 +60,9 @@ class MainWindow(ft.Row):
         logger.info(f"Navigation changed to index: {idx}")
         try:
             if idx == 0:
-                self.content_container.content = self.transcription_view
+                self.content_container.content = self.file_trans_view
             elif idx == 1:
-                self.content_container.content = self.minutes_view
-                self.content_container.update()
-                self.minutes_view.init_view()
+                self.content_container.content = self.live_trans_view
             elif idx == 2:
                 self.content_container.content = self.history_view
                 self.content_container.update()

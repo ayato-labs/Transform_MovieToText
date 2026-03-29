@@ -5,7 +5,7 @@ from src.core.config_manager import ConfigManager
 from src.core.history_mgr import history_mgr
 from src.core.state import state
 from src.core.transcription_service import TranscriptionService
-from src.transcriber import WhisperTranscriber
+from src.core.whisper_transcriber import WhisperTranscriber
 
 logger = logging.getLogger(__name__)
 

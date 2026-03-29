@@ -1,0 +1,14 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.10.17, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\saiha\My_Service\programing\Trancform_MovieToText\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\saiha\My_Service\programing\Trancform_MovieToText
+configfile: pyproject.toml
+plugins: anyio-4.12.1, langsmith-0.7.22, cov-7.1.0, mock-3.15.1
+collecting ... collected 4 items
+
+tests/unit/core/test_history_cockpit.py::test_visual_context_persistence PASSED [ 25%]
+tests/unit/core/test_history_cockpit.py::test_delete_meeting_with_dependencies PASSED [ 50%]
+tests/unit/core/test_history_cockpit.py::test_generate_minutes_for_meeting_logic PASSED [ 75%]
+tests/unit/core/test_history_cockpit.py::test_history_controller_bridge PASSED [100%]
+
+============================== 4 passed in 4.19s ==============================

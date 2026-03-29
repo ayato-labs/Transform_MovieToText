@@ -4,8 +4,8 @@ import os
 
 from dotenv import load_dotenv
 
-from .core.constants import DEFAULT_ACTIVE_PROVIDER, DEFAULT_CONFIG_PATH, DEFAULT_WHISPER_MODEL
-from .core.migrator import ConfigMigrator
+from .constants import DEFAULT_ACTIVE_PROVIDER, DEFAULT_CONFIG_PATH
+from .migrator import ConfigMigrator
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +88,28 @@ class ConfigManager:
         self.config["last_models"][provider_name] = model_name
         self.save_config()
 
+    def get_llm_models(self, provider_name=None):
+        if not provider_name:
+            provider_name = self.get_active_provider()
+
+        try:
+            from src.llm.factory import LLMFactory
+
+            conf = self.get_provider_config(provider_name)
+            client = LLMFactory.create_client(provider_name=provider_name, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
+            models = client.get_available_models()
+            if models:
+                return models
+        except Exception as e:
+            logger.warning(f"Failed to fetch live models for {provider_name}: {e}")
+
+        # Fallback to constants if live fetch fails
+        from .constants import DEFAULT_LLM_MODELS
+
+        return DEFAULT_LLM_MODELS.get(provider_name, [])
+
     def get_whisper_model(self):
-        return self.config.get("whisper_model", DEFAULT_WHISPER_MODEL)
+        return self.config.get("whisper_model", "base")
 
     def set_whisper_model(self, model_name):
         old = self.get_whisper_model()
@@ -97,6 +117,13 @@ class ConfigManager:
             self.config["whisper_model"] = model_name
             logger.info(f"Whisper model changed: {old} -> {model_name}")
             self.save_config()
+
+    def get_visual_capture_enabled(self):
+        return self.config.get("visual_capture_enabled", False)
+
+    def set_visual_capture_enabled(self, enabled: bool):
+        self.config["visual_capture_enabled"] = enabled
+        self.save_config()
 
     def get_force_gpu(self):
         return self.config.get("force_gpu", False)
@@ -107,6 +134,15 @@ class ConfigManager:
             self.config["force_gpu"] = enabled
             logger.info(f"Force GPU setting changed: {old} -> {enabled}")
             self.save_config()
+
+    def get_llm_client(self, provider_name=None, api_key=None):
+        """Returns an initialized LLM client for the provider."""
+        if not provider_name:
+            provider_name = self.get_active_provider()
+        conf = self.get_provider_config(provider_name)
+        from src.llm.factory import LLMFactory
+
+        return LLMFactory.create_client(provider_name=provider_name, api_key=api_key or conf.get("api_key"), base_url=conf.get("base_url"))
 
     def get_audio_source(self):
         """Returns the current audio source: 'system' or 'microphone'."""
@@ -121,11 +157,11 @@ class ConfigManager:
             self.save_config()
 
     def get_visual_capture_enabled(self):
-        """Returns whether screen capture is enabled."""
-        return self.config.get("visual_capture_enabled", True)
+        """Returns whether screen/video capture is enabled."""
+        return self.config.get("visual_capture_enabled", False)
 
-    def set_visual_capture_enabled(self, enabled):
-        """Sets whether screen capture is enabled."""
+    def set_visual_capture_enabled(self, enabled: bool):
+        """Sets whether screen/video capture is enabled."""
         old = self.get_visual_capture_enabled()
         if old != enabled:
             self.config["visual_capture_enabled"] = enabled
@@ -134,7 +170,7 @@ class ConfigManager:
 
     def get_embedding_provider(self):
         """Returns the current embedding provider: 'google' or 'local'."""
-        from .core.constants import DEFAULT_EMBEDDING_PROVIDER
+        from .constants import DEFAULT_EMBEDDING_PROVIDER
 
         return self.config.get("embedding_provider", DEFAULT_EMBEDDING_PROVIDER)
 

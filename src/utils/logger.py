@@ -1,39 +1,101 @@
 import datetime
 import logging
 import os
+import platform
 import sys
+from collections import deque
 from logging.handlers import RotatingFileHandler
 
 import colorlog
 
+# Global buffer for UI log viewing
+LOG_BUFFER = deque(maxlen=200)
+
+
+class DequeHandler(logging.Handler):
+    """Custom handler to store logs in a memory buffer (deque)."""
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            LOG_BUFFER.append(msg)
+        except Exception:
+            self.handleError(record)
+
+
+def get_system_info():
+    """Captures basic system and hardware diagnostics."""
+    info = {
+        "os": f"{platform.system()} {platform.release()} ({platform.version()})",
+        "python": sys.version.split()[0],
+        "cpu_count": os.cpu_count(),
+    }
+
+    # Try to get RAM info (Windows specific or fallback)
+    try:
+        if platform.system() == "Windows":
+            import subprocess
+
+            # Simple wmic call for RAM
+            cmd = "wmic computersystem get TotalPhysicalMemory"
+            output = subprocess.check_output(cmd, shell=True).decode().split()
+            if len(output) > 1:
+                info["ram_gb"] = round(int(output[1]) / (1024**3), 1)
+        else:
+            # Fallback for other OS or if wmic fails
+            info["ram_gb"] = "Unknown"
+    except Exception:
+        info["ram_gb"] = "Unknown"
+
+    # Try to detect GPU
+    try:
+        import subprocess
+
+        gpu_cmd = "nvidia-smi --query-gpu=name --format=csv,noheader"
+        gpu_info = subprocess.check_output(gpu_cmd, shell=True).decode().strip()
+        info["gpu"] = gpu_info if gpu_info else "None detected"
+    except Exception:
+        info["gpu"] = "None detected or nvidia-smi missing"
+
+    return info
+
 
 def setup_logger():
     """
-    Sets up a robust rotating file logger and professional colorized terminal output.
-    This should be called as early as possible.
+    Sets up a robust logging system with:
+    - Dedicated 'logs' directory
+    - Datetime-stamped log files
+    - Shared memory buffer for UI
+    - Professional colorized terminal output
     """
-    log_file = "app.log"
-    max_size = 10 * 1024 * 1024  # 10MB
-    backup_count = 5
+    # 1. Prepare directory
+    log_dir = "logs"
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-    # Check if DEBUG mode is enabled via environment variable
+    # 2. Daily/Run-based filename
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(log_dir, f"app_{timestamp}.log")
+
+    max_size = 10 * 1024 * 1024  # 10MB
+    backup_count = 10
+
+    # 3. Log Level
     debug_mode = os.environ.get("APP_DEBUG", "0") == "1"
     log_level = logging.DEBUG if debug_mode else logging.INFO
 
     try:
-        # Standard format for file logging (No colors)
+        # Formatters
         log_format = "%(asctime)s [%(levelname)s] [%(threadName)s] %(name)s (%(filename)s:%(lineno)d): %(message)s"
         file_formatter = logging.Formatter(log_format)
 
-        # File Handler (Rotating)
+        # File Handler
         file_handler = RotatingFileHandler(log_file, maxBytes=max_size, backupCount=backup_count, encoding="utf-8")
         file_handler.setFormatter(file_formatter)
 
-        # Stream Handler (Console) - Using colorlog for professional output
+        # Stream Handler (Console)
         stream_handler = logging.StreamHandler(sys.stdout)
-
         if sys.stdout.isatty():
-            # Color configuration for professional terminal output
             color_formatter = colorlog.ColoredFormatter(
                 "%(log_color)s" + log_format,
                 log_colors={
@@ -43,38 +105,42 @@ def setup_logger():
                     "ERROR": "red",
                     "CRITICAL": "bold_red",
                 },
-                secondary_log_colors={},
                 style="%",
             )
             stream_handler.setFormatter(color_formatter)
         else:
             stream_handler.setFormatter(file_formatter)
 
+        # Memory Handler
+        memory_handler = DequeHandler()
+        memory_handler.setFormatter(file_formatter)
+
         # Root Logger setup
         root_logger = logging.getLogger()
         root_logger.setLevel(log_level)
 
-        # Clean existing handlers to avoid duplicates during re-init
+        # Clean existing handlers
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
 
         root_logger.addHandler(file_handler)
         root_logger.addHandler(stream_handler)
+        root_logger.addHandler(memory_handler)
 
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logging.info(f"--- 🚀 APP START at {now} ---")
-        logging.info("Professional logging initialized: colorlog library is now managing terminal output.")
+        # Log system info immediately
+        sys_info = get_system_info()
+        logging.info(f"--- 🚀 APP START: {timestamp} ---")
+        logging.info(f"OS: {sys_info['os']}")
+        logging.info(f"Python: {sys_info['python']}")
+        logging.info(f"Hardware: {sys_info['cpu_count']} CPUs, {sys_info['ram_gb']}GB RAM")
+        logging.info(f"GPU: {sys_info['gpu']}")
+        logging.info(f"Logging to: {log_file}")
 
     except Exception as e:
-        # Fallback for lock contention or permission issues
         logging.basicConfig(level=logging.INFO)
-        logging.warning(f"Could not initialize RotatingFileHandler: {e}. Falling back to basic logging.")
+        logging.warning(f"Could not initialize advanced logging: {e}. Falling back to basic.")
 
 
 if __name__ == "__main__":
     setup_logger()
-    logging.debug("This is a debug message (Cyan)")
-    logging.info("This is an info message (Green)")
-    logging.warning("This is a warning message (Yellow)")
-    logging.error("This is an error message (Red)")
-    logging.critical("This is a critical message (Bold Red)")
+    logging.info("Advanced logging system test.")
