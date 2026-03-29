@@ -1,3 +1,10 @@
+## [2.5.6](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.5.5...v2.5.6) (2026-03-29)
+
+
+### Bug Fixes
+
+* pin flet to <0.80.0 to prevent Tab/ElevatedButton API breakage ([6906111](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/6906111d1ae4eca68e6a026fd94f93ffc8ec446f))
+
 ## [2.5.5](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.5.4...v2.5.5) (2026-03-29)
 
 
