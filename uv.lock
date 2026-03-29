@@ -2826,7 +2826,7 @@ wheels = [
 
 [[package]]
 name = "transform-movie-to-text"
-version = "2.5.3"
+version = "2.5.6"
 source = { editable = "." }
 dependencies = [
     { name = "fastembed" },
@@ -2858,8 +2858,8 @@ dev = [
 requires-dist = [
     { name = "fastembed" },
     { name = "faster-whisper" },
-    { name = "flet", extras = ["all"], specifier = ">=0.21.0" },
-    { name = "flet-desktop" },
+    { name = "flet", extras = ["all"], specifier = ">=0.21.0,<0.80.0" },
+    { name = "flet-desktop", specifier = ">=0.21.0,<0.80.0" },
     { name = "google-genai" },
     { name = "ollama" },
     { name = "openai" },
