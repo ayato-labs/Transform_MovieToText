@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.7.1...v2.8.0) (2026-03-30)
+
+
+### Features
+
+* **rag:** archive embedding logic and harden metadata-aware RAG search ([048f1a2](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/048f1a23c8116e59ae8fec220fa77f9e3ecf1e19))
+
 ## [2.7.1](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.7.0...v2.7.1) (2026-03-30)
 
 
