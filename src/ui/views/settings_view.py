@@ -37,16 +37,6 @@ class SettingsView(ft.Column):
             on_click=self._show_delete_confirmation,
         )
 
-        # Embedding Provider selection (Local-first policy)
-        self.embedding_provider_dropdown = ft.Dropdown(
-            label="Embeddingプロバイダー (推奨: Local)",
-            options=[
-                ft.dropdown.Option("local", "Local (FastEmbed - 100%オフライン/プライバシー保護)"),
-                ft.dropdown.Option("google", "Google Gemini (高性能/要インターネット接続)"),
-            ],
-            width=500,
-            on_change=self._on_embedding_provider_change,
-        )
 
         # Hardware display
         self.hw_rows = ft.Column(
@@ -72,10 +62,6 @@ class SettingsView(ft.Column):
             self._create_card("Google Gemini", [self.gemini_api_key]),
             self._create_card("Ollama Local (ローカルまたはPattern 1)", [self.ollama_local_url]),
             self._create_card("Ollama Cloud (クラウドAPIを消費)", [self.ollama_cloud_api_key, self.ollama_cloud_url]),
-            ft.Divider(),
-            ft.Text("Embedding設定 (デフォルト: ローカル)", size=18, weight="w500"),
-            ft.Text("ローカルEmbeddingを使用すると、検索用ベクトルも手元のPC内で生成されます。機密性を重視する場合はこちらを推奨します。", size=13, color="grey500"),
-            self.embedding_provider_dropdown,
             ft.Divider(),
             ft.Text("ハードウェア情報", size=18, weight="w500"),
             self.hw_rows,
@@ -182,8 +168,6 @@ class SettingsView(ft.Column):
     def _on_force_gpu_change(self, e):
         self.config_mgr.set_force_gpu(e.control.value)
 
-    def _on_embedding_provider_change(self, e):
-        self.config_mgr.set_embedding_provider(e.control.value)
 
     def init_view(self):
         gemini_conf = self.config_mgr.get_provider_config("gemini")
@@ -197,7 +181,6 @@ class SettingsView(ft.Column):
         self.ollama_cloud_url.value = ollama_cloud_conf.get("base_url", "https://ollama.com")
 
         self.force_gpu_checkbox.value = self.config_mgr.get_force_gpu()
-        self.embedding_provider_dropdown.value = self.config_mgr.get_embedding_provider()
 
         # Load and update projects list
         self._update_project_options()

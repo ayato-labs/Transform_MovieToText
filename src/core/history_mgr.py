@@ -113,17 +113,17 @@ class HistoryManager:
                 if "image_path" not in v_columns:
                     conn.execute("ALTER TABLE visual_context ADD COLUMN image_path TEXT")
 
-                # 6. Multi-model Embeddings (v3.2)
-                conn.execute("""
-                    CREATE TABLE IF NOT EXISTS meeting_embeddings (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        meeting_id INTEGER,
-                        model_name TEXT,
-                        embedding BLOB,
-                        UNIQUE(meeting_id, model_name),
-                        FOREIGN KEY(meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
-                    )
-                """)
+                # 6. Multi-model Embeddings (v3.2) - [ARCHIVED]
+                # conn.execute("""
+                #     CREATE TABLE IF NOT EXISTS meeting_embeddings (
+                #         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                #         meeting_id INTEGER,
+                #         model_name TEXT,
+                #         embedding BLOB,
+                #         UNIQUE(meeting_id, model_name),
+                #         FOREIGN KEY(meeting_id) REFERENCES meetings(id) ON DELETE CASCADE
+                #     )
+                # """)
 
                 conn.commit()
                 logger.debug("Database initialization successful.")
@@ -251,13 +251,12 @@ class HistoryManager:
             cursor = conn.execute("SELECT * FROM meetings ORDER BY timestamp DESC")
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_meetings_filtered(self, project_name: str | None = None, search_query: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+    def get_meetings_filtered(self, project_names: list[str] | None = None, categories: list[str] | None = None, search_query: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
         """
-        Retrieves meetings with optional project and search filters.
-        More robust than raw search_meetings for complex filtering.
+        Retrieves meetings with optional multi-project and multi-category filters.
+        Supports list of names for 'IN' clause filtering.
         """
         from contextlib import closing
-
         from src.core.utils import sanitize_fts_query
 
         safe_search = sanitize_fts_query(search_query) if search_query else None
@@ -266,12 +265,25 @@ class HistoryManager:
             params = []
             where_clauses = []
 
-            if project_name:
-                where_clauses.append("project_name = ?")
-                params.append(project_name)
+            # 1. Multi-Project Filter (IN clause)
+            if project_names:
+                # Filter out empty strings/None
+                valid_projs = [p for p in project_names if p]
+                if valid_projs:
+                    placeholders = ", ".join(["?"] * len(valid_projs))
+                    where_clauses.append(f"project_name IN ({placeholders})")
+                    params.extend(valid_projs)
 
+            # 2. Multi-Category Filter (IN clause)
+            if categories:
+                valid_cats = [c for c in categories if c]
+                if valid_cats:
+                    placeholders = ", ".join(["?"] * len(valid_cats))
+                    where_clauses.append(f"category IN ({placeholders})")
+                    params.extend(valid_cats)
+
+            # 3. FTS5 Search
             if safe_search:
-                # Use FTS5 subquery for performance
                 where_clauses.append("id IN (SELECT rowid FROM meetings_fts WHERE meetings_fts MATCH ?)")
                 params.append(safe_search)
 
@@ -285,7 +297,7 @@ class HistoryManager:
             try:
                 cursor = conn.execute(sql, tuple(params))
                 results = [dict(row) for row in cursor.fetchall()]
-                logger.info(f"get_meetings_filtered: Result set size={len(results)} (limit={limit})")
+                logger.debug(f"get_meetings_filtered: Query={sql}, Params={params}, Count={len(results)}")
                 return results
             except sqlite3.Error as e:
                 logger.error(f"Filtered query failed: {e}")
@@ -385,49 +397,56 @@ class HistoryManager:
             cursor = conn.execute("SELECT DISTINCT project_name FROM meetings WHERE project_name IS NOT NULL AND project_name != ''")
             return [row[0] for row in cursor.fetchall()]
 
-    # --- Embedding Persistence (v3.2) ---
-
-    def save_embedding(self, meeting_id: int, model_name: str, vector: list[float]):
-        """Persists an embedding for a specific meeting and model."""
-        import json
+    def get_categories(self) -> list[str]:
+        """Retrieves all distinct categories used in the history."""
         from contextlib import closing
 
         with closing(self._get_connection()) as conn:
-            try:
-                # Store as JSON string or binary (JSON is safer for interchange, binary more compact)
-                # For SQLite industrial strength, we'll use JSON for now to ensure portability
-                vector_data = json.dumps(vector)
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO meeting_embeddings (meeting_id, model_name, embedding)
-                    VALUES (?, ?, ?)
-                """,
-                    (meeting_id, model_name, vector_data),
-                )
-                conn.commit()
-            except sqlite3.Error as e:
-                logger.error(f"Failed to save embedding for meeting {meeting_id}: {e}")
-                raise HistoryError(f"Embedding storage failed: {e}") from e
+            cursor = conn.execute("SELECT DISTINCT category FROM meetings WHERE category IS NOT NULL AND category != ''")
+            return [row[0] for row in cursor.fetchall()]
 
-    def get_embedding(self, meeting_id: int, model_name: str) -> list[float] | None:
-        """Retrieves a cached embedding for a specific model."""
-        import json
-        from contextlib import closing
-
-        with closing(self._get_connection()) as conn:
-            cursor = conn.execute("SELECT embedding FROM meeting_embeddings WHERE meeting_id = ? AND model_name = ?", (meeting_id, model_name))
-            row = cursor.fetchone()
-            if row:
-                return json.loads(row[0])
-            return None
-
-    def delete_embeddings(self, meeting_id: int):
-        """Manually deletes all embeddings for a meeting (though ON DELETE CASCADE handles this)."""
-        from contextlib import closing
-
-        with closing(self._get_connection()) as conn:
-            conn.execute("DELETE FROM meeting_embeddings WHERE meeting_id = ?", (meeting_id,))
-            conn.commit()
+    # --- Embedding Persistence (v3.2) - [ARCHIVED] ---
+    # def save_embedding(self, meeting_id: int, model_name: str, vector: list[float]):
+    #     """Persists an embedding for a specific meeting and model."""
+    #     import json
+    #     from contextlib import closing
+    #
+    #     with closing(self._get_connection()) as conn:
+    #         try:
+    #             # Store as JSON string or binary (JSON is safer for interchange, binary more compact)
+    #             # For SQLite industrial strength, we'll use JSON for now to ensure portability
+    #             vector_data = json.dumps(vector)
+    #             conn.execute(
+    #                 """
+    #                 INSERT OR REPLACE INTO meeting_embeddings (meeting_id, model_name, embedding)
+    #                 VALUES (?, ?, ?)
+    #             """,
+    #                 (meeting_id, model_name, vector_data),
+    #             )
+    #             conn.commit()
+    #         except sqlite3.Error as e:
+    #             logger.error(f"Failed to save embedding for meeting {meeting_id}: {e}")
+    #             raise HistoryError(f"Embedding storage failed: {e}") from e
+    #
+    # def get_embedding(self, meeting_id: int, model_name: str) -> list[float] | None:
+    #     """Retrieves a cached embedding for a specific model."""
+    #     import json
+    #     from contextlib import closing
+    #
+    #     with closing(self._get_connection()) as conn:
+    #         cursor = conn.execute("SELECT embedding FROM meeting_embeddings WHERE meeting_id = ? AND model_name = ?", (meeting_id, model_name))
+    #         row = cursor.fetchone()
+    #         if row:
+    #             return json.loads(row[0])
+    #         return None
+    #
+    # def delete_embeddings(self, meeting_id: int):
+    #     """Manually deletes all embeddings for a meeting (though ON DELETE CASCADE handles this)."""
+    #     from contextlib import closing
+    #
+    #     with closing(self._get_connection()) as conn:
+    #         conn.execute("DELETE FROM meeting_embeddings WHERE meeting_id = ?", (meeting_id,))
+    #         conn.commit()
 
 
 # Singleton instance

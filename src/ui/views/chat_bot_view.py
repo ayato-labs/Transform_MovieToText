@@ -7,6 +7,7 @@ from src.controllers.local_smart_ctrl import LocalSmartController
 from src.core.config_manager import ConfigManager
 from src.core.history_mgr import history_mgr
 from src.core.minutes_service import MinutesService
+from src.core.query_analyzer import QueryAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -226,10 +227,26 @@ class ChatBotView(ft.Column):
 
     def _run_rag_worker(self, query: str):
         try:
-            # 1. Use Hybrid Search (High precision for titles/keywords + Fuzzy semantic)
-            results = self.history_mgr.search_hybrid(query, limit=5)
+            # 1. Intent Analysis using 1B Model + Robust Parser
+            all_projs = self.history_mgr.get_projects()
+            all_cats = self.history_mgr.get_categories()
+            
+            analyzer = QueryAnalyzer(all_projs, all_cats)
+            intent = analyzer.analyze(query)
+            
+            logger.info(f"RAG Intent Extracted: {intent}")
 
-            # 2. Format Context with Metadata
+            # 2. Metadata-Filtered Search (Multi-filter)
+            # Use extracted keywords for FTS5, scoped by projects/categories
+            search_text = " ".join(intent["keywords"]) if intent["keywords"] else query
+            results = self.history_mgr.get_meetings_filtered(
+                project_names=intent["projects"],
+                categories=intent["categories"],
+                search_query=search_text,
+                limit=5
+            )
+
+            # 3. Format Context with Metadata
             context_blocks = []
             for r in results:
                 title = r.get("title", "名称未設定の会議")
@@ -237,8 +254,6 @@ class ChatBotView(ft.Column):
                 project = r.get("project_name") or "その他"
                 category = r.get("category") or "未分類"
 
-                # Prioritize minutes (LLM-generated summary) if it contains relevant info
-                # Otherwise, use the raw transcript
                 content_source = "Summary" if r.get("minutes") else "Transcript"
                 content = r.get("minutes") if r.get("minutes") else r.get("transcript", "")
 
@@ -247,7 +262,7 @@ class ChatBotView(ft.Column):
                     f"- Project: {project}\n"
                     f"- Tags: {category}\n"
                     f"- Source: {content_source}\n"
-                    f"Content: {content[:1200]}..."  # Slightly more context
+                    f"Content: {content[:1000]}..."  # Optimized context length
                 )
 
             context = "\n\n---\n\n".join(context_blocks)

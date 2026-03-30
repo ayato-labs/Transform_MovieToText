@@ -241,7 +241,7 @@ class TranscriptionView(ft.Column):
 
         # Memory Relay: Always unload after live session to ensure LLM has resources
         logger.info("TranscriptionView: Live session ended. Unloading Whisper for memory efficiency...")
-        self.service.transcriber.unload_model()
+        self.service.transcriber.unload()
 
         self._run_ai_conversion(full_text)
         self.update()

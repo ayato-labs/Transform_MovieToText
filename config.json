@@ -16,12 +16,12 @@
     "audio_source": "system",
     "force_gpu": true,
     "last_models": {
-        "ollama_local": "phi3.5",
+        "ollama_local": "phi3.5:3.8b-mini-instruct-q4_K_M",
         "gemini": "gemini-3.1-flash-lite-preview",
         "google": "phi3.5",
         "ollama_cloud": "gemini-3-flash-preview"
     },
     "visual_capture_enabled": false,
-    "embedding_provider": "google",
+    "embedding_provider": "local",
     "local_smart_enabled": false
 }

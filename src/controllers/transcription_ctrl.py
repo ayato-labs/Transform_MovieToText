@@ -43,7 +43,7 @@ class TranscriptionController:
 
                 # Memory Relay: Unload Whisper before potentially starting LLM or just to free up resources
                 logger.info("TranscriptionController: Task complete. Unloading Whisper for memory efficiency...")
-                self.service.transcriber.unload_model()
+                self.service.transcriber.unload()
 
                 state.set("transcript_text", result)
                 state.set("status_text", "文字起こし完了 (履歴に自動保存しました)")

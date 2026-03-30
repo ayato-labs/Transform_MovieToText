@@ -4,7 +4,13 @@ from ollama import Client
 
 from src.llm.base_client import BaseLLMClient
 
+from src.core.model_manager import model_manager
+
 logger = logging.getLogger(__name__)
+
+
+# Standard VRAM client registration name for the active local LLM
+LLM_CLIENT_NAME = "llm_local"
 
 
 class OllamaLocalClient(BaseLLMClient):
@@ -13,6 +19,9 @@ class OllamaLocalClient(BaseLLMClient):
     def __init__(self, base_url="http://localhost:11434", **kwargs):
         self.host = base_url
         self.client = Client(host=self.host)
+        self._last_model_name = None
+        # Register with ModelManager
+        model_manager.register(LLM_CLIENT_NAME, self)
 
     def get_available_models(self) -> list[str]:
         try:
@@ -46,7 +55,26 @@ class OllamaLocalClient(BaseLLMClient):
             logger.error(f"Failed to list local Ollama models: {e}")
             return []
 
+    def unload(self) -> None:
+        """
+        Forcefully unloads the last used model from Ollama's VRAM.
+        Ollama unloads a model if a request is sent with keep_alive=0.
+        """
+        if self._last_model_name:
+            try:
+                logger.info(f"OllamaLocalClient: Unloading model '{self._last_model_name}'...")
+                # Sending an empty prompt with keep_alive=0 unloads the model immediately
+                self.client.generate(model=self._last_model_name, prompt="", keep_alive=0)
+                logger.info(f"OllamaLocalClient: Unloaded model '{self._last_model_name}'.")
+            except Exception as e:
+                logger.error(f"OllamaLocalClient: Failed to unload model: {e}")
+
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
+        """Generates minutes using Ollama."""
+        # Request VRAM before operation
+        model_manager.request_vram(LLM_CLIENT_NAME)
+        self._last_model_name = model_name
+
         prompt = (
             "以下の文字起こしテキストを元に、構造化された議事録をMarkdown形式で作成してください。\n"
             "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なヘッダーやリスト（# や -）を使用してください。\n\n"
@@ -84,6 +112,10 @@ class OllamaLocalClient(BaseLLMClient):
 
     def extract_category(self, transcript: str, model_name: str) -> str:
         """Extracts a short category/label (1-3 keywords) from the transcript."""
+        # Request VRAM before operation
+        model_manager.request_vram(LLM_CLIENT_NAME)
+        self._last_model_name = model_name
+
         prompt = (
             "以下の文字起こしテキストから、その内容を最もよく表す1〜3個の日本語キーワード、または"
             "短いカテゴリー名（例：AI技術, プロジェクト進捗, 顧客ヒアリング）を抽出してください。\n"
@@ -99,6 +131,10 @@ class OllamaLocalClient(BaseLLMClient):
 
     def generate_title(self, transcript: str, model_name: str) -> str:
         """Generates a concise meeting title using Ollama."""
+        # Request VRAM before operation
+        model_manager.request_vram(LLM_CLIENT_NAME)
+        self._last_model_name = model_name
+
         prompt = (
             "以下の文字起こしテキストの内容を要約し、非常に簡潔で分かりやすい「会議のタイトル」を1つ生成してください。\n"
             "タイトルは20文字以内とし、タイトルのみを出力してください。余計な説明は不要です。\n\n"
@@ -121,6 +157,10 @@ class OllamaLocalClient(BaseLLMClient):
 
     def chat(self, model_name: str, messages: list[dict]) -> str:
         """Sends a list of messages to Ollama Local."""
+        # Request VRAM before operation
+        model_manager.request_vram(LLM_CLIENT_NAME)
+        self._last_model_name = model_name
+
         try:
             response = self.client.chat(model=model_name, messages=messages)
             return response["message"]["content"]
@@ -154,7 +194,9 @@ class OllamaCloudClient(BaseLLMClient):
                     model_names.append(getattr(m, "model", getattr(m, "name", None)))
             elif isinstance(models_info, dict) and "models" in models_info:
                 for m in models_info["models"]:
-                    model_names.append(m.get("name") or m.get("model"))
+                    name = m.get("name") or m.get("model")
+                    if name:
+                        model_names.append(name)
 
             model_names = [m for m in model_names if m]
             if model_names:

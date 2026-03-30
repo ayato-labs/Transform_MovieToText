@@ -5,7 +5,12 @@ import time
 
 import torch
 
+from src.core.model_manager import model_manager
+
 logger = logging.getLogger(__name__)
+
+
+WHISPER_CLIENT_NAME = "whisper"
 
 
 class WhisperTranscriber:
@@ -28,11 +33,16 @@ class WhisperTranscriber:
         self.current_model_name = None
         self.cache_dir = cache_dir or os.path.join(os.getcwd(), "data", "models", "whisper")
         os.makedirs(self.cache_dir, exist_ok=True)
+        # Register with ModelManager
+        model_manager.register(WHISPER_CLIENT_NAME, self)
 
     def load_model(self, model_name: str, force_gpu: bool = False):
         """
         Loads the Whisper model with explicit memory management and quantization fallbacks.
         """
+        # Request VRAM before loading
+        model_manager.request_vram(WHISPER_CLIENT_NAME)
+
         from faster_whisper import WhisperModel
 
         if self.current_model_name == model_name and self.model is not None:
@@ -43,7 +53,7 @@ class WhisperTranscriber:
         start_time = time.time()
 
         # Proactive Memory Cleanup
-        self.unload_model()
+        self.unload()
 
         # Decide device and compute_type with Hardware Priority
         # Tier 1: GPU Native (Standardized to int8_float16 for best efficiency/accuracy ratio)
@@ -91,7 +101,7 @@ class WhisperTranscriber:
             logger.error(f"WhisperTranscriber: Failed to load model '{model_name}': {e}")
             raise
 
-    def unload_model(self):
+    def unload(self):
         """Forcefully clears Python and CUDA memory, unloading the current model."""
         if hasattr(self, "model") and self.model is not None:
             logger.info(f"WhisperTranscriber: Unloading model '{self.current_model_name}' to free memory...")

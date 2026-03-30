@@ -1,0 +1,8 @@
+﻿============================================================
+      ULTIMATE RAG DEBUG SUITE (EVIL EDITION)
+============================================================
+
+[EVIL CASE: Negation]
+Query: Marketing-Promotion 以外の議事録を全部出して
+  -> RAW LLM: {'projects': [], 'negated_projects': [], 'categories': [], 'keywords': []}
+  -> RECONCILED: {'projects': [], 'categories': [], 'keywords': [], 'exclude_projects': []}
