@@ -1,115 +1,220 @@
-# Transform Movie to Text (+ AI Minutes) v2.0.0
+<p align="center">
+  <img src="assets/icon.png" alt="Ayato Transcriber" width="120"/>
+</p>
 
-動画ファイルやPC内部の音声から高精度に文字起こしし、複数のAIプロバイダー（Gemini / Ollama Local / Ollama Cloud）を活用して議事録を自動生成するデスクトップアプリケーションです。
+<h1 align="center">Ayato Transcriber</h1>
 
-> **Note**: 本ツールは Windows 環境をメインに開発・テストされています。
-> macOS でも動作しますが、システム音キャプチャなど一部の OS 固有機能が制限される場合があります。
+<p align="center">
+  <strong>Privacy-First, Local AI Transcription & Knowledge Engine</strong>
+</p>
 
-## 主な機能 (Features)
+<p align="center">
+  <img src="https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <img src="https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/desktop_distribution.yml/badge.svg" alt="Desktop Build">
+  <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License">
+  <img src="https://img.shields.io/badge/code%20style-ruff-purple.svg" alt="Ruff">
+</p>
 
-- **高品質・高速文字起こし**: より高速で軽量な `faster-whisper` エンジンを使用して、動画・音声ファイルからテキストをスピーディーに生成します。
-- **マルチソース・ライブ録音 (システム音 / マイク)**: PCから出力されているあらゆる音声（オンライン会議、動画等）や、マイクからの音声（対面の会議、自分の声）をリアルタイムでキャプチャし、文字起こしできます。画面上でソースを自由に選択・切り替え可能です。**録音ファイルは軽量な MP3 形式で永続保存されます。**
-- **AI議事録生成（マルチプロバイダー対応）**: Gemini, Ollama Local (ローカルLLM), Ollama Cloud を切り替えて利用可能。文字起こしテキストから「会議の概要」「決定事項」「ネクストアクション」を自動で要約・抽出します。
-- **会議履歴管理**: 過去の会議（文字起こし・議事録・音声パス）をSQLiteデータベースで管理。「履歴」タブからいつでも過去の内容を確認したり、音声をエクスポートしたりできます。
-- **ハードウェア自動検知**: PCのスペック（VRAM/RAM）を解析し、最適なWhisperモデルを推奨。
+---
 
-## 動作環境
+> **データはあなたの手元に。** 音声も、文字起こしも、AIの推論も、すべてローカルで完結します。
 
-| 項目 | 要件 |
+Ayato Transcriber は、動画ファイルやPC内部のシステム音声を高精度に文字起こしし、ローカルLLMと連携して議事録の自動生成、ナレッジベースの構築、AIチャットによる過去会議の検索を行うデスクトップアプリケーションです。
+
+**クラウドに一切のデータを送信しない設計**により、弁護士・研究者・技術者など、機密性の高い情報を扱うプロフェッショナルが安心して利用できます。
+
+---
+
+## Design Philosophy
+
+| 原則 | 説明 |
 |------|------|
-| **OS** | **Windows 10 / 11**（必須） |
-| **FFmpeg** | システムにインストールされ、PATHが通っていること |
-| **GPU** | NVIDIA GPU（CUDA対応）があれば高速化。なくても動作可能 |
-| **Python** | `run.bat` が自動でインストールするため、手動導入は不要 |
+| **Privacy by Architecture** | 音声データ、文字起こし結果、AIの推論結果がネットワークを通過しません。Whisper と Ollama をローカルで実行します。 |
+| **Hardware-Aware Optimization** | システムの RAM / VRAM を自動検出し、最適な AI モデルを推奨します。ハイエンドGPUがなくても動作します。 |
+| **Zero Configuration** | `run.bat` をダブルクリックするだけで、Python・依存関係・AIモデルがすべて自動構築されます。 |
 
-### 重要: 録音ソース（システム音 / マイク）について
+---
 
-本ツールでは、録音ソースとして「システム音（Stereo Mix）」と「マイク」をUI上で切り替えて使用できます。
+## Architecture
 
-**A. システム音（オンライン会議などのPC出力音）を録音する場合:**
-「システム音」を利用するには、Windows 側で **「ステレオ ミキサー」** を有効にする必要があります。
+```mermaid
+graph TB
+    subgraph "Desktop App (Flet)"
+        UI["UI Layer<br/>File / Live / History / Chat / Settings"]
+        CTRL["Controller Layer<br/>Transcription / Minutes / History"]
+    end
 
-1. **[設定] > [システム] > [サウンド] > [詳細設定] > [サウンドの設定]** (サウンド コントロール パネル) を開きます。
-2. **[録音]** タブを選択します。
-3. リスト内の **「ステレオ ミキサー」** を右クリックし、**[有効]** を選択します。
-   - 表示されない場合は、リストの何もないところを右クリックし、[無効なデバイスの表示] にチェックを入れてください。
-4. ステレオ ミキサーが「既定のデバイス」である必要はありませんが、「準備完了」状態でメーターが動く必要があります。
+    subgraph "Core Engine"
+        WT["WhisperTranscriber<br/>(faster-whisper)"]
+        TS["TranscriptionService"]
+        LP["LiveProcessor<br/>Real-time chunking"]
+        RA["ResourceAdvisor<br/>HW-aware model selection"]
+    end
 
-**B. マイク（対面会議や自分の声）を録音する場合:**
-「マイク」を選択すると、接続されているデフォルトのマイクを自動的に検出して使用します。特別な設定は不要ですが、Windowsのプライバシー設定でアプリからのマイクアクセスが許可されている必要があります。
+    subgraph "AI Providers (Pluggable)"
+        LLM_F["LLMFactory"]
+        GEM["Gemini"]
+        OLL["Ollama Local"]
+        OLC["Ollama Cloud"]
+    end
 
-## 📦 インストールと実行方法
+    subgraph "Persistence"
+        DB[("SQLite<br/>history.db")]
+        EMB["Embedding Cache<br/>(FastEmbed)"]
+        FS["Local Filesystem<br/>MP3 / Frames"]
+    end
 
-### 1. デスクトップ版 (推奨・ビルド不要)
-Python のインストールすら不要です。GitHub の [Releases ページ](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/releases) から最新のバイナリをダウンロードし、展開して実行してください。
+    UI --> CTRL
+    CTRL --> TS
+    CTRL --> LLM_F
+    TS --> WT
+    TS --> LP
+    TS --> RA
+    LLM_F --> GEM
+    LLM_F --> OLL
+    LLM_F --> OLC
+    TS --> DB
+    TS --> FS
+    CTRL --> DB
+    CTRL --> EMB
+```
 
-*   **Windows**: `TransformMovieToText-Windows.zip`
-*   **macOS**: `TransformMovieToText-macOS.zip`
+---
 
-#### ⚠️ 初回起動時のセキュリティ警告について
-本ソフトは個人開発のプロトタイプ段階であるため、デジタル署名を行っていません。起動時に警告が表示されますが、以下の手順で実行可能です。
+## Key Features
 
-*   **Windows**: 「Windows によって PC が保護されました」と表示されたら、**「詳細情報」** をクリックし、表示された **「実行」** ボタンを押してください。
-*   **macOS**: 「開発元を確認できないため開けません」と表示されたら、**「システム設定 ＞ プライバシーとセキュリティ」** を開き、下部にある **「このまま開く」** をクリックしてください。または、Finder でアプリを右クリックして **「開く」** を選択してください。
+### 1. Multi-Source Transcription
+- **ファイル文字起こし**: MP4, MP3, WAV 等の動画・音声ファイルから高精度なテキストを抽出。
+- **ライブ文字起こし**: システム音声（オンライン会議等）やマイク入力をリアルタイムでキャプチャ。
+- **ビジュアル解析**: 画面キャプチャによるスライド変化の検知。音声だけでは失われる「視覚的文脈」を保存。
 
-### 2. Thin Client インストール (Windows専用)
+### 2. AI-Powered Meeting Intelligence
+- **自動議事録生成**: 概要、決定事項、ネクストアクションを構造化して出力。
+- **マルチプロバイダー**: Gemini / Ollama Local / Ollama Cloud をワンクリックで切り替え。
+- **AIチャット**: 過去の全会議データに対して自然言語で質問可能。RAG (Retrieval-Augmented Generation) による文脈検索。
 
-環境構築は `run.bat` が全自動で行います。
+### 3. Hardware-Aware Intelligence
+PC のスペックに応じて、最適な AI モデルを自動選択します。
 
-1. [Releases ページ](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/releases) から最新の `TransformMovieToText-Windows-ThinClient.zip` をダウンロードします。
-2. ZIP を展開し、`run.bat` をダブルクリックします。
-3. 初回起動時に以下が自動実行されます：
-   - **uv**（高速パッケージマネージャ）のダウンロード
-   - **Python 3.11** のインストール（システムを汚しません）
-   - **PyTorch 等の全依存ライブラリ**のインストール
-4. 2回目以降は一瞬で起動します。
+| Tier | RAM | VRAM | Whisper Model | LLM Model |
+|------|-----|------|---------------|-----------|
+| Entry | 8GB+ | - | `base` | `llama3.2:1b-instruct-q4_K_M` |
+| SmallGPU | 8GB+ | 4GB+ | `small` | `phi3.5:3.8b-mini-instruct-q4_K_M` |
+| Standard | 16GB+ | 8GB+ | `medium` | `llama3.1:8b-instruct-q4_K_M` |
+| Pro | 32GB+ | 10GB+ | `large-v3` | `gemma2:9b-instruct-q4_K_M` |
+| Monster | 64GB+ | 22GB+ | `large-v3` | `llama3.3:70b-instruct-q4_K_M` |
 
-### ソースコードから実行する
+---
 
-開発やカスタマイズを行いたい場合：
+## Tech Stack
+
+| Category | Technology | Why |
+|----------|-----------|-----|
+| **Speech-to-Text** | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | OpenAI Whisper の CTranslate2 最適化版。CPU/GPU 両対応で高速。 |
+| **LLM Integration** | [Ollama](https://ollama.com/) / [Gemini](https://ai.google.dev/) | ローカルLLMとクラウドLLMを同一インターフェースで切り替え可能。 |
+| **Desktop UI** | [Flet](https://flet.dev/) | Flutter ベースの Python UI フレームワーク。クロスプラットフォーム対応。 |
+| **Audio Capture** | [PyAudioWPatch](https://github.com/s0d3s/PyAudioWPatch) | Windows WASAPI loopback によるシステム音のキャプチャ。 |
+| **Embeddings** | [FastEmbed](https://github.com/qdrant/fastembed) | 軽量 ONNX ベースのローカル埋め込みモデル。RAG検索に使用。 |
+| **Package Manager** | [uv](https://github.com/astral-sh/uv) | Rust 製の超高速 Python パッケージマネージャ。 |
+| **Linter** | [Ruff](https://github.com/astral-sh/ruff) | Rust 製の超高速 Python リンター & フォーマッター。 |
+| **CI/CD** | GitHub Actions | 自動テスト、自動リリース、デスクトップバイナリの自動ビルド。 |
+
+---
+
+## Quality Assurance
+
+本プロジェクトでは、3 層のテスト戦略によりソフトウェア品質を担保しています。
+
+```
+tests/
+  unit/          ... 関数・メソッド単位の独立テスト (モック使用)
+  integration/   ... Whisper モデルの実ロードを含む連携テスト
+  e2e/           ... ファイル選択 -> 文字起こし -> DB保存 -> AI要約 の全フロー検証
+```
+
+- **静的解析**: `ruff` による自動リント & フォーマット (CI で強制)
+- **自動リリース**: `python-semantic-release` によるセマンティック・バージョニング
+- **クロスプラットフォーム・ビルド**: GitHub Actions で Windows / macOS のデスクトップバイナリを自動生成
+
+---
+
+## Getting Started
+
+### Option 1: Desktop App (推奨)
+
+Python のインストール不要。[Releases](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/releases) から最新バイナリをダウンロードしてください。
+
+### Option 2: Thin Client (Windows)
+
+`run.bat` をダブルクリックするだけで、Python / PyTorch / 全依存関係が自動インストールされます。
+
+```
+TransformMovieToText-Windows-ThinClient.zip をダウンロード -> 展開 -> run.bat を実行
+```
+
+### Option 3: From Source
 
 ```bash
 git clone https://github.com/Ayato-AI-for-Auto/Transform_MovieToText.git
 cd Transform_MovieToText
 
-![Luxurious CI](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/ci.yml/badge.svg)
-![Desktop Distribution](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/desktop_distribution.yml/badge.svg)
-
-# uvを利用したローカルインストール
+# ローカルインストール
 uv pip install -e .
 
-# [GPUを使う場合] CUDA版のPyTorchをインストール
+# GPU を使う場合
 uv pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121
 
 # 起動
 uv run main.py
 ```
 
-## 開発スタンスについて
+---
 
-本ツールは**開発者自身が使うために作られたもの**であり、「ついでに公開している」というスタンスです。
-詳しくは [docs/設計思想.md](docs/設計思想.md) をご覧ください。
+## System Requirements
 
-- 環境構築の自動化は提供しますが、**個別環境のバグ対応やサポートは行いません。**
-- ご利用は **As-Is（現状有姿）** です。
+| Item | Requirement |
+|------|-------------|
+| **OS** | Windows 10 / 11 (Primary), macOS (Experimental) |
+| **FFmpeg** | システムにインストール済み、PATH が通っていること |
+| **RAM** | 8GB 以上 (16GB+ 推奨) |
+| **GPU** | NVIDIA CUDA 対応 GPU があれば高速化。なくても動作可能 |
 
-## 開発者向け: バージョン管理とリリース (For Developers)
+---
 
-本プロジェクトでは `python-semantic-release` を使用して、コミットメッセージに基づいた自動バージョニングを行っています。
+## Project Structure
 
-### コミットメッセージ規約 (Conventional Commits)
-以下の接頭辞を使用してコミットすることで、GitHub へのプッシュ時に自動的にバージョンアップとタグ打ちが行われます。
+```
+.
+├── src/
+│   ├── core/           # ビジネスロジック (Whisper, LLM, DB, Config)
+│   ├── controllers/    # UIとCoreの仲介層
+│   ├── llm/            # LLMプロバイダー (Factory Pattern)
+│   ├── recorder/       # 音声キャプチャ (Strategy Pattern)
+│   ├── ui/             # Flet UI コンポーネント
+│   └── utils/          # 共通ユーティリティ
+├── tests/
+│   ├── unit/           # 単体テスト
+│   ├── integration/    # 結合テスト
+│   └── e2e/            # 総合テスト
+├── data/               # ランタイムデータ (DB, 履歴, 一時ファイル)
+├── .github/workflows/  # CI/CD パイプライン
+└── docs/               # 設計ドキュメント
+```
 
-- **`feat: ...`**: 新機能の追加 (Minor version bump: 2.3.0 -> 2.4.0)
-- **`fix: ...`**: バグ修正 (Patch version bump: 2.3.0 -> 2.3.1)
-- **`perf: ...`**: パフォーマンス改善 (Patch version bump)
-- **`docs: ...`**: ドキュメントのみの更新 (No version bump)
-- **`chore: ...`**: ビルドプロセスやライブラリの更新 (No version bump)
-- **`BREAKING CHANGE: ...`**: 破壊的変更 (Major version bump: 2.x.x -> 3.0.0)
+---
 
-### リリースの流れ
-1. 規約に沿った内容で `main` ブランチへプッシュ。
-2. GitHub Actions が自動でバージョン計算、`pyproject.toml` 更新、タグ打ち、`CHANGELOG.md` 生成を実行します。
+## Versioning
+
+[Conventional Commits](https://www.conventionalcommits.org/) に準拠し、`python-semantic-release` による自動バージョニングを行っています。
+
+| Prefix | Effect | Example |
+|--------|--------|---------|
+| `feat:` | Minor version bump | `2.6.0` -> `2.7.0` |
+| `fix:` | Patch version bump | `2.6.0` -> `2.6.1` |
+| `BREAKING CHANGE:` | Major version bump | `2.x.x` -> `3.0.0` |
+
+---
 
 ## License
 
