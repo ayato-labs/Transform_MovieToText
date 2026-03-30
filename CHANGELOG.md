@@ -1,3 +1,15 @@
+# [2.7.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.6.0...v2.7.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* harden desktop distribution build by adding flet.yaml and explicit Flutter paths ([1843557](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/1843557e9d01c4335346162b19d3c0582ce141d7))
+
+
+### Features
+
+* migrate to hybrid 'Thin Client' distribution model with auto-setup wizard ([509f0ad](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/509f0adaed07a2f6ebddeeb7b030edf4da5ebf5e))
+
 # [2.6.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.5.7...v2.6.0) (2026-03-29)
 
 
