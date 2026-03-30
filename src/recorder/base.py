@@ -15,8 +15,9 @@ class _BaseRecorder:
     Provides common buffering and chunking logic.
     """
 
-    def __init__(self, output_dir="temp_chunks", segment_time=30, overlap=5, source="system"):
-        self.output_dir = Path(output_dir)
+    def __init__(self, output_dir=None, segment_time=30, overlap=5, source="system"):
+        from src.core.constants import TEMP_CHUNKS_DIR
+        self.output_dir = Path(output_dir or TEMP_CHUNKS_DIR)
         self.segment_time = segment_time
         self.overlap = max(0, overlap)
         self.source = source

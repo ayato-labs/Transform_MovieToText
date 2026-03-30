@@ -21,6 +21,14 @@ class HistoryController:
     def search_meetings(self, query):
         return history_mgr.search_meetings(query)
 
+    def get_filtered_meetings(self, project_name=None, search_query=None):
+        """Advanced filtering with project name and keywords."""
+        return history_mgr.get_meetings_filtered(project_name=project_name, search_query=search_query)
+
+    def reassign_project(self, old_name: str, new_name: str = "その他"):
+        """Reassigns all meetings from one project to another (e.g. on deletion)."""
+        return history_mgr.reassign_project(old_name, new_name)
+
     def get_projects(self):
         return history_mgr.get_projects()
 
@@ -69,3 +77,12 @@ class HistoryController:
         except Exception as e:
             logger.error(f"Failed to regenerate minutes: {e}")
             raise
+
+    def update_meeting(self, meeting_id: int, **kwargs):
+        """Updates meeting metadata."""
+        try:
+            history_mgr.update_meeting(meeting_id, **kwargs)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update meeting {meeting_id}: {e}")
+            return False

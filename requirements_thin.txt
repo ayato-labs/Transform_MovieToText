@@ -1,9 +1,0 @@
-# Minimal requirements for Flet UI standlone build
-flet[all]>=0.21.0,<0.80.0
-flet-desktop>=0.21.0,<0.80.0
-google-genai
-psutil
-python-dotenv
-openai
-ollama
-# Note: Heavy libraries (torch, faster-whisper, etc.) are installed dynamically via setup_wizard.py

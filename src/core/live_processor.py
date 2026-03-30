@@ -61,7 +61,9 @@ class LiveTranscriptionManager:
         self.stop_event.set()
 
         if self.worker_thread:
-            self.worker_thread.join(timeout=10)
+            # 3s is enough since we flush the buffer on stop now.
+            # This prevents UI hang if the worker doesn't finish immediately.
+            self.worker_thread.join(timeout=3)
 
         duration = time.time() - self.start_time
         logger.info(

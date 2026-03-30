@@ -6,7 +6,10 @@ import sys
 from collections import deque
 from logging.handlers import RotatingFileHandler
 
-import colorlog
+try:
+    import colorlog
+except ImportError:
+    colorlog = None
 
 # Global buffer for UI log viewing
 LOG_BUFFER = deque(maxlen=200)
@@ -31,19 +34,12 @@ def get_system_info():
         "cpu_count": os.cpu_count(),
     }
 
-    # Try to get RAM info (Windows specific or fallback)
+    # Use psutil for RAM info (consistent across OS, much faster than subprocess)
     try:
-        if platform.system() == "Windows":
-            import subprocess
+        import psutil
 
-            # Simple wmic call for RAM
-            cmd = "wmic computersystem get TotalPhysicalMemory"
-            output = subprocess.check_output(cmd, shell=True).decode().split()
-            if len(output) > 1:
-                info["ram_gb"] = round(int(output[1]) / (1024**3), 1)
-        else:
-            # Fallback for other OS or if wmic fails
-            info["ram_gb"] = "Unknown"
+        ram_total = psutil.virtual_memory().total
+        info["ram_gb"] = round(ram_total / (1024**3), 1)
     except Exception:
         info["ram_gb"] = "Unknown"
 
@@ -95,7 +91,7 @@ def setup_logger():
 
         # Stream Handler (Console)
         stream_handler = logging.StreamHandler(sys.stdout)
-        if sys.stdout.isatty():
+        if colorlog and sys.stdout.isatty():
             color_formatter = colorlog.ColoredFormatter(
                 "%(log_color)s" + log_format,
                 log_colors={

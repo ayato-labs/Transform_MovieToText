@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class AudioRecorder(_BaseRecorder):
     """Recorder using pyaudiowpatch for microphone capture."""
 
-    def __init__(self, output_dir="temp_chunks", segment_time=30, overlap=5, source="microphone", mp3_path=None):
+    def __init__(self, output_dir=None, segment_time=30, overlap=5, source="microphone", mp3_path=None):
         super().__init__(output_dir, segment_time, overlap, source)
         self.mp3_path = mp3_path
         self._pa = None

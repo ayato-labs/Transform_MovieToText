@@ -4,11 +4,13 @@ import threading
 
 import flet as ft
 
+from src.controllers.local_smart_ctrl import LocalSmartController
 from src.controllers.transcription_ctrl import TranscriptionController
 from src.core.config_manager import ConfigManager
-from src.core.constants import DEFAULT_PROVIDERS, WHISPER_MODELS
+from src.core.constants import WHISPER_MODELS
+from src.core.history_mgr import history_mgr
 from src.core.intent_router import IntentRouter
-from src.ui.ui_utils import sync_llm_models
+from src.core.minutes_service import MinutesService
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,9 @@ class FileTranscriptionView(ft.Column):
         self.ctrl = ctrl
         self.hw_info = hw_info
         self.service = ctrl.service
+        self.local_smart_enabled = self.config_mgr.get_local_smart_enabled()
+        self.minutes_service = MinutesService(config_mgr)
+        self.local_smart_ctrl = LocalSmartController(config_mgr)
         self.router = IntentRouter(config_mgr)
 
         # File Pickers
@@ -44,11 +49,10 @@ class FileTranscriptionView(ft.Column):
             on_change=self._on_whisper_change,
         )
 
-        provider_options = [ft.dropdown.Option(k) for k in DEFAULT_PROVIDERS]
         self.dd_provider = ft.Dropdown(
             label="AIプロバイダー",
             width=180,
-            options=provider_options,
+            options=[ft.dropdown.Option(p) for p in ["ollama_local", "ollama_cloud", "google"]],
             value=self.config_mgr.get_active_provider(),
             on_change=self._on_provider_change,
         )
@@ -56,13 +60,54 @@ class FileTranscriptionView(ft.Column):
         self.status_text = ft.Text("待機中...", color=ft.Colors.GREY_500)
         self.progress_bar = ft.ProgressBar(value=0, visible=False, color=ft.Colors.BLUE_400, height=8)
 
+        # UI Components
+        self.model_dropdown = ft.Dropdown(
+            label="Whisper Model",
+            width=250,
+            options=[self._create_whisper_option(m) for m in WHISPER_MODELS],
+            value=self.config_mgr.get_whisper_model(),
+        )
+
+        self.local_smart_btn = ft.IconButton(
+            icon=ft.Icons.AUTO_AWESOME_OUTLINED,
+            selected_icon=ft.Icons.AUTO_AWESOME,
+            on_click=self._toggle_local_smart,
+            tooltip="Local Smart: Optimize models for my hardware",
+            selected=self.config_mgr.get_local_smart_enabled(),
+        )
+
         self.dd_llm = ft.Dropdown(
             label="LLMモデル",
             width=220,
-            options=[],  # Filled dynamically
+            options=[ft.dropdown.Option("取得中...", disabled=True)],
+            value=None,
             on_change=self._on_llm_change,
         )
-        sync_llm_models(self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
+
+        # --- Project Selection ---
+        existing_projects = self.service.history_mgr.get_projects() if hasattr(self.service, "history_mgr") else history_mgr.get_projects()
+        project_options = [
+            ft.dropdown.Option("その他", "その他 (デフォルト)"),
+            ft.dropdown.Option("__new__", "＋新規プロジェクト作成"),
+        ]
+        project_options.extend([ft.dropdown.Option(p) for p in existing_projects if p != "その他"])
+
+        self.dd_project = ft.Dropdown(
+            label="プロジェクト選択",
+            width=200,
+            options=project_options,
+            value="その他",
+            on_change=self._on_project_change,
+        )
+        self.tf_new_project = ft.TextField(
+            label="新規プロジェクト名",
+            width=200,
+            hint_text="プロジェクト名を入力...",
+            visible=False,
+        )
+
+        # Initial background load
+        threading.Thread(target=self._initial_load, daemon=True).start()
 
         self.sw_visual = ft.Switch(
             label="映像情報を使用", value=False, tooltip="動画ファイルから10秒ごとに画像を抽出してAIに送信します（分析精度が向上します）"
@@ -121,7 +166,27 @@ class FileTranscriptionView(ft.Column):
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
             ft.Divider(height=20, color=ft.Colors.GREY_800),
-            ft.Row([self.dd_whisper, self.dd_provider, self.dd_llm, self.sw_visual], spacing=10),
+            ft.Row(
+                [
+                    ft.Text("Smart Local Optimization:", weight=ft.FontWeight.BOLD),
+                    self.model_dropdown,
+                    self.local_smart_btn,
+                    ft.Container(
+                        content=ft.Column(
+                            [
+                                ft.Text(f"RAM: {hw_info['ram']}GB", size=10, color=ft.Colors.BLUE_200),
+                                ft.Text(f"VRAM: {hw_info['vram']}GB", size=10, color=ft.Colors.PURPLE_200),
+                            ],
+                            spacing=0,
+                        ),
+                        padding=ft.padding.only(left=10),
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.START,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            ft.Row([self.dd_provider, self.dd_llm, self.sw_visual], spacing=10),
+            ft.Row([self.dd_project, self.tf_new_project], spacing=10),
             ft.Container(height=10),
             self.btn_pick,
             ft.Container(height=10),
@@ -145,18 +210,50 @@ class FileTranscriptionView(ft.Column):
         ]
 
     def _create_whisper_option(self, model_name: str):
-        req = {"tiny": 1, "base": 1, "small": 2, "medium": 5, "large-v2": 10, "large-v3": 10}.get(model_name, 5)
-        can_gpu = self.hw_info.get("vram", 0.0) >= req
-        suffix = "(GPU)" if can_gpu else "(CPU)"
-        return ft.dropdown.Option(key=model_name, text=f"{model_name} {suffix}")
+        return ft.dropdown.Option(key=model_name, text=model_name)
 
     def _on_whisper_change(self, e):
         self.config_mgr.set_whisper_model(self.dd_whisper.value)
 
+    def _safe_update(self):
+        if self.page:
+            self.update()
+
+    def _initial_load(self):
+        if self.local_smart_enabled:
+            self._apply_local_smart()
+        else:
+            provider = self.config_mgr.get_active_provider()
+            self._update_model_options(provider)
+        self._safe_update()
+
     def _on_provider_change(self, e):
-        self.config_mgr.set_active_provider(self.dd_provider.value)
-        sync_llm_models(self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
-        self.update()
+        provider = self.dd_provider.value
+        self.config_mgr.set_active_provider(provider)
+        threading.Thread(target=self._update_model_options, args=(provider,), daemon=True).start()
+
+    def _update_model_options(self, provider: str):
+        # Map "google" to "gemini" for backend service
+        actual_provider = "gemini" if provider == "google" else provider
+
+        self.dd_llm.options = [ft.dropdown.Option("取得中...", disabled=True)]
+        self.dd_llm.value = None
+        self._safe_update()
+
+        models = self.minutes_service.get_available_models(actual_provider)
+        config = self.config_mgr.get_provider_config(provider)
+        last_model = config.get("model")
+
+        if models:
+            self.dd_llm.options = [ft.dropdown.Option(m) for m in models]
+            if last_model in models:
+                self.dd_llm.value = last_model
+            else:
+                self.dd_llm.value = models[0]
+        else:
+            self.dd_llm.options = [ft.dropdown.Option("モデルなし", disabled=True)]
+            self.dd_llm.value = None
+        self._safe_update()
 
     def _on_llm_change(self, e):
         self.config_mgr.set_last_model(self.dd_llm.value)
@@ -165,9 +262,16 @@ class FileTranscriptionView(ft.Column):
         if not e.files:
             return
         file_path = e.files[0].path
-        threading.Thread(target=self._process_flow, args=(file_path,), daemon=True).start()
 
-    def _process_flow(self, file_path: str):
+        # Resolve project name
+        if self.dd_project.value == "__new__":
+            project_name = self.tf_new_project.value.strip() or "新規プロジェクト"
+        else:
+            project_name = self.dd_project.value or "その他"
+
+        threading.Thread(target=self._process_flow, args=(file_path, project_name), daemon=True).start()
+
+    def _process_flow(self, file_path: str, project_name: str):
         try:
             self.btn_pick.disabled = True
             self.status_text.value = f"読み込み中: {os.path.basename(file_path)}"
@@ -179,7 +283,11 @@ class FileTranscriptionView(ft.Column):
             use_visual = self.sw_visual.value
 
             result_data = self.service.transcribe_file_sync(
-                file_path=file_path, model_name=whisper_model, progress_callback=lambda p: self._update_progress(p), use_visual=use_visual
+                file_path=file_path,
+                model_name=whisper_model,
+                project_name=project_name,
+                progress_callback=lambda p: self._update_progress(p),
+                use_visual=use_visual,
             )
 
             text = result_data["transcript"]
@@ -223,6 +331,31 @@ class FileTranscriptionView(ft.Column):
             self.btn_pick.disabled = False
             self.progress_bar.visible = False
             self.update()
+
+    def _toggle_local_smart(self, e):
+        self.local_smart_enabled = not self.local_smart_enabled
+        self.local_smart_btn.selected = self.local_smart_enabled
+
+        # Save to config
+        self.config_mgr.set_local_smart_enabled(self.local_smart_enabled)
+
+        if self.local_smart_enabled:
+            self._apply_local_smart()
+        else:
+            self.local_smart_ctrl.restore_manual_mode(
+                self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper, update_callback=self._update_model_options
+            )
+
+        self._safe_update()
+
+    def _apply_local_smart(self):
+        self.local_smart_ctrl.apply_optimization(self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper)
+        self._safe_update()
+
+    def _on_project_change(self, e):
+        is_new = self.dd_project.value == "__new__"
+        self.tf_new_project.visible = is_new
+        self.update()
 
     def _on_save_picked(self, e):
         if not e.path:

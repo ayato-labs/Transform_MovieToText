@@ -4,8 +4,10 @@ import threading
 
 import flet as ft
 
+from src.controllers.local_smart_ctrl import LocalSmartController
 from src.core.config_manager import ConfigManager
 from src.core.intent_router import IntentRouter
+from src.core.minutes_service import MinutesService
 from src.core.state import state
 from src.core.transcription_service import TranscriptionService
 
@@ -23,7 +25,11 @@ class TranscriptionView(ft.Column):
         self._page = page
         self.config_mgr = config_mgr
         self.service = service
+        self.minutes_service = MinutesService(config_mgr)
+        self.local_smart_ctrl = LocalSmartController(config_mgr)
         self.router = IntentRouter(config_mgr)
+        self.hw_info = service.transcriber.get_hardware_info()
+        self.local_smart_enabled = self.config_mgr.get_local_smart_enabled()
 
         # File Pickers
         self.file_picker = ft.FilePicker()
@@ -85,21 +91,60 @@ class TranscriptionView(ft.Column):
             ],
         )
 
-        # Build Main View Layout
+        # Model Selection Row with Local Smart Button
+        self.dd_whisper = ft.Dropdown(
+            label="Whisperモデル",
+            width=180,
+            options=[ft.dropdown.Option(m) for m in ["tiny", "base", "small", "medium", "large-v3"]],
+            value=self.config_mgr.get_last_model(),
+        )
+        self.dd_provider = ft.Dropdown(
+            label="AIプロバイダー",
+            width=180,
+            options=[ft.dropdown.Option(p) for p in ["ollama_local", "ollama_cloud", "google"]],
+            value=self.config_mgr.get_active_provider(),
+            on_change=self._on_provider_change,
+        )
+        self.dd_llm = ft.Dropdown(
+            label="LLMモデル",
+            width=200,
+            options=[ft.dropdown.Option("取得中...", disabled=True)],
+            value=None,
+        )
+        self.local_smart_btn = ft.IconButton(
+            icon=ft.Icons.AUTO_AWESOME_OUTLINED,
+            selected_icon=ft.Icons.AUTO_AWESOME,
+            selected=self.local_smart_enabled,
+            tooltip="Local Smart: ハードウェアに最適な設定を自動適用",
+            on_click=self._toggle_local_smart,
+        )
+
+        # Initial background load
+        threading.Thread(target=self._initial_load, daemon=True).start()
+
         self.controls = [
             ft.Row(
                 [
                     ft.Column(
                         [
-                            ft.Text("文字起こし & AI 変換", size=32, weight=ft.FontWeight.BOLD),
-                            ft.Text("動画や音声から議事録を自動生成します", size=14, color=ft.Colors.GREY_400),
+                            ft.Text("リアルタイム録音 & 文字起こし", size=28, weight=ft.FontWeight.BOLD),
+                            ft.Text("会議や動画の音声をリアルタイムで解析し、終了時に議事録を生成します", size=13, color=ft.Colors.GREY_400),
                         ]
                     ),
                     ft.IconButton(ft.Icons.REFRESH, on_click=lambda _: self._refresh_ui(), tooltip="表示を更新"),
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
-            ft.Divider(height=30, color=ft.Colors.GREY_800),
+            ft.Divider(height=20, color=ft.Colors.GREY_800),
+            ft.Row(
+                [
+                    self.dd_whisper,
+                    self.dd_provider,
+                    self.dd_llm,
+                    self.local_smart_btn,
+                ],
+                spacing=10,
+            ),
             ft.Row([self.btn_pick, self.btn_live, self.btn_stop], spacing=15),
             ft.Container(height=10),
             self.status_text,
@@ -147,28 +192,45 @@ class TranscriptionView(ft.Column):
             # Transition to START
             self._set_recording_ui_state(True)
             self.status_text.value = "録音準備中..."
+            state.set("is_recording", True)  # Set flag IMMEDIATELY to enable Stop button logic
             self.update()
 
             def on_chunk(text):
                 # Update text in real-time
                 self.raw_transcript_text.value += text + " "
-                self.update()
+                self._safe_update()
 
-            try:
-                # Defaulting to system audio for live meetings
-                self.service.start_live_recording(model_name=model, source="system", on_text_added=on_chunk)
-                state.set("is_recording", True)
-                self.status_text.value = "🎙 システム音をリアルタイム録音・文字起こし中..."
-                self.update()
-            except Exception as ex:
-                logger.error(f"Live recording start failed: {ex}")
-                self.status_text.value = f"⚠️ 録音開始エラー: {ex}"
-                self._set_recording_ui_state(False)
-                self.update()
+            def _start_worker():
+                try:
+                    # Offload to background thread so UI doesn't freeze
+                    result = self.service.start_live_recording(model_name=model, source="system", on_text_added=on_chunk)
+
+                    # result == -1 means stop was requested during model loading
+                    if result == -1:
+                        logger.info("Recording was cancelled during model load. Resetting UI.")
+                        state.set("is_recording", False)
+                        self._set_recording_ui_state(False)
+                        self.status_text.value = "録音をキャンセルしました（停止ボタンが押されました）"
+                        self._safe_update()
+                        return
+
+                    self.status_text.value = "🎙 システム音をリアルタイム録音・文字起こし中..."
+                    self._safe_update()
+                except Exception as ex:
+                    logger.error(f"Live recording start failed: {ex}")
+                    self.status_text.value = f"⚠️ 録音開始エラー: {ex}"
+                    state.set("is_recording", False)
+                    self._set_recording_ui_state(False)
+                    self._safe_update()
+
+            threading.Thread(target=_start_worker, daemon=True).start()
         else:
             # Transition to STOP
-            self.status_text.value = "録音を停止して最後の処理を行っています..."
+            self.status_text.value = "停止指示を受け付けました。最終処理中... (3秒程度)"
+            self.btn_stop.disabled = True  # Prevent double clicks
             self.update()
+
+            # Request stop from service (which now flushes buff immediately)
             self.service.stop_live_recording(finalize_callback=self._on_live_finalized)
 
     def _on_live_finalized(self, full_text, category):
@@ -176,6 +238,11 @@ class TranscriptionView(ft.Column):
         self._set_recording_ui_state(False)
         self.raw_transcript_text.value = full_text
         self.status_text.value = f"ライブ文字起こし完了 (自動分類: {category if category else '未分類'})"
+
+        # Memory Relay: Always unload after live session to ensure LLM has resources
+        logger.info("TranscriptionView: Live session ended. Unloading Whisper for memory efficiency...")
+        self.service.transcriber.unload_model()
+
         self._run_ai_conversion(full_text)
         self.update()
 
@@ -250,11 +317,63 @@ class TranscriptionView(ft.Column):
         self.progress_bar.value = val
         self.update()
 
-    def init_view(self, model_options: list):
-        """
-        Stub for additional initialization if needed by FletApp.
-        """
-        pass
+    def _safe_update(self):
+        if self.page:
+            self.update()
+
+    def _initial_load(self):
+        if self.local_smart_enabled:
+            self._apply_local_smart()
+        else:
+            provider = self.config_mgr.get_active_provider()
+            self._update_model_options(provider)
+        self._safe_update()
+
+    def _on_provider_change(self, e):
+        provider = self.dd_provider.value
+        self.config_mgr.set_active_provider(provider)
+        threading.Thread(target=self._update_model_options, args=(provider,), daemon=True).start()
+
+    def _update_model_options(self, provider: str):
+        # Map "google" to "gemini" for backend service
+        actual_provider = "gemini" if provider == "google" else provider
+
+        self.dd_llm.options = [ft.dropdown.Option("取得中...", disabled=True)]
+        self.dd_llm.value = None
+        self._safe_update()
+
+        models = self.minutes_service.get_available_models(actual_provider)
+        config = self.config_mgr.get_provider_config(provider)
+        last_model = config.get("model")
+
+        if models:
+            self.dd_llm.options = [ft.dropdown.Option(m) for m in models]
+            if last_model in models:
+                self.dd_llm.value = last_model
+            else:
+                self.dd_llm.value = models[0]
+        else:
+            self.dd_llm.options = [ft.dropdown.Option("モデルなし", disabled=True)]
+            self.dd_llm.value = None
+        self._safe_update()
+
+    def _apply_local_smart(self):
+        self.local_smart_ctrl.apply_optimization(self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper)
+        self._safe_update()
+
+    def _toggle_local_smart(self, e):
+        self.local_smart_enabled = not self.local_smart_enabled
+        self.local_smart_btn.selected = self.local_smart_enabled
+        self.config_mgr.set_local_smart_enabled(self.local_smart_enabled)
+
+        if self.local_smart_enabled:
+            self._apply_local_smart()
+        else:
+            self.local_smart_ctrl.restore_manual_mode(
+                self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper, update_callback=self._update_model_options
+            )
+
+        self._safe_update()
 
     def _refresh_ui(self):
         """

@@ -7,10 +7,8 @@ from datetime import datetime
 
 from src.core.config_manager import ConfigManager
 from src.core.history_mgr import history_mgr
-from src.core.live_processor import LiveTranscriptionManager
 from src.core.whisper_transcriber import WhisperTranscriber
 from src.llm.factory import LLMFactory
-from src.recorder.visual_recorder import visual_recorder
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +26,34 @@ class TranscriptionService:
         self._live_start_time: float | None = None
         self._current_meeting_id: int | None = None
         self._current_mp3_path: str | None = None
+        # Cancel flag: set immediately when stop is requested, even during model loading
+        self._cancel_event = threading.Event()
 
     def transcribe_file_sync(
         self,
         file_path: str,
         model_name: str,
         language: str | None = None,
+        project_name: str = "その他",
+        category: str = "",
         progress_callback: Callable[[float], None] | None = None,
         use_visual: bool = False,
     ) -> dict:
         """Synchronously transcribes a file and saves it to history."""
+        logger.info(f"transcribe_file_sync: Starting for {file_path} (model={model_name}, project={project_name}, visual={use_visual})")
         if not file_path or not os.path.exists(file_path):
+            logger.error(f"transcribe_file_sync: File not found: {file_path}")
             raise FileNotFoundError(f"File not found: {file_path}")
 
         force_gpu = self.config_mgr.get_force_gpu()
+        logger.info(f"transcribe_file_sync: Loading model (GPU={force_gpu})...")
         self.transcriber.load_model(model_name, force_gpu=force_gpu)
 
+        logger.info("transcribe_file_sync: Starting transcription...")
         result = self.transcriber.transcribe(
             file_path, model_name=model_name, force_gpu=force_gpu, language=language, progress_callback=progress_callback
         )
+        logger.info("transcribe_file_sync: Transcription core finished.")
 
         visual_contexts = []
         if use_visual and file_path.lower().endswith((".mp4", ".mov", ".avi", ".mkv")):
@@ -56,7 +63,22 @@ class TranscriptionService:
                 logger.warning(f"Failed to extract visual frames: {e}")
 
         # Auto-save to history
+        from src.core.constants import DEFAULT_RECORDS_DIR
+        from src.core.utils import sanitize_filename
+
+        safe_project = sanitize_filename(project_name or "その他")
+        records_dir = os.path.join(os.getcwd(), DEFAULT_RECORDS_DIR, safe_project)
+        os.makedirs(records_dir, exist_ok=True)
+
         base_name = os.path.basename(file_path)
+        final_file_path = os.path.join(records_dir, base_name)
+
+        # Copy file to project directory if it's not already there
+        if os.path.abspath(file_path) != os.path.abspath(final_file_path):
+            import shutil
+
+            logger.info(f"transcribe_file_sync: Copying {file_path} to {final_file_path}")
+            shutil.copy2(file_path, final_file_path)
 
         # 1. Generate AI Title if possible
         ai_title = ""
@@ -67,7 +89,9 @@ class TranscriptionService:
 
         final_title = f"{ai_title} ({base_name})" if ai_title else f"ファイル文字起こし: {base_name}"
 
-        meeting_id = history_mgr.add_meeting(title=final_title, transcript=result, audio_path=file_path, model_info=model_name)
+        meeting_id = history_mgr.add_meeting(
+            title=final_title, transcript=result, audio_path=final_file_path, model_info=model_name, project_name=safe_project, category=category
+        )
 
         # Save visual contexts if any
         for ctx in visual_contexts:
@@ -86,7 +110,8 @@ class TranscriptionService:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         duration = total_frames / fps if fps > 0 else 0
 
-        temp_dir = Path("data/records/temp_video_frames")
+        from src.core.constants import TEMP_VIDEO_DIR
+        temp_dir = Path(TEMP_VIDEO_DIR)
         temp_dir.mkdir(parents=True, exist_ok=True)
 
         contexts = []
@@ -104,6 +129,7 @@ class TranscriptionService:
             curr_sec += interval_sec
 
         cap.release()
+        logger.info(f"extract_visual_frames: Extracted {len(contexts)} frames.")
         return contexts
 
     def start_live_recording(
@@ -116,9 +142,24 @@ class TranscriptionService:
         on_text_added: Callable[[str], None] | None = None,
     ) -> int:
         """Starts a live recording session. Returns meeting_id."""
-        force_gpu = self.config_mgr.get_force_gpu()
-        self.transcriber.load_model(model_name, force_gpu=force_gpu)
+        logger.info(f"start_live_recording: Request for {model_name} (project={project_name})")
+        # 1. Start Model Loading in Background
+        # We don't wait for this to finish to start the recorder.
+        # This keeps the 'Stop' button responsive from the very first second.
+        force_gpu = self.get_config().get_force_gpu() if hasattr(self, "get_config") else self.config_mgr.get_force_gpu()
 
+        def _load_model_worker():
+            try:
+                logger.info(f"_load_model_worker: Starting async load for {model_name}...")
+                self.transcriber.load_model(model_name, force_gpu=force_gpu)
+                logger.info("_load_model_worker: Async load finished.")
+            except Exception as e:
+                logger.error(f"_load_model_worker: Failed to load model: {e}")
+
+        threading.Thread(target=_load_model_worker, daemon=True).start()
+
+        # 2. Prepare Storage and Metadata Immediately
+        logger.info("start_live_recording: Preparing storage...")
         from src.core.utils import sanitize_filename
 
         safe_project = sanitize_filename(project_name or "その他")
@@ -142,6 +183,9 @@ class TranscriptionService:
         self._current_mp3_path = mp3_path
 
         # 3. Start Recorders
+        logger.info(f"start_live_recording: Initializing LiveTranscriptionManager (mp3={mp3_path})")
+        from src.core.live_processor import LiveTranscriptionManager
+
         self.live_mgr = LiveTranscriptionManager(
             transcriber=self.transcriber,
             model_name=model_name,
@@ -155,20 +199,42 @@ class TranscriptionService:
 
         # Visual Recorder
         if self.config_mgr.get_visual_capture_enabled():
+            logger.info("start_live_recording: Starting VisualRecorder.")
+            from src.recorder.visual_recorder import visual_recorder
+
             visual_recorder.start(meeting_id)
 
+        logger.info(f"start_live_recording: Successfully started session (id={meeting_id})")
         return meeting_id
 
     def stop_live_recording(self, finalize_callback: Callable[[str, str], None] | None = None):
         """Stops live recording and finalizes results in background."""
+        logger.info("stop_live_recording: Stop command received.")
+        # Always set the cancel flag FIRST, regardless of live_mgr state.
+        # This handles the race condition where stop is called during model loading.
+        self._cancel_event.set()
+        logger.info("stop_live_recording: Cancel event set.")
+
         if not self.live_mgr:
+            # Was called during model loading; the cancel flag will abort start_live_recording.
+            # Notify the caller that we've been cancelled cleanly.
+            logger.warning("stop_live_recording: live_mgr not ready yet (likely still loading model); cancellation queued.")
+            if finalize_callback:
+                finalize_callback("", "")
             return
+
+        logger.info("stop_live_recording: Terminating recorders and starting finalization...")
+        from src.recorder.visual_recorder import visual_recorder
 
         visual_recorder.stop()
 
         def _finalize_worker():
+            logger.info("_finalize_worker: Starting background finalization...")
+            full_text = ""
+            category = ""
             try:
                 full_text = self.live_mgr.stop()
+                logger.info(f"_finalize_worker: live_mgr stopped. Text length: {len(full_text)}")
                 meeting_id = self._current_meeting_id
                 mp3_path = self._current_mp3_path
                 duration = time.time() - (self._live_start_time or time.time())
@@ -231,18 +297,49 @@ class TranscriptionService:
 
         return minutes
 
+    def _get_best_llm_model(self, provider: str) -> str:
+        """Helper to find the best available LLM model for the given provider."""
+        # Try to get from config first
+        model = self.config_mgr.get_provider_config(provider).get("model")
+        if model:
+            return model
+
+        # Fallback to defaults or first available
+        try:
+            conf = self.config_mgr.get_provider_config(provider)
+            client = LLMFactory.create_client(provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
+            available = client.get_available_models()
+            if available:
+                return available[0]
+        except Exception as e:
+            logger.debug(f"_get_best_llm_model: Automated model lookup failed for {provider}: {e}")
+
+        # Hardcoded defaults as last resort
+        defaults = {"gemini": "gemini-1.5-flash", "google": "gemini-1.5-flash", "ollama_local": "llama3", "ollama_cloud": "llama3"}
+        return defaults.get(provider, "gemini-1.5-flash")
+
     def _extract_category_internal(self, text: str) -> str:
         provider = self.config_mgr.get_active_provider()
+        llm_model = self._get_best_llm_model(provider)
+
+        logger.info(f"_extract_category_internal: Using {provider}/{llm_model} for tagging.")
         conf = self.config_mgr.get_provider_config(provider)
         llm_client = LLMFactory.create_client(provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
-        llm_model = self.config_mgr.get_last_model()
-        return llm_client.extract_category(text, llm_model)
+
+        category = llm_client.extract_category(text, llm_model)
+        logger.info(f"_extract_category_internal: Result -> {category}")
+        return category
 
     def _generate_title_internal(self, text: str) -> str:
         if not text or len(text.strip()) < 50:
             return ""
         provider = self.config_mgr.get_active_provider()
+        llm_model = self._get_best_llm_model(provider)
+
+        logger.info(f"_generate_title_internal: Using {provider}/{llm_model} for titling.")
         conf = self.config_mgr.get_provider_config(provider)
         llm_client = LLMFactory.create_client(provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
-        llm_model = self.config_mgr.get_last_model()
-        return llm_client.generate_title(text, llm_model)
+
+        title = llm_client.generate_title(text, llm_model)
+        logger.info(f"_generate_title_internal: Result -> {title}")
+        return title

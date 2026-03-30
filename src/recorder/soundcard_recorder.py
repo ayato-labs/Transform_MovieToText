@@ -30,7 +30,7 @@ class SoundCardRecorder(_BaseRecorder):
     and resamples to 16000Hz for Whisper.
     """
 
-    def __init__(self, output_dir="temp_chunks", segment_time=30, overlap=5, source="system", mp3_path=None):
+    def __init__(self, output_dir=None, segment_time=30, overlap=5, source="system", mp3_path=None):
         super().__init__(output_dir, segment_time, overlap, source)
         self.mp3_path = mp3_path
         self.ffmpeg_proc = None
@@ -169,6 +169,11 @@ class SoundCardRecorder(_BaseRecorder):
                 if now - self.last_save_time >= self.segment_time:
                     self._push_chunk()
                     self.last_save_time = now
+
+            # --- FLUSH REMAINING BUFFER ON STOP ---
+            logger.info("SoundCardRecorder: Stop signal received. Flushing remaining buffer...")
+            if self.current_samples_count > 0:
+                self._push_chunk()
 
         except Exception as e:
             logger.error(f"SoundCardRecorder crash: {e}", exc_info=True)

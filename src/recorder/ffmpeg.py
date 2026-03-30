@@ -17,7 +17,7 @@ class FFmpegRecorder(_BaseRecorder):
     Records system audio using FFmpeg with DirectShow, piping raw PCM streams into memory.
     """
 
-    def __init__(self, output_dir="temp_chunks", segment_time=30, overlap=5, source="system", mp3_path=None):
+    def __init__(self, output_dir=None, segment_time=30, overlap=5, source="system", mp3_path=None):
         super().__init__(output_dir, segment_time, overlap, source)
         self.process = None
         self.mp3_path = mp3_path

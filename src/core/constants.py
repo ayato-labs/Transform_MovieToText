@@ -1,8 +1,10 @@
 # Paths
 DEFAULT_DB_PATH = "data/history.db"
 DEFAULT_CONFIG_PATH = "config.json"
-DEFAULT_RECORDS_DIR = "data/records"
-TEMP_CHUNKS_DIR = "temp_chunks"
+DEFAULT_RECORDS_DIR = "data/history"
+TEMP_DIR = "data/temp"
+TEMP_CHUNKS_DIR = "data/temp/chunks"
+TEMP_VIDEO_DIR = "data/temp/frames"
 
 # Recording Defaults
 DEFAULT_SEGMENT_TIME = 30

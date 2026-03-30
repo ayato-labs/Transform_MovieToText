@@ -130,6 +130,30 @@ class ConfigManager:
             logger.info(f"Visual capture setting changed: {old} -> {enabled}")
             self.save_config()
 
+    def get_local_smart_enabled(self):
+        """Returns whether Local Smart optimization is enabled."""
+        return self.config.get("local_smart_enabled", False)
+
+    def set_local_smart_enabled(self, enabled: bool):
+        """Sets whether Local Smart optimization is enabled."""
+        old = self.get_local_smart_enabled()
+        if old != enabled:
+            self.config["local_smart_enabled"] = enabled
+            logger.info(f"Local Smart setting changed: {old} -> {enabled}")
+            self.save_config()
+
+    def get_llm_model(self):
+        """Returns the current LLM model name (e.g. for summary)."""
+        return self.config.get("llm_model", "phi3.5:mini")  # Default for 2026-03
+
+    def set_llm_model(self, model_name):
+        """Sets the LLM model name."""
+        old = self.get_llm_model()
+        if old != model_name:
+            self.config["llm_model"] = model_name
+            logger.info(f"LLM model changed: {old} -> {model_name}")
+            self.save_config()
+
     def get_force_gpu(self):
         return self.config.get("force_gpu", False)
 

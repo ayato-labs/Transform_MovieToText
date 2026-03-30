@@ -2,6 +2,7 @@ import logging
 
 import flet as ft
 
+from src.ui.views.chat_bot_view import ChatBotView
 from src.ui.views.file_transcription_view import FileTranscriptionView
 from src.ui.views.history_view import HistoryView
 from src.ui.views.live_transcription_view import LiveTranscriptionView
@@ -12,13 +13,19 @@ logger = logging.getLogger(__name__)
 
 class MainWindow(ft.Row):
     def __init__(
-        self, file_trans_view: FileTranscriptionView, live_trans_view: LiveTranscriptionView, settings_view: SettingsView, history_view: HistoryView
+        self,
+        file_trans_view: FileTranscriptionView,
+        live_trans_view: LiveTranscriptionView,
+        settings_view: SettingsView,
+        history_view: HistoryView,
+        chat_view: ChatBotView,
     ):
         super().__init__(expand=True)
         self.file_trans_view = file_trans_view
         self.live_trans_view = live_trans_view
         self.settings_view = settings_view
         self.history_view = history_view
+        self.chat_view = chat_view
 
         # Navigation Rail
         self.nav_rail = ft.NavigationRail(
@@ -31,6 +38,7 @@ class MainWindow(ft.Row):
                 ft.NavigationRailDestination(icon=ft.Icons.ATTACH_FILE, selected_icon=ft.Icons.ATTACH_FILE, label="ファイル文字起こし"),
                 ft.NavigationRailDestination(icon=ft.Icons.MIC, selected_icon=ft.Icons.MIC, label="リアルタイム"),
                 ft.NavigationRailDestination(icon=ft.Icons.HISTORY, selected_icon=ft.Icons.HISTORY, label="履歴"),
+                ft.NavigationRailDestination(icon=ft.Icons.CHAT_OUTLINED, selected_icon=ft.Icons.CHAT, label="AIチャット"),
                 ft.NavigationRailDestination(icon=ft.Icons.SETTINGS, selected_icon=ft.Icons.SETTINGS, label="設定"),
             ],
             on_change=self._on_nav_change,
@@ -68,6 +76,9 @@ class MainWindow(ft.Row):
                 self.content_container.update()
                 self.history_view.init_view()
             elif idx == 3:
+                self.content_container.content = self.chat_view
+                self.content_container.update()
+            elif idx == 4:
                 self.content_container.content = self.settings_view
                 self.content_container.update()
                 self.settings_view.init_view()

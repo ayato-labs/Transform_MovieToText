@@ -4,11 +4,12 @@ from src.core.config_manager import ConfigManager
 
 
 class SettingsView(ft.Column):
-    def __init__(self, config_mgr: ConfigManager, hw_info: dict, model_requirements: dict):
+    def __init__(self, config_mgr: ConfigManager, hw_info: dict, model_requirements: dict, history_ctrl=None):
         super().__init__(expand=True, scroll="auto")
         self.config_mgr = config_mgr
         self.hw_info = hw_info
         self.model_requirements = model_requirements
+        self.history_ctrl = history_ctrl
 
         # Initialize UI Components
         self.gemini_api_key = ft.TextField(
@@ -22,6 +23,19 @@ class SettingsView(ft.Column):
         )
         self.ollama_cloud_url = ft.TextField(label="Ollama Cloud URL", width=500, hint_text="https://ollama.com", on_change=self._on_settings_change)
         self.force_gpu_checkbox = ft.Checkbox(label="GPUを強制使用する (VRAM不足警告を無視)", on_change=self._on_force_gpu_change)
+
+        # Project Management
+        self.project_to_delete_dd = ft.Dropdown(
+            label="削除するプロジェクトを選択",
+            width=400,
+            options=[],
+        )
+        self.delete_project_btn = ft.ElevatedButton(
+            "選択したプロジェクトを削除",
+            icon=ft.Icons.DELETE_FOREVER,
+            color=ft.Colors.RED_400,
+            on_click=self._show_delete_confirmation,
+        )
 
         # Embedding Provider selection
         self.embedding_provider_dropdown = ft.Dropdown(
@@ -37,8 +51,8 @@ class SettingsView(ft.Column):
         # Hardware display
         self.hw_rows = ft.Column(
             [
-                ft.Row([ft.Icon("computer"), ft.Text(f"System RAM: {hw_info['ram']} GB")]),
-                ft.Row([ft.Icon("storage"), ft.Text(f"GPU VRAM: {hw_info['vram']} GB")]),
+                ft.Row([ft.Icon(ft.Icons.COMPUTER), ft.Icon(ft.Icons.MEMORY), ft.Text(f"System RAM: {hw_info['ram']} GB")]),
+                ft.Row([ft.Icon(ft.Icons.STORAGE), ft.Icon(ft.Icons.DEVELOPER_BOARD), ft.Text(f"GPU VRAM: {hw_info['vram']} GB")]),
             ]
         )
 
@@ -49,6 +63,10 @@ class SettingsView(ft.Column):
         # Build Layout
         self.controls = [
             ft.Text("設定", size=24, weight="bold"),
+            ft.Divider(),
+            ft.Text("プロジェクト管理", size=18, weight="w500"),
+            ft.Text("プロジェクトを削除すると、そのプロジェクトに属していたデータは自動的に「その他」へ移動されます。", size=13, color="grey500"),
+            ft.Row([self.project_to_delete_dd, self.delete_project_btn], alignment=ft.MainAxisAlignment.START),
             ft.Divider(),
             ft.Text("AIプロバイダー設定", size=18, weight="w500"),
             self._create_card("Google Gemini", [self.gemini_api_key]),
@@ -77,20 +95,83 @@ class SettingsView(ft.Column):
 
     def _build_compatibility_list(self):
         self.comp_items.controls.clear()
-        for model, req in self.model_requirements.items():
+        for m, req in self.model_requirements.items():
             can_gpu = self.hw_info["vram"] >= req
             can_cpu = self.hw_info["ram"] >= req
-            status_icon = "check_circle" if (can_gpu or can_cpu) else "cancel"
-            status_color = "green" if can_gpu else ("amber" if can_cpu else "red")
-            device_text = "(GPU可)" if can_gpu else ("(CPUのみ可)" if can_cpu else "(スペック不足)")
+            status_icon = ft.Icons.CHECK_CIRCLE if (can_gpu or can_cpu) else ft.Icons.CANCEL
+            status_color = ft.Colors.GREEN if can_gpu else (ft.Colors.AMBER if can_cpu else ft.Colors.RED)
+            device_text = f"適合 (Requirement: {req}GB)" if (can_gpu or can_cpu) else "推奨スペック不足"
 
             self.comp_items.controls.append(
                 ft.ListTile(
                     leading=ft.Icon(status_icon, color=status_color),
-                    title=ft.Text(f"{model} (要 {req}GB)"),
+                    title=ft.Text(m),
                     subtitle=ft.Text(device_text),
                 )
             )
+
+    def _show_delete_confirmation(self, e):
+        project_name = self.project_to_delete_dd.value
+        if not project_name:
+            # Show snackbar or error if no project selected
+            if self.page:
+                self.page.snack_bar = ft.SnackBar(ft.Text("削除するプロジェクトを選択してください。"))
+                self.page.snack_bar.open = True
+                self.page.update()
+            return
+
+        def confirm_delete(e_close):
+            confirm_dialog.open = False
+            self.page.update()
+            self._execute_project_deletion(project_name)
+
+        def cancel_delete(e_close):
+            confirm_dialog.open = False
+            self.page.update()
+
+        confirm_dialog = ft.AlertDialog(
+            title=ft.Text("プロジェクトの削除"),
+            content=ft.Text(f"プロジェクト「{project_name}」を削除しますか？\n所属していたデータは「その他」に移動されます。"),
+            actions=[
+                ft.TextButton("キャンセル", on_click=cancel_delete),
+                ft.TextButton("削除する", on_click=confirm_delete, font_weight="bold", color=ft.Colors.RED),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        self.page.dialog = confirm_dialog
+        confirm_dialog.open = True
+        self.page.update()
+
+    def _execute_project_deletion(self, project_name):
+        if not self.history_ctrl:
+            return
+
+        success = self.history_ctrl.reassign_project(project_name, "その他")
+        if success:
+            # Refresh project list after deletion
+            self._update_project_options()
+            if self.page:
+                self.page.snack_bar = ft.SnackBar(ft.Text(f"プロジェクト「{project_name}」を削除し、データを「その他」に移動しました。"))
+                self.page.snack_bar.open = True
+                self.page.update()
+        else:
+            if self.page:
+                self.page.snack_bar = ft.SnackBar(ft.Text("プロジェクトの削除に失敗しました。"), bgcolor=ft.Colors.RED_700)
+                self.page.snack_bar.open = True
+                self.page.update()
+
+    def _update_project_options(self):
+        if not self.history_ctrl:
+            return
+
+        projects = self.history_ctrl.get_projects()
+        # Exclude internal/default names from deletion list if necessary
+        # We allow deleting any project that exists.
+        self.project_to_delete_dd.options = [ft.dropdown.Option(p) for p in projects if p and p != "その他"]
+        self.project_to_delete_dd.value = None
+        if self.page:
+            self.update()
 
     def _on_settings_change(self, e):
         self.config_mgr.set_provider_config("gemini", {"api_key": self.gemini_api_key.value})
@@ -116,6 +197,9 @@ class SettingsView(ft.Column):
 
         self.force_gpu_checkbox.value = self.config_mgr.get_force_gpu()
         self.embedding_provider_dropdown.value = self.config_mgr.get_embedding_provider()
+
+        # Load and update projects list
+        self._update_project_options()
 
         if self.page:
             self.update()

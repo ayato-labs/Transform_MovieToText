@@ -144,6 +144,7 @@ class HistoryManager:
                     (title, transcript, audio_path, model_info, project_name, category, ""),
                 )
                 meeting_id = cursor.lastrowid
+                logger.info(f"add_meeting: Inserted base record with ID={meeting_id}")
 
                 # 2. Sync to FTS table (Manual sync)
                 conn.execute(
@@ -195,9 +196,10 @@ class HistoryManager:
                         "VALUES (?, ?, ?, ?, ?, ?, ?)",
                         (meeting_id, row["title"], row["transcript"], row["minutes"], row["project_name"], row["category"], row["minutes_model"]),
                     )
-                    logger.debug("Synchronized FTS5: meeting_id=%d title=%s minutes_model=%s", meeting_id, row["title"], row["minutes_model"])
+                    logger.info("update_meeting: Synchronized FTS5: meeting_id=%d title=%s", meeting_id, row["title"])
 
                 conn.commit()
+                logger.info(f"update_meeting: Successfully committed changes for ID={meeting_id}")
             except sqlite3.Error as e:
                 logger.error(f"Error updating meeting {meeting_id}: {e}")
                 raise HistoryError(f"Update failed: {e}") from e
@@ -221,6 +223,7 @@ class HistoryManager:
                 conn.execute("DELETE FROM visual_context WHERE meeting_id = ?", (meeting_id,))
                 conn.execute("DELETE FROM meetings WHERE id = ?", (meeting_id,))
                 conn.commit()
+                logger.info(f"delete_meeting: Successfully deleted meeting ID={meeting_id} from all tables.")
             except sqlite3.Error as e:
                 logger.error(f"Error deleting meeting {meeting_id}: {e}")
                 raise HistoryError(f"Deletion failed: {e}") from e
@@ -248,7 +251,71 @@ class HistoryManager:
             cursor = conn.execute("SELECT * FROM meetings ORDER BY timestamp DESC")
             return [dict(row) for row in cursor.fetchall()]
 
-    def search_meetings(self, query: str) -> list[dict[str, Any]]:
+    def get_meetings_filtered(self, project_name: str | None = None, search_query: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+        """
+        Retrieves meetings with optional project and search filters.
+        More robust than raw search_meetings for complex filtering.
+        """
+        from contextlib import closing
+
+        from src.core.utils import sanitize_fts_query
+
+        safe_search = sanitize_fts_query(search_query) if search_query else None
+
+        with closing(self._get_connection()) as conn:
+            params = []
+            where_clauses = []
+
+            if project_name:
+                where_clauses.append("project_name = ?")
+                params.append(project_name)
+
+            if safe_search:
+                # Use FTS5 subquery for performance
+                where_clauses.append("id IN (SELECT rowid FROM meetings_fts WHERE meetings_fts MATCH ?)")
+                params.append(safe_search)
+
+            sql = "SELECT * FROM meetings"
+            if where_clauses:
+                sql += " WHERE " + " AND ".join(where_clauses)
+
+            sql += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+
+            try:
+                cursor = conn.execute(sql, tuple(params))
+                results = [dict(row) for row in cursor.fetchall()]
+                logger.info(f"get_meetings_filtered: Result set size={len(results)} (limit={limit})")
+                return results
+            except sqlite3.Error as e:
+                logger.error(f"Filtered query failed: {e}")
+                return []
+
+    def reassign_project(self, old_name: str, new_name: str = "その他"):
+        """Reassigns all meetings from one project to another (e.g. on deletion)."""
+        if not old_name or old_name == new_name:
+            return False
+
+        from contextlib import closing
+
+        with closing(self._get_connection()) as conn:
+            try:
+                # 1. Update main table
+                conn.execute("UPDATE meetings SET project_name = ? WHERE project_name = ?", (new_name, old_name))
+
+                # 2. Sync FTS5 table
+                # meetings_fts uses external content from meetings in some setups,
+                # but if it's a standard FTS5 table, we update it too.
+                conn.execute("UPDATE meetings_fts SET project_name = ? WHERE project_name = ?", (new_name, old_name))
+
+                conn.commit()
+                logger.info(f"Reassigned project '{old_name}' to '{new_name}'")
+                return True
+            except sqlite3.Error as e:
+                logger.error(f"Failed to reassign project: {old_name} -> {new_name}: {e}")
+                return False
+
+    def search_meetings(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
         """Performs optimized search using FTS5."""
         from src.core.utils import sanitize_fts_query
 
@@ -259,13 +326,57 @@ class HistoryManager:
         from contextlib import closing
 
         with closing(self._get_connection()) as conn:
-            sql = "SELECT * FROM meetings WHERE id IN (SELECT rowid FROM meetings_fts WHERE meetings_fts MATCH ?) ORDER BY timestamp DESC"
+            # Join with base table to get all fields, and use MATCH for FTS5
+            sql = """
+                SELECT m.* FROM meetings m
+                WHERE m.id IN (SELECT rowid FROM meetings_fts WHERE meetings_fts MATCH ?)
+                ORDER BY timestamp DESC
+                LIMIT ?
+            """
             try:
-                cursor = conn.execute(sql, (safe_query,))
+                cursor = conn.execute(sql, (safe_query, limit))
                 return [dict(row) for row in cursor]
             except sqlite3.Error as e:
                 logger.error(f"Search failed: {e}")
                 return []
+
+    def search_hybrid(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        """
+        Performs Hybrid Search:
+        1. FTS5 Keyword Search (High precision for titles/specific terms)
+        2. Vector Similarity (Fuzzy semantic matching) (Placeholder logic if vector store not fully integrated)
+
+        Merges results and returns high-confidence matches first.
+        """
+        # 1. Full-Text Search (Keyword/Title focus)
+        fts_hits = self.search_meetings(query, limit=limit)
+
+        # 2. Add score metadata for prioritization
+        for hit in fts_hits:
+            hit["_search_type"] = "keyword"
+            hit["_rank_score"] = 0.9  # High initial score for exact matches
+
+        # 3. Vector Search (TBD actual vector library, currently fuzzy title/transcript fallback)
+        # For now, we enhance FTS hits with priority if they appear in Title vs Transcript
+        scored_results = []
+        seen_ids = set()
+
+        for hit in fts_hits:
+            if hit["id"] in seen_ids:
+                continue
+
+            # Boost score based on where it matched (Simulating weighting)
+            if query.lower() in (hit["title"] or "").lower():
+                hit["_rank_score"] += 0.5
+            if query.lower() in (hit["minutes"] or "").lower():
+                hit["_rank_score"] += 0.3
+
+            scored_results.append(hit)
+            seen_ids.add(hit["id"])
+
+        # Sort by rank score
+        scored_results.sort(key=lambda x: x["_rank_score"], reverse=True)
+        return scored_results[:limit]
 
     def get_projects(self) -> list[str]:
         from contextlib import closing

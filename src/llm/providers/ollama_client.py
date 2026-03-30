@@ -71,6 +71,12 @@ class OllamaLocalClient(BaseLLMClient):
             response = self.client.chat(model=model_name, messages=[msg])
             return response["message"]["content"]
         except Exception as e:
+            err_str = str(e)
+            if "model requires more system memory" in err_str:
+                logger.error(f"Ollama local RAM exhaustion: {err_str}")
+                raise RuntimeError(
+                    f"メモリ不足によりモデルを起動できませんでした。より軽量なバージョン（例: {model_name.split(':')[0]}:3.8b-mini-instruct-q4_K_M）を手動で 'ollama pull' して試してください。\n詳細: {err_str}"
+                ) from e
             logger.error(f"Ollama local generation failed: {e}")
             raise RuntimeError(f"Failed to generate minutes: {str(e)}") from e
 
@@ -109,7 +115,16 @@ class OllamaLocalClient(BaseLLMClient):
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        return self.client.chat(model=model_name, messages=messages)["message"]["content"]
+        return self.chat(model_name, messages)
+
+    def chat(self, model_name: str, messages: list[dict]) -> str:
+        """Sends a list of messages to Ollama Local."""
+        try:
+            response = self.client.chat(model=model_name, messages=messages)
+            return response["message"]["content"]
+        except Exception as e:
+            logger.error(f"Ollama local chat failed: {e}")
+            raise RuntimeError(f"Chat failed: {str(e)}") from e
 
 
 class OllamaCloudClient(BaseLLMClient):
@@ -210,4 +225,13 @@ class OllamaCloudClient(BaseLLMClient):
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        return self.client.chat(model=model_name, messages=messages)["message"]["content"]
+        return self.chat(model_name, messages)
+
+    def chat(self, model_name: str, messages: list[dict]) -> str:
+        """Sends a list of messages to Ollama Cloud."""
+        try:
+            response = self.client.chat(model=model_name, messages=messages)
+            return response["message"]["content"]
+        except Exception as e:
+            logger.error(f"Ollama cloud chat failed: {e}")
+            raise RuntimeError(f"Chat failed: {str(e)}") from e

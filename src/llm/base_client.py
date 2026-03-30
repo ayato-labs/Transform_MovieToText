@@ -40,6 +40,16 @@ class BaseLLMClient(ABC):
         """
         pass
 
+    @abstractmethod
+    def chat(self, model_name: str, messages: list[dict]) -> str:
+        """General purpose chat interface.
+
+        Args:
+            model_name: The LLM model to use.
+            messages: List of message dicts with 'role' and 'content'.
+        """
+        pass
+
     def transform(self, transcript: str, model_name: str, system_instruction: str, visual_contexts: list = None) -> str:
         """
         Unified transformation method. Higher-level than generate_minutes.

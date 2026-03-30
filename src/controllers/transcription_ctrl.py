@@ -41,6 +41,10 @@ class TranscriptionController:
 
                 result = self.service.transcribe_file_sync(file_path, model_name, language=language, progress_callback=progress_callback)
 
+                # Memory Relay: Unload Whisper before potentially starting LLM or just to free up resources
+                logger.info("TranscriptionController: Task complete. Unloading Whisper for memory efficiency...")
+                self.service.transcriber.unload_model()
+
                 state.set("transcript_text", result)
                 state.set("status_text", "文字起こし完了 (履歴に自動保存しました)")
             except Exception as e:

@@ -149,3 +149,20 @@ class GeminiLLMClient(BaseLLMClient):
             model=model_name, contents=contents, config=types.GenerateContentConfig(system_instruction=system_instruction, temperature=0.7)
         )
         return response.text
+
+    def chat(self, model_name: str, messages: list[dict]) -> str:
+        """Sends a list of messages to Gemini."""
+        # Convert roles (UI uses 'user'/'assistant', Gemini uses 'user'/'model')
+        gemini_messages = []
+        for m in messages:
+            role = "model" if m["role"] in ["assistant", "model", "bot"] else "user"
+            gemini_messages.append({"role": role, "parts": [{"text": m["content"]}]})
+
+        try:
+            response = self.client.models.generate_content(
+                model=model_name, contents=gemini_messages, config=types.GenerateContentConfig(temperature=0.7)
+            )
+            return response.text
+        except Exception as e:
+            logger.error(f"Gemini chat failed: {e}")
+            raise RuntimeError(f"Chat failed: {str(e)}") from e

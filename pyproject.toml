@@ -53,6 +53,7 @@ dependencies = [
     "pyautogui",
     "opencv-python",
     "fastembed",
+    "colorlog",
 ]
 
 [project.optional-dependencies]

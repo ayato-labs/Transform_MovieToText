@@ -5,6 +5,7 @@ import flet as ft
 from src.controllers.transcription_ctrl import TranscriptionController
 from src.core.config_manager import ConfigManager
 from src.core.constants import DEFAULT_PROVIDERS, WHISPER_MODELS
+from src.core.history_mgr import history_mgr
 from src.core.intent_router import IntentRouter
 from src.core.state import state
 from src.ui.ui_utils import sync_llm_models
@@ -58,6 +59,28 @@ class LiveTranscriptionView(ft.Column):
         )
 
         self.status_text = ft.Text("機材準備完了...", color=ft.Colors.GREEN_400)
+
+        # --- Project Selection ---
+        existing_projects = history_mgr.get_projects()
+        project_options = [
+            ft.dropdown.Option("その他", "その他 (デフォルト)"),
+            ft.dropdown.Option("__new__", "＋新規プロジェクト作成"),
+        ]
+        project_options.extend([ft.dropdown.Option(p) for p in existing_projects if p != "その他"])
+
+        self.dd_project = ft.Dropdown(
+            label="プロジェクト選択",
+            width=200,
+            options=project_options,
+            value="その他",
+            on_change=self._on_project_change,
+        )
+        self.tf_new_project = ft.TextField(
+            label="新規プロジェクト名",
+            width=200,
+            hint_text="プロジェクト名を入力...",
+            visible=False,
+        )
 
         # Action Buttons
         self.btn_live = ft.ElevatedButton("録音開始", icon=ft.Icons.MIC, color=ft.Colors.RED_400, on_click=self._on_toggle_recording)
@@ -125,8 +148,21 @@ class LiveTranscriptionView(ft.Column):
                 spacing=10,
             ),
             ft.Row(
-                [self.dd_source, self.sw_visual, ft.VerticalDivider(width=10, color=ft.Colors.TRANSPARENT), self.btn_live, self.btn_stop],
+                [
+                    self.dd_source,
+                    self.sw_visual,
+                    ft.VerticalDivider(width=10, color=ft.Colors.TRANSPARENT),
+                    self.dd_project,
+                    self.tf_new_project,
+                ],
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=15,
+            ),
+            ft.Row(
+                [
+                    self.btn_live,
+                    self.btn_stop,
+                ],
                 spacing=15,
             ),
             ft.Container(height=5),
@@ -143,10 +179,7 @@ class LiveTranscriptionView(ft.Column):
         ]
 
     def _create_whisper_option(self, model_name: str):
-        req = {"tiny": 1, "base": 1, "small": 2, "medium": 5, "large-v2": 10, "large-v3": 10}.get(model_name, 5)
-        can_gpu = self.hw_info.get("vram", 0.0) >= req
-        suffix = "(GPU)" if can_gpu else "(CPU)"
-        return ft.dropdown.Option(key=model_name, text=f"{model_name} {suffix}")
+        return ft.dropdown.Option(key=model_name, text=model_name)
 
     # --- Config Sync ---
     def _on_whisper_change(self, e):
@@ -166,6 +199,12 @@ class LiveTranscriptionView(ft.Column):
     def _on_source_change(self, e):
         self.config_mgr.set_audio_source(self.dd_source.value)
 
+    def _on_project_change(self, e):
+        # Show/Hide new project text field based on selection
+        is_new = self.dd_project.value == "__new__"
+        self.tf_new_project.visible = is_new
+        self.update()
+
     # --- Action Handlers ---
     def _on_toggle_recording(self, _):
         is_recording = state.get("is_recording", False)
@@ -177,16 +216,29 @@ class LiveTranscriptionView(ft.Column):
             self.dd_source.disabled = True
             self.dd_provider.disabled = True
             self.dd_whisper.disabled = True
+            self.dd_project.disabled = True
+            self.tf_new_project.disabled = True
             self.status_text.value = "🎙 録音開始中..."
             self.tabs.selected_index = 0
             self.update()
+
+            # Resolve project name
+            if self.dd_project.value == "__new__":
+                project_name = self.tf_new_project.value.strip() or "新規プロジェクト"
+            else:
+                project_name = self.dd_project.value or "その他"
 
             def on_chunk(text):
                 self.raw_transcript_text.value += text + " "
                 self.update()
 
             try:
-                self.service.start_live_recording(model_name=self.dd_whisper.value, source=self.dd_source.value, on_text_added=on_chunk)
+                self.service.start_live_recording(
+                    model_name=self.dd_whisper.value,
+                    source=self.dd_source.value,
+                    project_name=project_name,
+                    on_text_added=on_chunk,
+                )
                 state.set("is_recording", True)
                 self.status_text.value = "🎙 リアルタイム録音・解析中..."
                 self.update()
@@ -226,6 +278,8 @@ class LiveTranscriptionView(ft.Column):
         self.dd_source.disabled = False
         self.dd_provider.disabled = False
         self.dd_whisper.disabled = False
+        self.dd_project.disabled = False
+        self.tf_new_project.disabled = False
 
     def init_view(self):
         pass

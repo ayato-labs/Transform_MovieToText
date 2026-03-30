@@ -34,12 +34,18 @@ class HistoryView(ft.Column):
         )
 
         self.project_dropdown = ft.Dropdown(label="プロジェクトで絞り込み", width=250, on_change=lambda _: self._on_project_filter_change())
+        self.clear_filter_btn = ft.IconButton(
+            icon=ft.Icons.FILTER_LIST_OFF,
+            tooltip="絞り込みを解除",
+            on_click=lambda _: self._clear_filters(),
+            visible=False,  # Initially hidden
+        )
 
         self.controls = [
             ft.Text("会議履歴", size=24, weight="bold"),
             ft.Text("過去の録音と議事録を確認・書き出せます。"),
             ft.Row([self.search_field, ft.IconButton(ft.Icons.REFRESH, on_click=lambda _: self._refresh_history())]),
-            ft.Row([self.project_dropdown]),
+            ft.Row([self.project_dropdown, self.clear_filter_btn]),
             ft.Divider(),
             self.history_list,
         ]
@@ -50,22 +56,34 @@ class HistoryView(ft.Column):
 
     def _update_projects_list(self):
         projects = self.controller.get_projects()
-        self.project_dropdown.options = [ft.dropdown.Option(key="", text="全プロジェクト")]
-        for p in projects:
-            self.project_dropdown.options.append(ft.dropdown.Option(key=p, text=p))
+        current_val = self.project_dropdown.value
+
+        # Don't add 'All Projects' anymore. We use a clear button instead.
+        self.project_dropdown.options = [ft.dropdown.Option(p) for p in projects]
+
+        # Keep selection if it still exists
+        if current_val in projects:
+            self.project_dropdown.value = current_val
+        else:
+            self.project_dropdown.value = None
+
         if self._page:
             self.update()
 
-    def _refresh_history(self, search_query=None):
+    def _refresh_history(self):
         self.history_list.controls.clear()
 
-        query = search_query or self.search_field.value
+        # Get both filters
+        search_query = self.search_field.value.strip() if self.search_field.value else None
+        project_filter = self.project_dropdown.value
 
-        if query:
-            logger.info(f"Filtering history with query: {query}")
-            meetings = self.controller.search_meetings(query)
-        else:
-            meetings = self.controller.get_meetings()
+        # Toggle clear filter button visibility
+        self.clear_filter_btn.visible = bool(project_filter)
+
+        logger.info(f"Refreshing history with project='{project_filter}' and query='{search_query}'")
+
+        # Use single gateway for filtered data
+        meetings = self.controller.get_filtered_meetings(project_name=project_filter, search_query=search_query)
 
         if not meetings:
             self.history_list.controls.append(ft.Text("履歴がありません。", italic=True, color="grey500"))
@@ -75,14 +93,15 @@ class HistoryView(ft.Column):
 
         if self._page:
             self.update()
+            self._page.update()
 
     def _on_project_filter_change(self):
-        selected = self.project_dropdown.value
-        if selected:
-            # Full-text search can also handle exact project names
-            self._refresh_history(search_query=selected)
-        else:
-            self._refresh_history()
+        self._refresh_history()
+
+    def _clear_filters(self):
+        self.project_dropdown.value = None
+        self.clear_filter_btn.visible = False
+        self._refresh_history()
 
     def _build_meeting_card(self, meeting):
         meeting_id = meeting["id"]
@@ -183,6 +202,24 @@ class HistoryView(ft.Column):
             border=ft.InputBorder.NONE,
         )
 
+        # Metadata Edit Controls
+        tf_title = ft.TextField(label="タイトル", value=m["title"], expand=True)
+        tf_project = ft.TextField(label="プロジェクト", value=m["project_name"] or "その他", width=200)
+
+        def on_save_metadata(e):
+            new_title = tf_title.value.strip()
+            new_project = tf_project.value.strip()
+            if self.controller.update_meeting(m["id"], title=new_title, project_name=new_project):
+                self._page.snack_bar = ft.SnackBar(ft.Text("保存しました"))
+                self._page.snack_bar.open = True
+                self._update_projects_list()
+                self._refresh_history()
+                self._page.update()
+            else:
+                self._page.snack_bar = ft.SnackBar(ft.Text("保存に失敗しました"), bgcolor=ft.Colors.RED_400)
+                self._page.snack_bar.open = True
+                self._page.update()
+
         # Visual Context Row
         visual_row = ft.Row(scroll="always", spacing=10)
         for ctx in v_contexts:
@@ -278,11 +315,13 @@ class HistoryView(ft.Column):
         dlg = ft.AlertDialog(
             title=ft.Row(
                 [
-                    ft.Icon(ft.Icons.DESCRIPTION),
-                    ft.Text(f"{m['title']}", expand=True, overflow=ft.TextOverflow.ELLIPSIS),
+                    ft.Icon(ft.Icons.EDIT_DOCUMENT),
+                    tf_title,
+                    ft.IconButton(ft.Icons.SAVE, on_click=on_save_metadata, tooltip="メタデータを保存", icon_color="blue400"),
                     ft.IconButton(ft.Icons.CLOSE, on_click=close_details),
                 ],
                 alignment="spaceBetween",
+                spacing=10,
             ),
             content=ft.Container(
                 width=800,
@@ -353,7 +392,8 @@ class HistoryView(ft.Column):
                         ft.Divider(),
                         ft.Row(
                             [
-                                ft.Text(f"📍 プロジェクト: {m['project_name'] or '未分類'} | 📅 日時: {m['timestamp']}", size=12, color="grey400"),
+                                ft.Row([ft.Icon(ft.Icons.FOLDER_OPEN, size=16), tf_project], vertical_alignment="center", spacing=5),
+                                ft.Text(f"📅 日時: {m['timestamp']}", size=12, color="grey400"),
                                 ft.Row(
                                     [
                                         ft.IconButton(

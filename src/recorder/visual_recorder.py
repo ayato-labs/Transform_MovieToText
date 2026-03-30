@@ -6,15 +6,16 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+logger = logging.getLogger(__name__)
+
 try:
     import pyautogui
-except Exception:
+except Exception as e:
     # Handle headless environments (Linux CI without DISPLAY)
+    logger.warning(f"pyautogui could not be imported. Screen capture disabled: {e}")
     pyautogui = None
 
 from src.core.history_mgr import history_mgr
-
-logger = logging.getLogger(__name__)
 
 
 class VisualRecorder:

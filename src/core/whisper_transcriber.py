@@ -1,9 +1,9 @@
 import gc
 import logging
 import os
+import time
 
 import torch
-from faster_whisper import WhisperModel
 
 logger = logging.getLogger(__name__)
 
@@ -33,59 +33,76 @@ class WhisperTranscriber:
         """
         Loads the Whisper model with explicit memory management and quantization fallbacks.
         """
+        from faster_whisper import WhisperModel
+
         if self.current_model_name == model_name and self.model is not None:
+            logger.debug(f"WhisperTranscriber: Model {model_name} already loaded.")
             return
 
-        logger.info(f"WhisperTranscriber: Resource-safe loading model '{model_name}' (GPU: {force_gpu})...")
+        logger.info(f"WhisperTranscriber: Loading model '{model_name}' (requested GPU: {force_gpu})...")
+        start_time = time.time()
 
-        # 1. Proactive Memory Cleanup
-        self._clear_memory()
+        # Proactive Memory Cleanup
+        self.unload_model()
 
-        device = "cuda" if force_gpu and torch.cuda.is_available() else "cpu"
-        # DEFAULT: Use int8_float16 for best performance/VRAM ratio on GPU
-        compute_type = "int8_float16" if device == "cuda" else "int8"
-
-        # 2. VRAM Safety Pre-check
-        if device == "cuda":
-            hw = self.get_hardware_info()
-            required = self.MODEL_REQUIREMENTS.get(model_name, 5.0)
-            if hw["vram"] < (required - 0.5):  # Allow a small margin
-                logger.warning(f"WhisperTranscriber: VRAM ({hw['vram']}GB) is likely insufficient for '{model_name}' ({required}GB).")
-                # We still try, but with a warning. If it's truly impossible, catch below.
+        # Decide device and compute_type with Hardware Priority
+        # Tier 1: GPU Native (Standardized to int8_float16 for best efficiency/accuracy ratio)
+        if force_gpu and torch.cuda.is_available():
+            device = "cuda"
+            compute_type = "int8_float16"
+            logger.info(f"WhisperTranscriber: Loading Priority 1 (GPU {compute_type}).")
+        else:
+            # Fallback or CPU-forced
+            device = "cpu"
+            compute_type = "int8"
+            if force_gpu:
+                logger.warning("WhisperTranscriber: GPU requested but unavailable. Falling back to CPU.")
+            else:
+                logger.info(f"WhisperTranscriber: Loading Priority 3 (CPU {compute_type}).")
 
         try:
-            # 3. Initial Load Attempt (Preferred: int8_float16)
-            logger.info(f"WhisperTranscriber: Loading '{model_name}' on {device} with {compute_type}...")
+            # Load Attempt
+            logger.info(f"WhisperTranscriber: Attempting load on {device} with {compute_type}...")
             self.model = WhisperModel(model_name, device=device, compute_type=compute_type, download_root=self.cache_dir)
             self.current_model_name = model_name
-            logger.info(f"WhisperTranscriber: Successfully loaded '{model_name}'")
+            duration = time.time() - start_time
+            logger.info(f"WhisperTranscriber: SUCCESSFULLY LOADED using {device} ({compute_type}) in {duration:.2f}s")
         except Exception as e:
-            # 4. Crisis Fallback: Strict int8 (Smallest footprint)
-            err_str = str(e).lower()
-            if "out of memory" in err_str or "mkl_malloc" in err_str or "cuda error" in err_str:
-                logger.warning("WhisperTranscriber: OOM/Allocation error. Retrying with ultra-light int8...")
-                self._clear_memory()
+            # Detailed Error for GPU Failure
+            if device == "cuda":
+                logger.error(f"WhisperTranscriber: GPU Priority 1 failed: {e}")
+                logger.info("WhisperTranscriber: Attempting Priority 2 (GPU with limited offload/int8)...")
                 try:
+                    # Tier 2: Try even lighter GPU (int8) if int8_float16 failed
+                    self._clear_memory()
                     self.model = WhisperModel(model_name, device=device, compute_type="int8", download_root=self.cache_dir)
                     self.current_model_name = model_name
-                    logger.info(f"WhisperTranscriber: Loaded '{model_name}' using strict int8.")
+                    logger.info(f"WhisperTranscriber: SUCCESS on Priority 2 (GPU int8) after {time.time() - start_time:.2f}s")
                     return
                 except Exception as retry_e:
-                    self._clear_memory()
-                    logger.error(f"WhisperTranscriber: All GPU load attempts failed: {retry_e}")
-                    raise RuntimeError(f"VRAM不足: {model_name} をロードできません。モデルを下げるかCPUを使用してください。") from retry_e
+                    logger.error(f"WhisperTranscriber: GPU Priority 1 & 2 failed: {retry_e}")
+                    raise RuntimeError(
+                        f"GPU稼働失敗: {e}. GPUメモリ不足、またはライブラリ不足です。モデルサイズを下げるか、CPUに切り替えてください。"
+                    ) from retry_e
+
+            logger.error(f"WhisperTranscriber: General load failure for '{model_name}': {e}")
+            raise
 
             logger.error(f"WhisperTranscriber: Failed to load model '{model_name}': {e}")
             raise
 
-    def _clear_memory(self):
-        """Forcefully clears Python and CUDA memory."""
+    def unload_model(self):
+        """Forcefully clears Python and CUDA memory, unloading the current model."""
         if hasattr(self, "model") and self.model is not None:
+            logger.info(f"WhisperTranscriber: Unloading model '{self.current_model_name}' to free memory...")
             del self.model
             self.model = None
+            self.current_model_name = None
+
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            logger.info("WhisperTranscriber: Memory and CUDA cache cleared.")
 
     def transcribe(self, audio_path: str, model_name: str, force_gpu: bool = False, language: str | None = None, progress_callback=None) -> str:
         """
