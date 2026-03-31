@@ -293,11 +293,8 @@ class FileTranscriptionView(ft.Column):
             return
         file_path = e.files[0].path
 
-<<<<<<< HEAD
         # project_name is resolved but unused by current ctrl.start_file_transcription signature
         # which only takes (file_path, model_name). Removing to fix F841.
-=======
->>>>>>> fix/cleanup-final
         self.btn_pick.disabled = True
         self.ctrl.start_file_transcription(file_path, self.dd_whisper.value)
 
@@ -316,10 +313,7 @@ class FileTranscriptionView(ft.Column):
         try:
             provider = self.dd_provider.value
             llm_model = self.dd_llm.value
-<<<<<<< HEAD
             # use_visual was unused. Removing to fix F841.
-=======
->>>>>>> fix/cleanup-final
 
             # This part still uses service directly but in a worker
             system_prompt = "文字起こしデータの分析エキスパートとしてレポートを作成してください。"

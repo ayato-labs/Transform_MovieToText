@@ -10,14 +10,9 @@ from src.core.state import state
 from src.core.whisper_transcriber import WhisperTranscriber
 
 LONG_TEXT = (
-<<<<<<< HEAD
     "This is a very long transcription result that definitely exceeds both the fifty "
     "character limit for titles and the one hundred character limit for AI category "
     "extraction. It is long enough to trigger all AI logic paths. "
-=======
-    "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
-    "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. "
->>>>>>> fix/cleanup-final
     "This is added text to ensure it's well over the limit."
 )
 
@@ -33,14 +28,10 @@ def system_setup():
     mock_config.get_visual_capture_enabled.return_value = False
 
     mock_transcriber = Mock(spec=WhisperTranscriber)
-<<<<<<< HEAD
     mock_transcriber.transcribe.return_value = {
         "text": LONG_TEXT,
         "segments": [{"start": 0.0, "end": 1.0, "text": "Something long."}]
     }
-=======
-    mock_transcriber.transcribe.return_value = {"text": LONG_TEXT, "segments": [{"start": 0.0, "end": 1.0, "text": "Something long."}]}
->>>>>>> fix/cleanup-final
 
     # Reset global state for each test
     state.set("is_processing", False)
@@ -49,12 +40,8 @@ def system_setup():
     # In-memory history for system test integration
     history = HistoryManager(db_path=":memory:")
     # Both the controller creates its own service AND it uses history_mgr singleton.
-<<<<<<< HEAD
     with patch("src.controllers.transcription_ctrl.history_mgr", history), \
          patch("src.core.transcription_service._history_mgr", history):
-=======
-    with patch("src.controllers.transcription_ctrl.history_mgr", history), patch("src.core.transcription_service._history_mgr", history):
->>>>>>> fix/cleanup-final
         ctrl = TranscriptionController(mock_config, mock_transcriber)
         yield ctrl, history
 
@@ -78,12 +65,7 @@ def test_system_file_transcription_flow(system_setup, tmp_path):
         # Force history injection
         ctrl.service.history_mgr = history
 
-<<<<<<< HEAD
         ctrl.start_file_transcription(str(test_file), "base-model")
-=======
-        with patch("src.core.transcription_service.LLMFactory.create_client", return_value=mock_llm):
-            ctrl.start_file_transcription(str(test_file), "base-model")
->>>>>>> fix/cleanup-final
         # Wait inside patch scope for async worker with polling
         timeout = 5
         start_wait = time.time()
@@ -114,13 +96,7 @@ def test_system_live_recording_flow(system_setup):
         patch(
             "src.core.live_processor.LiveTranscriptionManager.stop",
             return_value=(
-<<<<<<< HEAD
                 LONG_TEXT,
-=======
-                "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
-                "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI "
-                "logic paths. EXTRA TEXT FOR 100+.",
->>>>>>> fix/cleanup-final
                 [{"text": "Something long"}],
             ),
         ),
@@ -144,12 +120,7 @@ def test_system_live_recording_flow(system_setup):
             # Artificial delay to mimic recording
             time.sleep(0.2)
 
-<<<<<<< HEAD
             # simulate time passed
-=======
-            # We need to simulate that at least 30 seconds passed for saving,
-            # or mock the duration check. TranscriptionService checks time.time() - start_time.
->>>>>>> fix/cleanup-final
             from itertools import count
 
             t_gen = count(int(time.time() + 60))
@@ -172,23 +143,12 @@ def test_system_live_recording_flow(system_setup):
 
             # 3. Verify final state
             assert state.get("is_recording") is False
-<<<<<<< HEAD
             assert state.get("transcript_text") == LONG_TEXT
-=======
-            assert state.get("transcript_text") == (
-                "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
-                "and the one hundred character limit for AI category extraction. It is long enough to trigger 100+ "
-                "and 100+".replace("100+", "all AI logic paths. EXTRA TEXT FOR 100+.")
-            )
->>>>>>> fix/cleanup-final
             assert state.get("category") == "Live"
 
             # 4. Verify DB persistence
             meeting = history.get_meeting(m_id)
             assert meeting is not None
-<<<<<<< HEAD
-            assert meeting["transcript"] == LONG_TEXT
-=======
             assert (
                 meeting["transcript"]
                 == (
@@ -197,4 +157,3 @@ def test_system_live_recording_flow(system_setup):
                     "logic paths. EXTRA TEXT FOR 100+."
                 )
             )
->>>>>>> fix/cleanup-final
