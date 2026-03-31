@@ -12,18 +12,18 @@ def test_tier_mapping_entry():
         assert tier_info["tier"] == "Entry"
         assert tier_info["whisper"] == "base"
 
+
 def test_tier_mapping_small_gpu():
     """Tests that moderate hardware results in a 'SmallGPU' tier if VRAM is present."""
     # 8GB <= RAM < 16GB, VRAM >= 4GB
-    with patch("psutil.virtual_memory") as mock_mem, \
-         patch("src.core.resource_advisor.ResourceAdvisor.get_system_specs") as mock_specs:
-        
+    with patch("psutil.virtual_memory") as mock_mem, patch("src.core.resource_advisor.ResourceAdvisor.get_system_specs") as mock_specs:
         mock_mem.return_value.total = 12 * 1024 * 1024 * 1024  # 12GB
         mock_specs.return_value = (12.0, 4.0)
-        
+
         tier_info = ResourceAdvisor.get_best_match()
         assert tier_info["tier"] == "SmallGPU"
         assert tier_info["whisper"] == "small"
+
 
 def test_tier_mapping_monster():
     """Tests that very high-end hardware results in a 'Monster' tier."""
@@ -33,6 +33,7 @@ def test_tier_mapping_monster():
         tier_info = ResourceAdvisor.get_best_match()
         assert tier_info["tier"] == "Monster"
         assert tier_info["whisper"] == "large-v3"
+
 
 def test_ollama_tag_consistency():
     """Tests that the recommended Ollama tags are specific and memory-efficient."""

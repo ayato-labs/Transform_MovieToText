@@ -1,5 +1,6 @@
 import logging
-from typing import Callable
+from collections.abc import Callable
+
 from python_event_bus import EventBus
 
 logger = logging.getLogger(__name__)
@@ -11,10 +12,12 @@ EVENT_TRANSCRIPTION_FINISHED = "transcription_finished"
 EVENT_TRANSCRIPTION_ERROR = "transcription_error"
 EVENT_STATUS_UPDATE = "status_update"
 
+
 class AppEventBus:
     """
     Wrapper for python-event-bus to provide a singleton and type-safe event handling.
     """
+
     def __init__(self):
         self.bus = EventBus()
         logger.info("AppEventBus: Initialized.")
@@ -31,6 +34,7 @@ class AppEventBus:
     @staticmethod
     def add_handler(event_name: str, handler: Callable):
         EventBus.subscribe(event_name, handler)
+
 
 # Singleton instance
 event_bus = AppEventBus()

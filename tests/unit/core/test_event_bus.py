@@ -1,12 +1,14 @@
-import pytest
-from src.core.event_bus import AppEventBus, event_bus
+from src.core.event_bus import AppEventBus
+
 
 def test_event_bus_singleton():
     """Verify that event_bus is a singleton."""
     from src.core.event_bus import event_bus as eb1
     from src.core.event_bus import event_bus as eb2
+
     assert eb1 is eb2
     assert isinstance(eb1, AppEventBus)
+
 
 def test_event_bus_publish_subscribe():
     """Verify that events can be published and subscribed to."""
@@ -18,9 +20,10 @@ def test_event_bus_publish_subscribe():
 
     bus.add_handler("test_event", handler)
     bus.publish("test_event", "hello")
-    
+
     assert "hello" in received_data
     assert len(received_data) == 1
+
 
 def test_event_bus_decorator():
     """Verify the decorator subscription works."""
@@ -32,9 +35,10 @@ def test_event_bus_decorator():
         received_data.append(data)
 
     bus.publish("decorated_event", "world")
-    
+
     assert "world" in received_data
     assert len(received_data) == 1
+
 
 def test_event_bus_multiple_args():
     """Verify multiple arguments are passed correctly."""

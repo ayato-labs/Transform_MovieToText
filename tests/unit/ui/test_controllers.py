@@ -26,7 +26,7 @@ def test_transcription_auto_save_heuristic_discard(mock_deps):
         state.set("current_meeting_id", 999)
 
         # Trigger logic
-        ctrl.stop_live_recording()
+        ctrl.stop_live_transcription()
 
         # Capture the finalize_callback
         args, kwargs = mock_stop.call_args
@@ -47,7 +47,7 @@ def test_transcription_auto_save_heuristic_persist(mock_deps):
         state.set("current_meeting_id", 888)
 
         # Trigger logic
-        ctrl.stop_live_recording()
+        ctrl.stop_live_transcription()
 
         # Capture the finalize_callback
         args, kwargs = mock_stop.call_args

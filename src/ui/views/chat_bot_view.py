@@ -230,20 +230,17 @@ class ChatBotView(ft.Column):
             # 1. Intent Analysis using 1B Model + Robust Parser
             all_projs = self.history_mgr.get_projects()
             all_cats = self.history_mgr.get_categories()
-            
+
             analyzer = QueryAnalyzer(all_projs, all_cats)
             intent = analyzer.analyze(query)
-            
+
             logger.info(f"RAG Intent Extracted: {intent}")
 
             # 2. Metadata-Filtered Search (Multi-filter)
             # Use extracted keywords for FTS5, scoped by projects/categories
             search_text = " ".join(intent["keywords"]) if intent["keywords"] else query
             results = self.history_mgr.get_meetings_filtered(
-                project_names=intent["projects"],
-                categories=intent["categories"],
-                search_query=search_text,
-                limit=5
+                project_names=intent["projects"], categories=intent["categories"], search_query=search_text, limit=5
             )
 
             # 3. Format Context with Metadata

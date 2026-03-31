@@ -1,26 +1,31 @@
 import logging
-from typing import Any, List, Dict, Optional
+
 from src.core.db.connection import DatabaseConnection
 from src.core.db.repositories import MeetingRepository, VisualContextRepository
 
 logger = logging.getLogger(__name__)
 
+
 class HistoryError(Exception):
     """Base exception for History Manager."""
+
     pass
+
 
 class HistoryManager:
     """
     Service layer for meeting history.
     Delegates database operations to repositories.
     """
+
     def __init__(self, db_path: str | None = None):
         if db_path:
             self._conn = DatabaseConnection(db_path)
         else:
             from src.core.db.connection import db_conn
+
             self._conn = db_conn
-            
+
         self.meetings = MeetingRepository(self._conn)
         self.visuals = VisualContextRepository(self._conn)
         try:
@@ -42,9 +47,16 @@ class HistoryManager:
         self.visuals.init_db()
         logger.debug("HistoryManager: Database layers initialized.")
 
-    def add_meeting(self, title: str, transcript: str, audio_path: str, 
-                    model_info: str = "", project_name: str = "", category: str = "",
-                    transcript_segments: Optional[List[Dict]] = None) -> int:
+    def add_meeting(
+        self,
+        title: str,
+        transcript: str,
+        audio_path: str,
+        model_info: str = "",
+        project_name: str = "",
+        category: str = "",
+        transcript_segments: list[dict] | None = None,
+    ) -> int:
         """Adds a new meeting with optional segment data."""
         try:
             return self.meetings.add(
@@ -54,7 +66,7 @@ class HistoryManager:
                 model_info=model_info,
                 project_name=project_name,
                 category=category,
-                transcript_segments=transcript_segments
+                transcript_segments=transcript_segments,
             )
         except Exception as e:
             logger.error(f"Error adding meeting: {e}")
@@ -93,17 +105,18 @@ class HistoryManager:
             logger.error(f"Error deleting meeting {meeting_id}: {e}")
             raise HistoryError(f"Deletion failed: {e}") from e
 
-    def get_meeting(self, meeting_id: int) -> Optional[Dict]:
+    def get_meeting(self, meeting_id: int) -> dict | None:
         return self.meetings.get(meeting_id)
 
-    def get_visual_context(self, meeting_id: int) -> List[Dict]:
+    def get_visual_context(self, meeting_id: int) -> list[dict]:
         return self.visuals.get_by_meeting(meeting_id)
 
-    def get_all_meetings(self) -> List[Dict]:
+    def get_all_meetings(self) -> list[dict]:
         return self.meetings.list_all()
 
-    def get_meetings_filtered(self, project_names: List[str] = None, categories: List[str] = None, 
-                              search_query: str = None, limit: int = 50) -> List[Dict]:
+    def get_meetings_filtered(
+        self, project_names: list[str] = None, categories: list[str] = None, search_query: str = None, limit: int = 50
+    ) -> list[dict]:
         return self.meetings.search_filtered(project_names, categories, search_query, limit)
 
     def reassign_project(self, old_name: str, new_name: str = "その他"):
@@ -117,13 +130,13 @@ class HistoryManager:
             logger.error(f"Failed to reassign project: {e}")
             return False
 
-    def get_projects(self) -> List[str]:
+    def get_projects(self) -> list[str]:
         return self.meetings.get_distinct_projects()
 
-    def get_categories(self) -> List[str]:
+    def get_categories(self) -> list[str]:
         return self.meetings.get_distinct_categories()
 
-    def search_meetings(self, query: str, limit: int = 50) -> List[Dict]:
+    def search_meetings(self, query: str, limit: int = 50) -> list[dict]:
         """Backward compatibility alias for search_filtered."""
         return self.meetings.search_filtered(search_query=query, limit=limit)
 
@@ -131,25 +144,26 @@ class HistoryManager:
         """Backward compatibility for project deletion (reassigns to default)."""
         return self.reassign_project(project_name, "その他")
 
-    def search_hybrid(self, query: str, limit: int = 5) -> List[Dict]:
+    def search_hybrid(self, query: str, limit: int = 5) -> list[dict]:
         """
         Maintains the existing hybrid search logic, delegating basic search to repository.
         """
         # For now, reuse repository search as base
         results = self.meetings.search_filtered(search_query=query, limit=limit)
-        
+
         for hit in results:
             hit["_search_type"] = "keyword"
             hit["_rank_score"] = 0.9
-            
+
             # Simple boosting
             if query.lower() in (hit["title"] or "").lower():
                 hit["_rank_score"] += 0.5
             if query.lower() in (hit["minutes"] or "").lower():
                 hit["_rank_score"] += 0.3
-                
+
         results.sort(key=lambda x: x.get("_rank_score", 0), reverse=True)
         return results[:limit]
+
 
 # Singleton instance
 history_mgr = HistoryManager()

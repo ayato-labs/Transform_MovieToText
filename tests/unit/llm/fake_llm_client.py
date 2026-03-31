@@ -1,5 +1,6 @@
 from src.llm.base_client import BaseLLMClient
 
+
 class FakeLLMClient(BaseLLMClient):
     """
     A manual fake LLM client for unit tests.
@@ -14,34 +15,19 @@ class FakeLLMClient(BaseLLMClient):
         return self.available_models
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
-        self.recorded_calls.append({
-            "method": "generate_minutes",
-            "transcript": transcript,
-            "model_name": model_name,
-            "visual_contexts": visual_contexts
-        })
+        self.recorded_calls.append(
+            {"method": "generate_minutes", "transcript": transcript, "model_name": model_name, "visual_contexts": visual_contexts}
+        )
         return "偽の議事録: 決定事項 - テストを成功させる。"
 
     def extract_category(self, transcript: str, model_name: str) -> str:
-        self.recorded_calls.append({
-            "method": "extract_category",
-            "transcript": transcript,
-            "model_name": model_name
-        })
+        self.recorded_calls.append({"method": "extract_category", "transcript": transcript, "model_name": model_name})
         return "テストカテゴリー"
 
     def generate_title(self, transcript: str, model_name: str) -> str:
-        self.recorded_calls.append({
-            "method": "generate_title",
-            "transcript": transcript,
-            "model_name": model_name
-        })
+        self.recorded_calls.append({"method": "generate_title", "transcript": transcript, "model_name": model_name})
         return "テストタイトル"
 
     def chat(self, model_name: str, messages: list[dict]) -> str:
-        self.recorded_calls.append({
-            "method": "chat",
-            "model_name": model_name,
-            "messages": messages
-        })
+        self.recorded_calls.append({"method": "chat", "model_name": model_name, "messages": messages})
         return "偽の回答"

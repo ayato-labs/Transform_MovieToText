@@ -2,6 +2,7 @@ import gc
 import logging
 import os
 import time
+
 import torch
 from faster_whisper import WhisperModel
 
@@ -104,7 +105,7 @@ class WhisperTranscriber:
                     return
                 except Exception as retry_e:
                     logger.error(f"WhisperTranscriber: CPU Load & Fallback failed: {retry_e}")
-                    raise 
+                    raise
 
             logger.error(f"WhisperTranscriber: General load failure for '{model_name}': {e}")
             raise
@@ -135,25 +136,18 @@ class WhisperTranscriber:
 
         full_text_list = []
         structured_segments = []
-        
+
         # Note: segments is a generator
         for segment in segments:
-            seg_data = {
-                "start": round(segment.start, 2),
-                "end": round(segment.end, 2),
-                "text": segment.text.strip()
-            }
+            seg_data = {"start": round(segment.start, 2), "end": round(segment.end, 2), "text": segment.text.strip()}
             structured_segments.append(seg_data)
             full_text_list.append(segment.text)
-            
+
             if progress_callback:
                 # Approximate progress
                 progress_callback(segment.end / info.duration if info.duration > 0 else 0)
 
-        return {
-            "text": "".join(full_text_list).strip(),
-            "segments": structured_segments
-        }
+        return {"text": "".join(full_text_list).strip(), "segments": structured_segments}
 
     def transcribe_numpy(self, audio_data, model_name: str | None = None, force_gpu: bool = False) -> dict:
         """
@@ -161,28 +155,21 @@ class WhisperTranscriber:
         """
         if model_name and (self.model is None or self.current_model_name != model_name):
             self.load_model(model_name, force_gpu=force_gpu)
-            
+
         if self.model is None:
             # Default to loading base if nothing loaded
             self.load_model("base", force_gpu=force_gpu)
 
         segments, _ = self.model.transcribe(audio_data, beam_size=5)
-        
+
         full_text_list = []
         structured_segments = []
         for segment in segments:
-            seg_data = {
-                "start": round(segment.start, 2),
-                "end": round(segment.end, 2),
-                "text": segment.text.strip()
-            }
+            seg_data = {"start": round(segment.start, 2), "end": round(segment.end, 2), "text": segment.text.strip()}
             structured_segments.append(seg_data)
             full_text_list.append(segment.text)
 
-        return {
-            "text": "".join(full_text_list).strip(),
-            "segments": structured_segments
-        }
+        return {"text": "".join(full_text_list).strip(), "segments": structured_segments}
 
     def get_hardware_info(self) -> dict:
         """

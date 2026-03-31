@@ -10,17 +10,15 @@ if TYPE_CHECKING:
     from src.core.live_processor import LiveTranscriptionManager
 
 from src.core.config_manager import ConfigManager
-from src.core.history_mgr import history_mgr
+from src.core.event_bus import (
+    EVENT_STATUS_UPDATE,
+    EVENT_TRANSCRIPTION_FINISHED,
+    EVENT_TRANSCRIPTION_PROGRESS,
+    event_bus,
+)
+from src.core.history_mgr import history_mgr as _history_mgr
 from src.core.whisper_transcriber import WhisperTranscriber
 from src.llm.factory import LLMFactory
-from src.core.event_bus import (
-    event_bus,
-    EVENT_TRANSCRIPTION_PROGRESS,
-    EVENT_TRANSCRIPTION_FINISHED,
-    EVENT_TRANSCRIPTION_ERROR,
-    EVENT_STATUS_UPDATE,
-    EVENT_TRANSCRIPTION_SEGMENT
-)
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +29,10 @@ class TranscriptionService:
     Decoupled from UI state.
     """
 
-    def __init__(self, config_mgr: ConfigManager, transcriber: WhisperTranscriber):
+    def __init__(self, config_mgr: ConfigManager, transcriber: WhisperTranscriber, history_mgr=None):
         self.config_mgr = config_mgr
         self.transcriber = transcriber
+        self.history_mgr = history_mgr or _history_mgr
         self.live_mgr: LiveTranscriptionManager | None = None
         self._live_start_time: float | None = None
         self._current_meeting_id: int | None = None
@@ -73,7 +72,7 @@ class TranscriptionService:
         )
         full_text = result_data["text"]
         segments = result_data["segments"]
-        
+
         logger.info("transcribe_file_sync: Transcription core finished.")
 
         visual_contexts = []
@@ -97,6 +96,7 @@ class TranscriptionService:
 
         if os.path.abspath(file_path) != os.path.abspath(final_file_path):
             import shutil
+
             logger.info(f"transcribe_file_sync: Copying {file_path} to {final_file_path}")
             shutil.copy2(file_path, final_file_path)
 
@@ -110,19 +110,19 @@ class TranscriptionService:
 
         final_title = f"{ai_title} ({base_name})" if ai_title else f"ファイル文字起こし: {base_name}"
 
-        meeting_id = history_mgr.add_meeting(
-            title=final_title, 
-            transcript=full_text, 
+        meeting_id = self.history_mgr.add_meeting(
+            title=final_title,
+            transcript=full_text,
             transcript_segments=segments,
-            audio_path=final_file_path, 
-            model_info=model_name, 
-            project_name=safe_project, 
-            category=category
+            audio_path=final_file_path,
+            model_info=model_name,
+            project_name=safe_project,
+            category=category,
         )
 
         # Save visual contexts
         for ctx in visual_contexts:
-            history_mgr.add_visual_context(meeting_id=meeting_id, timestamp_sec=ctx["timestamp_sec"], image_path=ctx["image_path"])
+            self.history_mgr.add_visual_context(meeting_id=meeting_id, timestamp_sec=ctx["timestamp_sec"], image_path=ctx["image_path"])
 
         event_bus.publish(EVENT_TRANSCRIPTION_FINISHED, {"meeting_id": meeting_id, "text": full_text})
         return {"transcript": full_text, "segments": segments, "visual_contexts": visual_contexts, "meeting_id": meeting_id}
@@ -139,6 +139,7 @@ class TranscriptionService:
         duration = total_frames / fps if fps > 0 else 0
 
         from src.core.constants import TEMP_VIDEO_DIR
+
         temp_dir = Path(TEMP_VIDEO_DIR)
         temp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -198,7 +199,7 @@ class TranscriptionService:
         timestamp_ui = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # 1. Create Placeholder
-        meeting_id = history_mgr.add_meeting(
+        meeting_id = self.history_mgr.add_meeting(
             title=f"会議録音 ({timestamp_ui})", transcript="", audio_path="", model_info=model_name, project_name=safe_project, category=category
         )
         self._current_meeting_id = meeting_id
@@ -289,22 +290,17 @@ class TranscriptionService:
                     timestamp_ui = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     final_title = f"{ai_title} ({timestamp_ui})" if ai_title else f"会議録音 ({timestamp_ui})"
 
-                    history_mgr.update_meeting(
-                        meeting_id, 
-                        title=final_title, 
-                        transcript=full_text, 
-                        transcript_segments=all_segments,
-                        audio_path=mp3_path, 
-                        category=category
+                    self.history_mgr.update_meeting(
+                        meeting_id, title=final_title, transcript=full_text, transcript_segments=all_segments, audio_path=mp3_path, category=category
                     )
                 else:
                     logger.info(f"Recording discarded (duration={duration:.1f}s)")
                     if meeting_id:
-                        history_mgr.delete_meeting(meeting_id)
+                        self.history_mgr.delete_meeting(meeting_id)
 
                 if finalize_callback:
                     finalize_callback(full_text, category)
-                
+
                 # Publish finish event so UI knows processing is done
                 event_bus.publish(EVENT_TRANSCRIPTION_FINISHED, {"text": full_text})
 
@@ -329,13 +325,14 @@ class TranscriptionService:
         llm_model = model or self.config_mgr.get_last_model()
 
         # Fetch visual context if available
-        visual_contexts = history_mgr.get_visual_context(meeting_id)
+        visual_contexts = self.history_mgr.get_visual_context(meeting_id)
+        image_paths = [ctx["image_path"] for ctx in visual_contexts]
 
         # Generate minutes using the client directly
-        minutes = llm_client.generate_minutes(transcript=transcript, model_name=llm_model, visual_contexts=visual_contexts)
+        minutes = llm_client.generate_minutes(transcript=transcript, model_name=llm_model, image_paths=image_paths)
 
         # Update history
-        history_mgr.update_minutes(meeting_id, minutes, model_name=llm_model)
+        self.history_mgr.update_minutes(meeting_id, minutes, model_name=llm_model)
 
         return minutes
 
