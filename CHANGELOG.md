@@ -1,3 +1,17 @@
+# [2.10.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.9.0...v2.10.0) (2026-03-31)
+
+
+### Bug Fixes
+
+* resolve CI linting errors and merge conflicts to stabilize codebase ([589841b](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/589841b20ba9244463931fc178957e7fc921ea28))
+* resolve residual merge conflicts and stabilize main branch ([033023f](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/033023f1940534381e746007bd4ce99448e2dd94))
+* restore CI stability and resolve merge conflicts in main ([c5f865f](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/c5f865fdab54178c1feead2933d382fd88bc8984))
+
+
+### Features
+
+* migrate to Gemma 3 and stabilize transcription pipeline ([3a71ff7](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/3a71ff7e104d7c79055eb8e3e573f99579c67d23))
+
 # [2.9.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.8.0...v2.9.0) (2026-03-31)
 
 
