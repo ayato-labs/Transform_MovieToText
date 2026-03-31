@@ -18,7 +18,11 @@ def test_env(tmp_path):
     mock_config.get_provider_config.return_value = {"api_key": "fake", "base_url": "fake"}
     mock_config.get_last_model.return_value = "fake-m"
 
-    long_text = "This is a very long transcription result that definitely exceeds both the fifty character limit for titles and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. EXTRA CONTENT FOR 200 PLUS CHARACTERS."
+    long_text = (
+        "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
+        "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. "
+        "EXTRA CONTENT FOR 200 PLUS CHARACTERS."
+    )
     mock_transcriber = MagicMock(spec=WhisperTranscriber)
     mock_transcriber.transcribe.return_value = {"text": long_text, "segments": [{"start": 0.0, "end": 1.0, "text": "Something long."}]}
 
@@ -27,14 +31,14 @@ def test_env(tmp_path):
     service = TranscriptionService(mock_config, mock_transcriber, history_mgr=history_mgr)
     # Patch the singleton inside the service/controller to use our test instance
     with patch("src.core.transcription_service._history_mgr", history_mgr), patch("src.controllers.transcription_ctrl.history_mgr", history_mgr):
-        yield service, history_mgr, event_bus
+        yield service, history_mgr, event_bus, long_text
 
 
 def test_full_transcription_workflow_with_events(test_env, tmp_path):
     """
     Test the flow: Service calls -> Event Bus publishes -> Subscribed callback invoked -> DB updated.
     """
-    service, history, bus = test_env
+    service, history, bus, long_text = test_env
 
     fake_file = tmp_path / "video.mp4"
     fake_file.write_text("dummy video")
@@ -71,7 +75,7 @@ def test_full_transcription_workflow_with_events(test_env, tmp_path):
 
 def test_live_recording_integration_abort(test_env):
     """Test that start_live_recording initializes the session correctly even if stopped quickly."""
-    service, history, bus = test_env
+    service, history, bus, long_text = test_env
 
     # Mock visual recorder to avoid threading issues in tests
     with patch("src.recorder.visual_recorder.visual_recorder.start"), patch("src.core.live_processor.LiveTranscriptionManager.start"):

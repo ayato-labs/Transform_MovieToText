@@ -32,10 +32,11 @@ class DatabaseConnection:
         Returns a database connection.
         For in-memory databases, returns the persistent connection to avoid losing the schema.
         """
-        if self._is_memory:
-            conn = self._keep_alive
-        else:
-            conn = sqlite3.connect(self.db_path, timeout=self.timeout, check_same_thread=False)
+        conn = (
+            self._keep_alive
+            if self._is_memory
+            else sqlite3.connect(self.db_path, timeout=self.timeout, check_same_thread=False)
+        )
 
         conn.row_factory = sqlite3.Row
         try:

@@ -23,7 +23,11 @@ def mock_config():
 @pytest.fixture
 def mock_transcriber():
     transcriber = Mock(spec=WhisperTranscriber)
-    long_text = "This is a very long transcription result that definitely exceeds both the fifty character limit for titles and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. This is additional text to ensure we are well over the two hundred and fifty character threshold for robust testing purposes."
+    long_text = (
+        "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
+        "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. "
+        "This is additional text to ensure we are well over the two hundred and fifty character threshold for robust testing purposes."
+    )
     transcriber.transcribe.return_value = {"text": long_text, "segments": [{"start": 0.0, "end": 1.0, "text": "Something very long indeed."}]}
     return transcriber
 

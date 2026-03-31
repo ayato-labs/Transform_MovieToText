@@ -125,7 +125,7 @@ class MeetingRepository:
                 if d.get("transcript_segments"):
                     try:
                         d["transcript_segments"] = json.loads(d["transcript_segments"])
-                    except:
+                    except Exception:
                         d["transcript_segments"] = None
                 return d
             return None
@@ -142,8 +142,6 @@ class MeetingRepository:
             return [dict(row) for row in cursor.fetchall()]
 
     def search_filtered(self, project_names: list[str] = None, categories: list[str] = None, search_query: str = None, limit: int = 50) -> list[dict]:
-        safe_search = sanitize_fts_query(search_query) if search_query else None
-
         with self.db.get_connection() as conn:
             params = []
             where_clauses = []

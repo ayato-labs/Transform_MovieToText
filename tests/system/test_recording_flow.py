@@ -9,8 +9,11 @@ from src.core.history_mgr import HistoryManager
 from src.core.state import state
 from src.core.whisper_transcriber import WhisperTranscriber
 
-
-LONG_TEXT = "This is a very long transcription result that definitely exceeds both the fifty character limit for titles and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. This is added text to ensure it's well over the limit."
+LONG_TEXT = (
+    "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
+    "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. "
+    "This is added text to ensure it's well over the limit."
+)
 
 
 @pytest.fixture
@@ -89,7 +92,9 @@ def test_system_live_recording_flow(system_setup):
         patch(
             "src.core.live_processor.LiveTranscriptionManager.stop",
             return_value=(
-                "This is a very long transcription result that definitely exceeds both the fifty character limit for titles and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. EXTRA TEXT FOR 100+.",
+                "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
+                "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI "
+                "logic paths. EXTRA TEXT FOR 100+.",
                 [{"text": "Something long"}],
             ),
         ),
@@ -137,9 +142,10 @@ def test_system_live_recording_flow(system_setup):
 
             # 3. Verify final state
             assert state.get("is_recording") is False
-            assert (
-                state.get("transcript_text")
-                == "This is a very long transcription result that definitely exceeds both the fifty character limit for titles and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. EXTRA TEXT FOR 100+."
+            assert state.get("transcript_text") == (
+                "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
+                "and the one hundred character limit for AI category extraction. It is long enough to trigger 100+ "
+                "and 100+".replace("100+", "all AI logic paths. EXTRA TEXT FOR 100+.")
             )
             assert state.get("category") == "Live"
 
@@ -148,5 +154,9 @@ def test_system_live_recording_flow(system_setup):
             assert meeting is not None
             assert (
                 meeting["transcript"]
-                == "This is a very long transcription result that definitely exceeds both the fifty character limit for titles and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. EXTRA TEXT FOR 100+."
+                == (
+                    "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
+                    "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI "
+                    "logic paths. EXTRA TEXT FOR 100+."
+                )
             )

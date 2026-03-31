@@ -293,12 +293,6 @@ class FileTranscriptionView(ft.Column):
             return
         file_path = e.files[0].path
 
-        # Resolve project name
-        if self.dd_project.value == "__new__":
-            project_name = self.tf_new_project.value.strip() or "新規プロジェクト"
-        else:
-            project_name = self.dd_project.value or "その他"
-
         self.btn_pick.disabled = True
         self.ctrl.start_file_transcription(file_path, self.dd_whisper.value)
 
@@ -317,7 +311,6 @@ class FileTranscriptionView(ft.Column):
         try:
             provider = self.dd_provider.value
             llm_model = self.dd_llm.value
-            use_visual = self.sw_visual.value
 
             # This part still uses service directly but in a worker
             system_prompt = "文字起こしデータの分析エキスパートとしてレポートを作成してください。"

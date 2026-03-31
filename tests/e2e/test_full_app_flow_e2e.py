@@ -28,7 +28,11 @@ def test_full_file_transcription_flow(mock_managers):
     config_mgr, history_mgr = mock_managers
 
     # 1. Mock dependencies
-    long_text = "This is a very long transcription result that definitely exceeds both the fifty character limit for titles and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. This is additional text to ensure we are well over the two hundred character threshold for testing purposes."
+    long_text = (
+        "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
+        "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI logic paths. "
+        "This is additional text to ensure we are well over the two hundred character threshold for testing purposes."
+    )
     mock_transcriber = MagicMock(spec=WhisperTranscriber)
     mock_transcriber.transcribe.return_value = {"text": long_text, "segments": [{"start": 0.0, "end": 1.0, "text": "Something very long indeed."}]}
 

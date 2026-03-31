@@ -1,3 +1,4 @@
+import contextlib
 import logging
 from typing import Protocol, runtime_checkable
 
@@ -58,11 +59,10 @@ class ModelManager:
 
     def release_all(self):
         """Unlocks everything. Useful for app shutdown or low-power modes."""
-        for name, client in self._clients.items():
-            try:
+
+        for _name, client in self._clients.items():
+            with contextlib.suppress(Exception):
                 client.unload()
-            except Exception:
-                pass
         self._active_client = None
 
 

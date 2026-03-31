@@ -33,7 +33,7 @@ class TranscriptionService:
         self.config_mgr = config_mgr
         self.transcriber = transcriber
         self.history_mgr = history_mgr or _history_mgr
-        self.live_mgr: "LiveTranscriptionManager | None" = None
+        self.live_mgr: LiveTranscriptionManager | None = None
         self._live_start_time: float | None = None
         self._current_meeting_id: int | None = None
         self._current_mp3_path: str | None = None

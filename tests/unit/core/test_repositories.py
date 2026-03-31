@@ -9,8 +9,8 @@ def db_conn():
     """In-memory database connection for testing."""
     # Use ":memory:" for pure unit testing without side effects.
     # Note: sqlite3 is already imported in the repo files.
-    conn_manager = DatabaseConnection(":memory:")
-    return conn_manager
+    return DatabaseConnection(":memory:")
+
 
 
 @pytest.fixture

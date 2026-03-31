@@ -138,7 +138,7 @@ class QueryAnalyzer:
                     keywords.append(p)
 
         return {
-            "projects": sorted(list(found_projects)),
-            "categories": sorted(list(found_categories)),
-            "keywords": sorted(list(set(keywords))[:8]),  # Reduced to 8 for better FTS precision
+            "projects": sorted(found_projects),
+            "categories": sorted(found_categories),
+            "keywords": sorted(list(set(keywords))[:8]), # list(set(...))[:8] is fine to get slice first
         }
