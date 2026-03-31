@@ -37,7 +37,6 @@ class SettingsView(ft.Column):
             on_click=self._show_delete_confirmation,
         )
 
-
         # Hardware display
         self.hw_rows = ft.Column(
             [
@@ -167,7 +166,6 @@ class SettingsView(ft.Column):
 
     def _on_force_gpu_change(self, e):
         self.config_mgr.set_force_gpu(e.control.value)
-
 
     def init_view(self):
         gemini_conf = self.config_mgr.get_provider_config("gemini")

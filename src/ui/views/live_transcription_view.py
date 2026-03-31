@@ -5,11 +5,11 @@ import flet as ft
 from src.controllers.transcription_ctrl import TranscriptionController
 from src.core.config_manager import ConfigManager
 from src.core.constants import DEFAULT_PROVIDERS, WHISPER_MODELS
+from src.core.event_bus import EVENT_STATUS_UPDATE, EVENT_TRANSCRIPTION_ERROR, EVENT_TRANSCRIPTION_FINISHED, EVENT_TRANSCRIPTION_SEGMENT, event_bus
 from src.core.history_mgr import history_mgr
 from src.core.intent_router import IntentRouter
 from src.core.state import state
 from src.ui.ui_utils import sync_llm_models
-from src.core.event_bus import event_bus, EVENT_STATUS_UPDATE, EVENT_TRANSCRIPTION_SEGMENT, EVENT_TRANSCRIPTION_FINISHED, EVENT_TRANSCRIPTION_ERROR
 
 logger = logging.getLogger(__name__)
 
@@ -254,7 +254,7 @@ class LiveTranscriptionView(ft.Column):
         if not is_recording:
             # START
             self._start_ui_state()
-            
+
             # Resolve project name
             if self.dd_project.value == "__new__":
                 project_name = self.tf_new_project.value.strip() or "新規プロジェクト"
@@ -262,11 +262,7 @@ class LiveTranscriptionView(ft.Column):
                 project_name = self.dd_project.value or "その他"
 
             try:
-                self.ctrl.start_live_transcription(
-                    model_name=self.dd_whisper.value,
-                    source=self.dd_source.value,
-                    project_name=project_name
-                )
+                self.ctrl.start_live_transcription(model_name=self.dd_whisper.value, source=self.dd_source.value, project_name=project_name)
             except Exception as ex:
                 logger.error(f"Live transcription failed to start: {ex}", exc_info=True)
                 self.status_text.value = f"⚠️ 起動失敗: {ex}"
@@ -291,7 +287,7 @@ class LiveTranscriptionView(ft.Column):
             # Case 1: Raw Transcription is COMPLETE, start AI Transformation
             full_text = result.get("text", "")
             meeting_id = result.get("meeting_id") or state.get("current_meeting_id")
-            
+
             if full_text and len(full_text.strip()) >= 50:
                 self._run_ai_conversion(meeting_id, full_text)
             else:
@@ -305,17 +301,12 @@ class LiveTranscriptionView(ft.Column):
         """Triggers the background AI transformation process."""
         provider = self.dd_provider.value
         llm_model = self.dd_llm.value
-        
+
         self.status_text.value = "🧠 AI変換の準備中..."
         self._safe_update()
-        
+
         # Controller handles the strategy detection and LLM execution in a thread
-        self.ctrl.transform_transcript(
-            meeting_id=meeting_id,
-            transcript=text,
-            provider=provider,
-            model=llm_model
-        )
+        self.ctrl.transform_transcript(meeting_id=meeting_id, transcript=text, provider=provider, model=llm_model)
 
     def _start_ui_state(self):
         self.btn_live.disabled = True

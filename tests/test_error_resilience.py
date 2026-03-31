@@ -1,5 +1,6 @@
 import sqlite3
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
+
 import pytest
 
 from src.core.history_mgr import HistoryError, HistoryManager
@@ -34,9 +35,8 @@ def test_database_lock_resilience(temp_db):
 
 def test_whisper_invalid_model_handling():
     """Tests if WhisperTranscriber raises clear errors for non-existent models."""
-    from src.core.whisper_transcriber import WhisperTranscriber
     from src.core.transcription_service import TranscriptionService
-    from src.ui.views.transcription_view import TranscriptionView
+    from src.core.whisper_transcriber import WhisperTranscriber
 
     service = MagicMock(spec=TranscriptionService)
     # Ensure nested mock exists

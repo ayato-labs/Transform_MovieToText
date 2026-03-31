@@ -6,9 +6,9 @@ import traceback
 
 import numpy as np
 
+from src.core.event_bus import EVENT_TRANSCRIPTION_SEGMENT, event_bus
 from src.core.recorder_factory import create_recorder
 from src.core.whisper_transcriber import WhisperTranscriber
-from src.core.event_bus import event_bus, EVENT_TRANSCRIPTION_SEGMENT
 
 logger = logging.getLogger(__name__)
 
@@ -125,16 +125,17 @@ class LiveTranscriptionManager:
 
             if text:
                 logger.info(f"Transcribed chunk: {text[:50]}...")
-                
+
                 # Session-relative offset
                 offset = time.time() - self.start_time - duration
-                if offset < 0: offset = 0
-                
+                if offset < 0:
+                    offset = 0
+
                 # Adjust segment timestamps to be session-relative
                 for seg in segments:
                     seg["start"] = round(seg["start"] + offset, 2)
                     seg["end"] = round(seg["end"] + offset, 2)
-                    
+
                     self.all_segments.append(seg)
                     # Publish each segment individually for granular UI updates
                     event_bus.publish(EVENT_TRANSCRIPTION_SEGMENT, seg)

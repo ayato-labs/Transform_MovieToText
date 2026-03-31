@@ -21,7 +21,7 @@ class TestResourceAdvisor(unittest.TestCase):
         mock_specs.return_value = (8.0, 0.0)
         res = ResourceAdvisor.get_best_match()
         assert res["tier"] == "Entry"
-        assert res["ollama"] == "llama3.2:1b-instruct-q4_K_M"
+        assert res["ollama"] == "gemma3:1b"
 
     @patch("src.core.resource_advisor.ResourceAdvisor.get_system_specs")
     def test_small_gpu_tier(self, mock_specs):
@@ -29,7 +29,7 @@ class TestResourceAdvisor(unittest.TestCase):
         mock_specs.return_value = (8.0, 4.0)
         res = ResourceAdvisor.get_best_match()
         assert res["tier"] == "SmallGPU"
-        assert res["ollama"] == "phi3.5:3.8b-mini-instruct-q4_K_M"
+        assert res["ollama"] == "gemma3:4b"
 
     @patch("src.core.resource_advisor.ResourceAdvisor.get_system_specs")
     def test_monster_tier(self, mock_specs):
@@ -37,7 +37,7 @@ class TestResourceAdvisor(unittest.TestCase):
         mock_specs.return_value = (64.0, 24.0)
         res = ResourceAdvisor.get_best_match()
         assert res["tier"] == "Monster"
-        assert res["ollama"] == "llama3.3:70b-instruct-q4_K_M"
+        assert res["ollama"] == "gemma3:27b"
 
 
 if __name__ == "__main__":

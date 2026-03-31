@@ -1,4 +1,5 @@
 import os
+
 from dotenv import load_dotenv
 from google import genai
 
@@ -11,7 +12,7 @@ try:
     # Google GenAI SDK (New version) uses client.models.list()
     # Let's see what's there
     for m in client.models.list():
-        if 'gemma' in m.name.lower():
+        if "gemma" in m.name.lower():
             print(f"- {m.name} (Supported: {m.supported_actions})")
 except Exception as e:
     print(f"Error listing: {e}")

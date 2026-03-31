@@ -186,7 +186,7 @@ class HistoryView(ft.Column):
         # Setup audio player
         if self.audio_player in self._page.overlay:
             self._page.overlay.remove(self.audio_player)
-        
+
         audio_path = m.get("audio_path")
         if audio_path and os.path.exists(audio_path):
             self.audio_player = ft.Audio(src=audio_path, autoplay=False, volume=1.0)
@@ -409,7 +409,9 @@ class HistoryView(ft.Column):
                                 ft.Tab(
                                     text="インタラクティブ再生",
                                     icon=ft.Icons.PLAY_CIRCLE_FILL_ROUNDED,
-                                    content=interactive_content if interactive_content else ft.Text("このデータにはタイムライン情報がありません。", color="grey500"),
+                                    content=interactive_content
+                                    if interactive_content
+                                    else ft.Text("このデータにはタイムライン情報がありません。", color="grey500"),
                                 ),
                             ],
                             expand=True,
@@ -459,7 +461,7 @@ class HistoryView(ft.Column):
         # Player Controls at the top
         play_btn = ft.IconButton(ft.Icons.PLAY_ARROW, on_click=lambda _: self.audio_player.play() if self.audio_player else None)
         pause_btn = ft.IconButton(ft.Icons.PAUSE, on_click=lambda _: self.audio_player.pause() if self.audio_player else None)
-        
+
         transcript_container.controls.append(
             ft.Row([play_btn, pause_btn, ft.Text("テキストをクリックするとその時点から再生します", size=12, italic=True)], alignment="center")
         )
@@ -467,7 +469,7 @@ class HistoryView(ft.Column):
         for seg in segments:
             start_ms = int(seg["start"] * 1000)
             text = seg["text"]
-            
+
             def on_seg_click(e, ms=start_ms):
                 if self.audio_player:
                     self.audio_player.seek(ms)
@@ -483,7 +485,7 @@ class HistoryView(ft.Column):
                     ink=True,
                 )
             )
-            
+
         return ft.Container(content=transcript_container, padding=10, expand=True)
 
     def _generate_minutes(self, meeting):

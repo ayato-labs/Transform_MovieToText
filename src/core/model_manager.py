@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class ModelManager:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(ModelManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._clients = {}
             cls._instance._active_client = None
         return cls._instance

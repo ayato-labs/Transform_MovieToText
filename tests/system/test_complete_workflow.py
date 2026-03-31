@@ -40,8 +40,7 @@ class TestSystemCompleteWorkflow(unittest.TestCase):
 
         # 2. Chat Query (Story: User asks about the secret to pizza)
         # CRITICAL: We patch the global history_mgr in the view module
-        with patch("src.ui.views.chat_bot_view.history_mgr", self.mgr), \
-             patch("src.ui.views.chat_bot_view.threading.Thread"):
+        with patch("src.ui.views.chat_bot_view.history_mgr", self.mgr), patch("src.ui.views.chat_bot_view.threading.Thread"):
             view = ChatBotView(self.page, self.config_mgr)
 
         query = "What is the secret for pizza?"

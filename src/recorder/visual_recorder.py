@@ -17,6 +17,7 @@ except Exception as e:
     logger.warning(f"pyautogui could not be imported. Screen capture disabled: {e}")
     pyautogui = None
 
+
 class VisualRecorder:
     """
     Asynchronous screen capture recorder.

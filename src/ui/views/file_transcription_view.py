@@ -1,5 +1,4 @@
 import logging
-import os
 import threading
 
 import flet as ft
@@ -8,10 +7,10 @@ from src.controllers.local_smart_ctrl import LocalSmartController
 from src.controllers.transcription_ctrl import TranscriptionController
 from src.core.config_manager import ConfigManager
 from src.core.constants import WHISPER_MODELS
+from src.core.event_bus import EVENT_STATUS_UPDATE, EVENT_TRANSCRIPTION_ERROR, EVENT_TRANSCRIPTION_FINISHED, EVENT_TRANSCRIPTION_PROGRESS, event_bus
 from src.core.history_mgr import history_mgr
 from src.core.intent_router import IntentRouter
 from src.core.minutes_service import MinutesService
-from src.core.event_bus import event_bus, EVENT_STATUS_UPDATE, EVENT_TRANSCRIPTION_PROGRESS, EVENT_TRANSCRIPTION_FINISHED, EVENT_TRANSCRIPTION_ERROR
 
 logger = logging.getLogger(__name__)
 
@@ -319,7 +318,7 @@ class FileTranscriptionView(ft.Column):
             provider = self.dd_provider.value
             llm_model = self.dd_llm.value
             use_visual = self.sw_visual.value
-            
+
             # This part still uses service directly but in a worker
             system_prompt = "文字起こしデータの分析エキスパートとしてレポートを作成してください。"
             ai_output = self.service.config_mgr.get_llm_client(provider, None).transform(

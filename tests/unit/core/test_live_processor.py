@@ -44,10 +44,7 @@ class TestLiveProcessor(unittest.TestCase):
         self.manager.recorder.chunk_queue.put(chunk1)
         self.manager.recorder.chunk_queue.put(chunk2)
 
-        self.mock_transcriber.transcribe.side_effect = [
-            {"text": "One", "segments": []},
-            {"text": "Two", "segments": []}
-        ]
+        self.mock_transcriber.transcribe.side_effect = [{"text": "One", "segments": []}, {"text": "Two", "segments": []}]
 
         # Set stop event so loop runs until queue is empty
         self.manager.stop_event.set()
