@@ -84,15 +84,16 @@ class TranscriptionService:
                 logger.warning(f"Failed to extract visual frames: {e}")
 
         # Auto-save to history
+        from pathlib import Path
         from src.core.constants import DEFAULT_RECORDS_DIR
         from src.core.utils import sanitize_filename
 
         safe_project = sanitize_filename(project_name or "その他")
-        records_dir = os.path.join(os.getcwd(), DEFAULT_RECORDS_DIR, safe_project)
-        os.makedirs(records_dir, exist_ok=True)
+        records_dir = Path.cwd().joinpath(*DEFAULT_RECORDS_DIR.split("/")).joinpath(safe_project)
+        records_dir.mkdir(parents=True, exist_ok=True)
 
         base_name = os.path.basename(file_path)
-        final_file_path = os.path.join(records_dir, base_name)
+        final_file_path = str(records_dir / base_name)
 
         if os.path.abspath(file_path) != os.path.abspath(final_file_path):
             import shutil
@@ -100,13 +101,15 @@ class TranscriptionService:
             logger.info(f"transcribe_file_sync: Copying {file_path} to {final_file_path}")
             shutil.copy2(file_path, final_file_path)
 
-        # 1. Generate AI Title
+        # 1. Generate AI Title & Category
         event_bus.publish(EVENT_STATUS_UPDATE, "タイトル自動生成中...")
         ai_title = ""
         try:
             ai_title = self._generate_title_internal(full_text)
+            if not category:
+                category = self._extract_category_internal(full_text)
         except Exception as e:
-            logger.warning(f"AI Title generation failed for file: {e}")
+            logger.warning(f"AI Title/Category generation failed for file: {e}")
 
         final_title = f"{ai_title} ({base_name})" if ai_title else f"ファイル文字起こし: {base_name}"
 

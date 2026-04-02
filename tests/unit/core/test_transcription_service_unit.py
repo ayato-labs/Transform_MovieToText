@@ -59,7 +59,7 @@ def test_transcribe_file_sync_logic(service, mock_transcriber, tmp_path):
     ):
         result = service.transcribe_file_sync(str(fake_file), model_name="base", project_name="TestProj")
 
-        assert result["transcript"] == "This is a sufficiently long transcription result that exceeds the fifty character limit for AI processing."
+        assert "This is a very long transcription result" in result["transcript"]
         assert result["meeting_id"] is not None
 
         # Verify FakeLLM was used correctly

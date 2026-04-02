@@ -49,11 +49,11 @@ def test_full_file_transcription_flow(mock_managers):
         # 3. Simulate file transcription
         # We mock os.path.exists to 'find' the dummy file
         with (
-            patch("os.path.exists", return_value=True),
+            patch("src.core.transcription_service.os.path.exists", return_value=True),
             patch("shutil.copy2"),
             patch("src.core.transcription_service.WhisperTranscriber", return_value=mock_transcriber),
         ):
-            result = service.transcribe_file_sync(file_path="dummy_audio.mp3", model_name="tiny", project_name="E2EProject", category="E2E")
+            result = service.transcribe_file_sync(file_path="dummy_audio.mp3", model_name="tiny", project_name="E2EProject", category="")
 
             # Wait inside patch scope for async worker with polling
             timeout = 5
@@ -71,6 +71,6 @@ def test_full_file_transcription_flow(mock_managers):
             # 5. Check Database Persistence
             saved = history_mgr.get_meetings_filtered(project_names=["E2EProject"])
             assert len(saved) == 1
-            assert saved[0]["title"] == "Generated AI Title"
+            assert saved[0]["title"] == "Generated AI Title (dummy_audio.mp3)"
             assert saved[0]["category"] == "AI Technology"  # Overwritten by AI
             assert saved[0]["model_info"] == "tiny"

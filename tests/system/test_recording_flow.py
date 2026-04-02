@@ -145,8 +145,4 @@ def test_system_live_recording_flow(system_setup):
             # 4. Verify DB persistence
             meeting = history.get_meeting(m_id)
             assert meeting is not None
-            assert meeting["transcript"] == (
-                "This is a very long transcription result that definitely exceeds both the fifty character limit for titles "
-                "and the one hundred character limit for AI category extraction. It is long enough to trigger all AI "
-                "logic paths. EXTRA TEXT FOR 100+."
-            )
+            assert meeting["transcript"] == LONG_TEXT

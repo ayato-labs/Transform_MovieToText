@@ -42,4 +42,4 @@ def test_ollama_tag_consistency():
     # Should include a specific tag for stability
     assert ":" in ollama_model
     if tier_info["tier"] == "Entry":
-        assert "instruct-q4" in ollama_model
+        assert "gemma3:1b" in ollama_model

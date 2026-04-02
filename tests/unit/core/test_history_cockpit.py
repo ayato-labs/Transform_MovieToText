@@ -76,6 +76,7 @@ def test_generate_minutes_for_meeting_logic(transcription_service, temp_db, monk
     """Integration test: Service -> LLM Client -> History Updates."""
     # Setup global history_mgr used in Service to use our temp_db
     monkeypatch.setattr("src.core.transcription_service._history_mgr", temp_db)
+    transcription_service.history_mgr = temp_db
 
     meeting_id = temp_db.add_meeting(
         title="Minutes Test", transcript="Long enough transcript to pass the 50 char limit check..................", audio_path="..."
