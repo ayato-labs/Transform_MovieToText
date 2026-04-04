@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.10.0...v2.11.0) (2026-04-04)
+
+
+### Features
+
+* setup android build via github actions ([3c3e5cb](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/3c3e5cb3968e230c73b525e48ab40184310d9bc6))
+
 # [2.10.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.9.0...v2.10.0) (2026-03-31)
 
 
