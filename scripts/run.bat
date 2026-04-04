@@ -62,8 +62,11 @@ echo [%date% %time%] Setup SUCCESS >> launcher.log
 echo [INFO] Launching application...
 echo [%date% %time%] Launching python main.py... >> launcher.log
 
+:: 修正: プロジェクトルートに移動
+cd /d "%~dp0.."
+
 :: RUN APP (The app will handle app.log on its own)
-"%UV_CMD%" run python ..\main.py
+"%UV_CMD%" run python main.py
 
 if %errorlevel% neq 0 (
     echo.
