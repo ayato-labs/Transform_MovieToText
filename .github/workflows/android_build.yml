@@ -20,6 +20,11 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -30,14 +35,34 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgconf-2-4
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Install Flet CLI
         run: |
           uv pip install --system flet
 
+      - name: Verify Flutter environment
+        run: |
+          flet --version
+          flutter doctor -v
+
       - name: Build APK (Flet)
         run: |
-          # --yes を付与して SDK インストールの確認をスキップ
-          flet build apk --yes --verbose
+          flet build apk --yes --verbose 2>&1 | tee build.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

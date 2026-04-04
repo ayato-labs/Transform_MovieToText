@@ -2681,8 +2681,8 @@ pc = [
 requires-dist = [
     { name = "colorlog" },
     { name = "faster-whisper", marker = "extra == 'pc'" },
-    { name = "flet", extras = ["all"], specifier = ">=0.21.0,<0.80.0" },
-    { name = "flet-desktop", specifier = ">=0.21.0,<0.80.0" },
+    { name = "flet", extras = ["all"], specifier = ">=0.21.0" },
+    { name = "flet-desktop", specifier = ">=0.21.0" },
     { name = "google-genai" },
     { name = "ollama", marker = "extra == 'pc'" },
     { name = "openai", marker = "extra == 'pc'" },
