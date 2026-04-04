@@ -1,3 +1,10 @@
+## [2.11.5](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.4...v2.11.5) (2026-04-04)
+
+
+### Bug Fixes
+
+* **assets:** replace invalid icon.png with a valid high-quality PNG to fix Android build ([d396d28](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/d396d2846a3e1c7069355a6873fe7f978aacd22a))
+
 ## [2.11.4](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.3...v2.11.4) (2026-04-04)
 
 
