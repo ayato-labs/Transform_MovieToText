@@ -1,3 +1,10 @@
+## [2.11.7](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.6...v2.11.7) (2026-04-04)
+
+
+### Bug Fixes
+
+* **ui:** remove direct assignment to self.page in ChatBotView to avoid AttributeError ([9d78c63](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/9d78c632136a3978eaa42786b16d27c42f91b9f2))
+
 ## [2.11.6](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.5...v2.11.6) (2026-04-04)
 
 
