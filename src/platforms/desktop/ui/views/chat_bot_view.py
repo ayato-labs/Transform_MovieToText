@@ -7,7 +7,7 @@ from src.core.config_manager import ConfigManager
 from src.core.history_mgr import history_mgr
 from src.core.minutes_service import MinutesService
 from src.core.query_analyzer import QueryAnalyzer
-from src.pc.controllers.local_smart_ctrl import LocalSmartController
+from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 
 logger = logging.getLogger(__name__)
 

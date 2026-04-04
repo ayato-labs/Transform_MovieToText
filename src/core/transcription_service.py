@@ -236,7 +236,7 @@ class TranscriptionService:
         # Visual Recorder
         if self.config_mgr.get_visual_capture_enabled():
             logger.info("start_live_recording: Starting VisualRecorder.")
-            from src.pc.recorder.visual_recorder import visual_recorder
+            from src.platforms.desktop.recorder.visual_recorder import visual_recorder
 
             visual_recorder.start(meeting_id)
 
@@ -261,7 +261,7 @@ class TranscriptionService:
             return
 
         logger.info("stop_live_recording: Terminating recorders and starting finalization...")
-        from src.pc.recorder.visual_recorder import visual_recorder
+        from src.platforms.desktop.recorder.visual_recorder import visual_recorder
 
         visual_recorder.stop()
 

@@ -49,7 +49,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pc = [
+desktop = [
     "flet-desktop>=0.21.0",
     "faster-whisper",
     "torch",

@@ -2379,25 +2379,22 @@ wheels = [
 
 [[package]]
 name = "transform-movie-to-text"
-version = "2.11.4"
+version = "2.11.8"
 source = { editable = "." }
 dependencies = [
     { name = "colorlog" },
     { name = "flet" },
     { name = "google-genai" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pillow" },
     { name = "python-dotenv" },
     { name = "python-event-bus" },
     { name = "requests" },
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-    { name = "ruff" },
-]
-pc = [
+desktop = [
     { name = "faster-whisper" },
     { name = "flet-desktop" },
     { name = "ollama" },
@@ -2410,20 +2407,28 @@ pc = [
     { name = "torchaudio" },
     { name = "torchvision" },
 ]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "colorlog" },
-    { name = "faster-whisper", marker = "extra == 'pc'" },
+    { name = "faster-whisper", marker = "extra == 'desktop'" },
     { name = "flet", specifier = ">=0.21.0" },
-    { name = "flet-desktop", marker = "extra == 'pc'", specifier = ">=0.21.0" },
+    { name = "flet-desktop", marker = "extra == 'desktop'", specifier = ">=0.21.0" },
     { name = "google-genai" },
-    { name = "ollama", marker = "extra == 'pc'" },
-    { name = "openai", marker = "extra == 'pc'" },
-    { name = "opencv-python", marker = "extra == 'pc'" },
-    { name = "psutil", marker = "extra == 'pc'" },
-    { name = "pyaudiowpatch", marker = "sys_platform == 'win32' and extra == 'pc'" },
-    { name = "pyautogui", marker = "extra == 'pc'" },
+    { name = "numpy" },
+    { name = "ollama", marker = "extra == 'desktop'" },
+    { name = "openai", marker = "extra == 'desktop'" },
+    { name = "opencv-python", marker = "extra == 'desktop'" },
+    { name = "pillow" },
+    { name = "psutil", marker = "extra == 'desktop'" },
+    { name = "pyaudiowpatch", marker = "sys_platform == 'win32' and extra == 'desktop'" },
+    { name = "pyautogui", marker = "extra == 'desktop'" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pytest-mock", marker = "extra == 'dev'" },
@@ -2431,11 +2436,11 @@ requires-dist = [
     { name = "python-event-bus" },
     { name = "requests" },
     { name = "ruff", marker = "extra == 'dev'" },
-    { name = "torch", marker = "extra == 'pc'", index = "https://download.pytorch.org/whl/cu121" },
-    { name = "torchaudio", marker = "extra == 'pc'", index = "https://download.pytorch.org/whl/cu121" },
-    { name = "torchvision", marker = "extra == 'pc'", index = "https://download.pytorch.org/whl/cu121" },
+    { name = "torch", marker = "extra == 'desktop'", index = "https://download.pytorch.org/whl/cu121" },
+    { name = "torchaudio", marker = "extra == 'desktop'", index = "https://download.pytorch.org/whl/cu121" },
+    { name = "torchvision", marker = "extra == 'desktop'", index = "https://download.pytorch.org/whl/cu121" },
 ]
-provides-extras = ["pc", "dev"]
+provides-extras = ["desktop", "dev"]
 
 [[package]]
 name = "triton"

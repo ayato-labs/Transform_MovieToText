@@ -2,11 +2,11 @@ import logging
 
 import flet as ft
 
-from src.pc.ui.views.chat_bot_view import ChatBotView
-from src.pc.ui.views.file_transcription_view import FileTranscriptionView
-from src.pc.ui.views.history_view import HistoryView
-from src.pc.ui.views.live_transcription_view import LiveTranscriptionView
-from src.pc.ui.views.settings_view import SettingsView
+from src.platforms.desktop.ui.views.chat_bot_view import ChatBotView
+from src.platforms.desktop.ui.views.file_transcription_view import FileTranscriptionView
+from src.platforms.desktop.ui.views.history_view import HistoryView
+from src.platforms.desktop.ui.views.live_transcription_view import LiveTranscriptionView
+from src.platforms.desktop.ui.views.settings_view import SettingsView
 
 logger = logging.getLogger(__name__)
 

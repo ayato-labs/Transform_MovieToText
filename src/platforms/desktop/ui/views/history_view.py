@@ -6,8 +6,8 @@ from src.core.config_manager import ConfigManager
 from src.core.constants import DEFAULT_LLM_MODELS, DEFAULT_PROVIDERS
 from src.core.transcription_service import TranscriptionService
 from src.core.whisper_transcriber import WhisperTranscriber
-from src.pc.controllers.history_ctrl import HistoryController
-from src.pc.ui.ui_utils import sync_llm_models
+from src.platforms.desktop.controllers.history_ctrl import HistoryController
+from src.platforms.desktop.ui.ui_utils import sync_llm_models
 
 logger = logging.getLogger(__name__)
 

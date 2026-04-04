@@ -5,7 +5,7 @@ import threading
 import flet as ft
 
 from src.core.state import state
-from src.pc.controllers.minutes_ctrl import MinutesController
+from src.platforms.desktop.controllers.minutes_ctrl import MinutesController
 
 logger = logging.getLogger(__name__)
 

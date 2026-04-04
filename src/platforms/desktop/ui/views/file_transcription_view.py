@@ -15,8 +15,8 @@ from src.core.event_bus import (
 from src.core.history_mgr import history_mgr
 from src.core.intent_router import IntentRouter
 from src.core.minutes_service import MinutesService
-from src.pc.controllers.local_smart_ctrl import LocalSmartController
-from src.pc.controllers.transcription_ctrl import TranscriptionController
+from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
+from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 
 logger = logging.getLogger(__name__)
 

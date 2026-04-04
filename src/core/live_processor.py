@@ -8,7 +8,7 @@ import numpy as np
 
 from src.core.event_bus import EVENT_TRANSCRIPTION_SEGMENT, event_bus
 from src.core.whisper_transcriber import WhisperTranscriber
-from src.pc.recorder.factory import create_recorder
+from src.platforms.desktop.recorder.factory import create_recorder
 
 logger = logging.getLogger(__name__)
 
