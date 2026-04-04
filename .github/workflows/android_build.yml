@@ -1,0 +1,44 @@
+name: Flet Android Build
+
+on:
+  workflow_dispatch:  # 手動実行用
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv and dependencies
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Flet CLI
+        run: |
+          uv pip install flet
+
+      - name: Build APK (Flet)
+        run: |
+          # Linux 環境では Windows 特有のエンコーディング・パス問題が発生しない
+          flet build apk --verbose
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: flet-android-apk
+          path: build/apk/*.apk

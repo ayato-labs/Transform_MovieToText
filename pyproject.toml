@@ -38,25 +38,28 @@ readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 dependencies = [
-    "faster-whisper",
-    "google-genai",
     "flet[all]>=0.21.0,<0.80.0",
     "flet-desktop>=0.21.0,<0.80.0",
-    "psutil",
-    "torch",
-    "torchvision",
-    "torchaudio",
-    "ollama",
-    "openai",
-    "PyAudioWPatch; sys_platform == 'win32'",
+    "google-genai",
     "python-dotenv",
-    "pyautogui",
-    "opencv-python",
     "colorlog",
     "python-event-bus",
+    "requests",
 ]
 
 [project.optional-dependencies]
+pc = [
+    "faster-whisper",
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "PyAudioWPatch; sys_platform == 'win32'",
+    "psutil",
+    "ollama",
+    "openai",
+    "pyautogui",
+    "opencv-python",
+]
 dev = [
     "pytest",
     "pytest-mock",
