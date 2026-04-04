@@ -1,3 +1,10 @@
+## [2.11.4](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.3...v2.11.4) (2026-04-04)
+
+
+### Bug Fixes
+
+* **ci:** resolve watchdog dependency issue by separating desktop dependencies ([5e78619](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/5e7861911c8f5a5d8d412f9374b83dd9a17e4a83))
+
 ## [2.11.3](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.2...v2.11.3) (2026-04-04)
 
 
