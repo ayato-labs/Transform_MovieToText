@@ -1,6 +1,6 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 :: 0. Initialize Logger (Prioritize this above all)
 :: We use a separate launcher.log to avoid file locking with the app
@@ -62,8 +62,6 @@ echo [%date% %time%] Setup SUCCESS >> launcher.log
 echo [INFO] Launching application...
 echo [%date% %time%] Launching python main.py... >> launcher.log
 
-:: 修正: プロジェクトルートに移動
-cd /d "%~dp0.."
 
 :: RUN APP (The app will handle app.log on its own)
 "%UV_CMD%" run python main.py
