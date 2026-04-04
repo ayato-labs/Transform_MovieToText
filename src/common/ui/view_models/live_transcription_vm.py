@@ -24,7 +24,7 @@ class LiveTranscriptionViewModel:
         self.on_segment_added: Callable[[str], None] | None = None
         self.on_transcription_finished: Callable[[dict], None] | None = None
         self.on_error: Callable[[str], None] | None = None
-        
+
         self._setup_subscriptions()
 
     def _setup_subscriptions(self):
@@ -61,11 +61,7 @@ class LiveTranscriptionViewModel:
         self.config_mgr.set_last_model(llm_model)
 
         try:
-            self.ctrl.start_live_transcription(
-                model_name=whisper_model, 
-                source=source, 
-                project_name=project_name
-            )
+            self.ctrl.start_live_transcription(model_name=whisper_model, source=source, project_name=project_name)
         except Exception as e:
             if self.on_error:
                 self.on_error(f"起動失敗: {e}")
@@ -80,10 +76,10 @@ class LiveTranscriptionViewModel:
         """Triggers AI minutes generation."""
         if not transcript or len(transcript.strip()) < 50:
             return
-        
+
         if self.on_status_changed:
             self.on_status_changed("🧠 AI変換の準備中...")
-            
+
         self.ctrl.transform_transcript(
             meeting_id=meeting_id,
             transcript=transcript,

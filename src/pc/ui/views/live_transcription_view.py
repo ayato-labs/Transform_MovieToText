@@ -24,11 +24,11 @@ class LiveTranscriptionView(ft.Column):
         self.config_mgr = config_mgr
         self.ctrl = ctrl
         self.hw_info = hw_info
-        
+
         # Initialize ViewModel
         self.vm = LiveTranscriptionViewModel(config_mgr, ctrl)
         self._setup_vm_callbacks()
-        
+
         self._build_ui()
 
     def _setup_vm_callbacks(self):
