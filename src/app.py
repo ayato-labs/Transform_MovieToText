@@ -159,6 +159,7 @@ class FletApp:
                             controls=[ft.Text(error_stack, size=10, selectable=True, color="grey")],
                         ),
                         ft.ElevatedButton("Retry (Clear State)", on_click=lambda _: self._init_app_safe()),
+                        ft.TextButton("Copy Debug Logs to Clipboard", icon=ft.Icons.COPY_ALL, on_click=self._on_copy_error_logs),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -169,6 +170,24 @@ class FletApp:
             )
         )
         self.page.update()
+
+    def _on_copy_error_logs(self, e):
+        try:
+            from src.core.platform_utils import get_log_path
+            path = get_log_path()
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                self.page.set_clipboard(content)
+                self.page.snack_bar = ft.SnackBar(ft.Text("Logs copied to clipboard!"))
+                self.page.snack_bar.open = True
+                self.page.update()
+            else:
+                self.page.snack_bar = ft.SnackBar(ft.Text("Log file not found."))
+                self.page.snack_bar.open = True
+                self.page.update()
+        except Exception as ex:
+            logger.error(f"Failed to copy error logs: {ex}")
 
     def _setup_initial_values(self):
         # Whisper model options
