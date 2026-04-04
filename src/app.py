@@ -1,6 +1,5 @@
 import logging
 import os
-import sys
 import warnings
 
 # Suppress HuggingFace and Requests warnings before other imports
@@ -19,14 +18,12 @@ except ImportError:
 
 import flet as ft
 
+from src.core.platform_utils import is_android
 from src.core.config_manager import ConfigManager
 from src.core.state import state
-from src.core.platform_utils import is_android
 
 # src.core.whisper_transcriber is now lazy-loaded
 # src.ui and controllers are loaded only when environment is ready
-
-logger = logging.getLogger(__name__)
 
 
 class FletApp:

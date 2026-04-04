@@ -26,9 +26,8 @@ def test_view_instantiation_smoke():
     from src.core.config_manager import ConfigManager
     from src.core.transcription_service import TranscriptionService
     from src.pc.ui.views.settings_view import SettingsView
-    from src.pc.ui.views.settings_view import SettingsView
 
-    page = MagicMock(spec=ft.Page)
+    _ = MagicMock(spec=ft.Page)
     config_mgr = MagicMock(spec=ConfigManager)
     service = MagicMock(spec=TranscriptionService)
     # Corrected: ensure nested mock exists for TranscriptionView's __init__
