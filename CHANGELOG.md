@@ -1,3 +1,10 @@
+## [2.11.3](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.2...v2.11.3) (2026-04-04)
+
+
+### Bug Fixes
+
+* **ci:** remove deprecated libgconf-2-4 dependency ([785800f](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/785800faab1e83ea57a5793bb572c34d7f3c6323))
+
 ## [2.11.2](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.1...v2.11.2) (2026-04-04)
 
 
