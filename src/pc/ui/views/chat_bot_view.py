@@ -50,7 +50,10 @@ class ChatBotView(ft.Column):
 
     def __init__(self, page: ft.Page, config_mgr: ConfigManager):
         super().__init__(expand=True)
-        self.page = page
+        # self.page is a property of ft.Control, cannot be set directly.
+        # It will be set automatically when the control is added to a page.
+        # For unit tests and immediate access, we can keep a local reference.
+        self._page_ref = page
         self.config_mgr = config_mgr
         self.history_mgr = history_mgr
         self.minutes_service = MinutesService(config_mgr)
