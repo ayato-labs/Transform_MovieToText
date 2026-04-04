@@ -34,9 +34,8 @@ def test_view_instantiation_smoke():
     service.transcriber = MagicMock()
     service.transcriber.get_hardware_info.return_value = {"ram": 16.0, "vram": 4.0, "device": "GPU"}
 
-    # TranscriptionView is deprecated and removed. 
-    # Smoke tests for specialized views can be added here if needed, 
-    # but the generic launch test covers main app structure.
+    # TranscriptionView is deprecated and removed.
+    # Smoke tests for specialized views can be added here if needed,    # but the generic launch test covers main app structure.
 
     # 2. Settings View
     hw_info = {"ram": 16, "vram": 8, "device": "cuda"}

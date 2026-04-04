@@ -107,25 +107,30 @@ class FletApp:
 
     def _handle_critical_error(self, ex):
         import traceback
+
         error_stack = traceback.format_exc()
         logger.critical(f"FATAL BOOT ERROR: {ex}\n{error_stack}")
-        
-        # Clear page and show error
-        self.page.controls.clear()
+
         self.page.add(
             ft.Container(
-                content=ft.Column([
-                    ft.Icon(ft.Icons.ERROR_OUTLINE, color="red", size=50),
-                    ft.Text("Fatal Initialization Error", size=24, color="red", weight="bold"),
-                    ft.Divider(),
-                    ft.Text(f"{ex}", selectable=True, color="white"),
-                    ft.ExpansionTile(
-                        title=ft.Text("Show Stack Trace (for Dev)", size=12),
-                        controls=[ft.Text(error_stack, size=10, selectable=True, color="grey")]
-                    ),
-                    ft.ElevatedButton("Retry (Clear State)", on_click=lambda _: self._init_app_safe())
-                ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                expand=True, alignment=ft.alignment.center, padding=20
+                content=ft.Column(
+                    [
+                        ft.Icon(ft.Icons.ERROR_OUTLINE, color="red", size=50),
+                        ft.Text("Fatal Initialization Error", size=24, color="red", weight="bold"),
+                        ft.Divider(),
+                        ft.Text(f"{ex}", selectable=True, color="white"),
+                        ft.ExpansionTile(
+                            title=ft.Text("Show Stack Trace (for Dev)", size=12),
+                            controls=[ft.Text(error_stack, size=10, selectable=True, color="grey")],
+                        ),
+                        ft.ElevatedButton("Retry (Clear State)", on_click=lambda _: self._init_app_safe()),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
+                expand=True,
+                alignment=ft.alignment.center,
+                padding=20,
             )
         )
         self.page.update()
