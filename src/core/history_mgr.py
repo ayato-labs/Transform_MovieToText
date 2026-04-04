@@ -19,6 +19,7 @@ class HistoryManager:
     """
 
     def __init__(self, db_path: str | None = None):
+        logger.info(f"HistoryManager: Initializing (DB Path: {db_path or 'default'})")
         if db_path:
             self._conn = DatabaseConnection(db_path)
         else:

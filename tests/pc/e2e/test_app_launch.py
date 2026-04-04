@@ -26,7 +26,7 @@ def test_view_instantiation_smoke():
     from src.core.config_manager import ConfigManager
     from src.core.transcription_service import TranscriptionService
     from src.pc.ui.views.settings_view import SettingsView
-    from src.pc.ui.views.transcription_view import TranscriptionView
+    from src.pc.ui.views.settings_view import SettingsView
 
     page = MagicMock(spec=ft.Page)
     config_mgr = MagicMock(spec=ConfigManager)
@@ -35,9 +35,9 @@ def test_view_instantiation_smoke():
     service.transcriber = MagicMock()
     service.transcriber.get_hardware_info.return_value = {"ram": 16.0, "vram": 4.0, "device": "GPU"}
 
-    # 1. Transcription View
-    t_view = TranscriptionView(page, config_mgr, service)
-    assert t_view is not None
+    # TranscriptionView is deprecated and removed. 
+    # Smoke tests for specialized views can be added here if needed, 
+    # but the generic launch test covers main app structure.
 
     # 2. Settings View
     hw_info = {"ram": 16, "vram": 8, "device": "cuda"}

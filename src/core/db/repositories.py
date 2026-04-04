@@ -14,6 +14,7 @@ class MeetingRepository:
 
     def init_db(self):
         """Initializes tables and handles migrations for meetings."""
+        logger.info("MeetingRepository: Initializing database tables and migrations.")
         with self.db.get_connection() as conn:
             # 1. Main table
             conn.execute("""
@@ -76,6 +77,7 @@ class MeetingRepository:
         transcript_segments: list[dict] | None = None,
     ) -> int:
         segments_json = json.dumps(transcript_segments) if transcript_segments else None
+        logger.info(f"MeetingRepository: Adding new meeting: {title} (Project: {project_name})")
 
         with self.db.get_connection() as conn:
             cursor = conn.execute(
@@ -125,7 +127,8 @@ class MeetingRepository:
                 if d.get("transcript_segments"):
                     try:
                         d["transcript_segments"] = json.loads(d["transcript_segments"])
-                    except Exception:
+                    except Exception as e:
+                        logger.error(f"MeetingRepository: Failed to parse transcript_segments for ID {meeting_id}: {e}")
                         d["transcript_segments"] = None
                 return d
             return None
@@ -137,6 +140,7 @@ class MeetingRepository:
             conn.commit()
 
     def list_all(self) -> list[dict]:
+        logger.debug("MeetingRepository: Listing all meetings.")
         with self.db.get_connection() as conn:
             cursor = conn.execute("SELECT * FROM meetings ORDER BY timestamp DESC")
             return [dict(row) for row in cursor.fetchall()]

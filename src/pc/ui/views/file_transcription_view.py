@@ -296,11 +296,10 @@ class FileTranscriptionView(ft.Column):
 
     def _on_file_picked(self, e):
         if not e.files:
+            logger.info("FileTranscriptionView: File selection cancelled.")
             return
         file_path = e.files[0].path
-
-        # project_name is resolved but unused by current ctrl.start_file_transcription signature
-        # which only takes (file_path, model_name). Removing to fix F841.
+        logger.info(f"FileTranscriptionView: Starting transcription for: {file_path} (Model: {self.dd_whisper.value})")
         self.btn_pick.disabled = True
         self.ctrl.start_file_transcription(file_path, self.dd_whisper.value)
 
@@ -366,7 +365,9 @@ class FileTranscriptionView(ft.Column):
 
     def _on_save_picked(self, e):
         if not e.path:
+            logger.info("FileTranscriptionView: Save file cancelled.")
             return
+        logger.info(f"FileTranscriptionView: Saving result to {e.path}")
         with open(e.path, "w", encoding="utf-8") as f:
             f.write(self.result_text.value)
 

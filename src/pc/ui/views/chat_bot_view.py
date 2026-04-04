@@ -218,6 +218,7 @@ class ChatBotView(ft.Column):
         if not query:
             return
 
+        logger.info(f"ChatBotView: User sent query: {query}")
         self.chat_history.controls.append(ChatMessage(query, is_user=True))
         self.input_field.value = ""
         self.status_text.value = "AIが思考中..."

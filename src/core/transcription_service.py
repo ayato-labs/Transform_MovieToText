@@ -62,9 +62,11 @@ class TranscriptionService:
 
         force_gpu = self.config_mgr.get_force_gpu()
         event_bus.publish(EVENT_STATUS_UPDATE, f"モデル読み込み中 (GPU={force_gpu})...")
+        logger.info(f"transcribe_file_sync: Loading Whisper model: {model_name}")
         self.transcriber.load_model(model_name, force_gpu=force_gpu)
 
         event_bus.publish(EVENT_STATUS_UPDATE, "文字起こし実行中...")
+        logger.info("transcribe_file_sync: Starting transcription core progress...")
 
         def _internal_progress(progress):
             event_bus.publish(EVENT_TRANSCRIPTION_PROGRESS, progress)
@@ -203,6 +205,7 @@ class TranscriptionService:
         meeting_id = self.history_mgr.add_meeting(
             title=f"会議録音 ({timestamp_ui})", transcript="", audio_path="", model_info=model_name, project_name=safe_project, category=category
         )
+        logger.info(f"start_live_recording: Created DB placeholder ID: {meeting_id}")
         self._current_meeting_id = meeting_id
         self._live_start_time = time.time()
 

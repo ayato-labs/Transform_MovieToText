@@ -134,6 +134,7 @@ class MinutesView(ft.Column):
         threading.Thread(target=_fetch_worker, daemon=True).start()
 
     def _on_generate_click(self, e):
+        logger.info(f"MinutesView: Generate minutes clicked (Model: {self.llm_model_dropdown.value})")
         transcript = state.get("transcript_text")
         provider = state.get("llm_provider")
         model = self.llm_model_dropdown.value

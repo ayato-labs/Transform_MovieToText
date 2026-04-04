@@ -25,6 +25,14 @@ def main(page: ft.Page):
         raise
 
 
+def start_app_for_android():
+    """Entry point for Android/Chaquopy."""
+    import threading
+    logging.info("Starting Flet app via Android thread...")
+    # Start Flet in a separate thread to not block Java main thread
+    threading.Thread(target=lambda: ft.app(target=main, port=8551, view=ft.AppView.WEB_BROWSER), daemon=True).start()
+
+
 if __name__ == "__main__":
     logging.info("Starting main process...")
     ft.app(target=main)

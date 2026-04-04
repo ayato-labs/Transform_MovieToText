@@ -21,8 +21,8 @@ def test_add_and_get_meeting(mock_history_mgr):
     )
 
     assert meeting_id > 0
-    # Use get_single_meeting to be sure we are checking the one we just added
-    meeting = mock_history_mgr.get_single_meeting(meeting_id)
+    # Use get_meeting to be sure we are checking the one we just added
+    meeting = mock_history_mgr.get_meeting(meeting_id)
     assert meeting["title"] == "Test Meeting"
     assert meeting["project_name"] == "TestProject"
 

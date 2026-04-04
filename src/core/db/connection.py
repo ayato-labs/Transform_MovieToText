@@ -12,6 +12,7 @@ class DatabaseConnection:
     """
 
     def __init__(self, db_path: str = "data/history.db", timeout: float = 5.0):
+        logger.info(f"DatabaseConnection: Initializing with path: {db_path}")
         self._is_memory = str(db_path) == ":memory:"
         if self._is_memory:
             # Use URI for sharing across connections in same process.
@@ -19,10 +20,12 @@ class DatabaseConnection:
             # Keep one connection open to ensure :memory: db stays alive
             # MUST use check_same_thread=False for sharing across transcription threads
             self._keep_alive = sqlite3.connect(self.db_path, timeout=timeout, uri=True, check_same_thread=False)
+            logger.info("DatabaseConnection: In-memory database initialized.")
         else:
             self.db_path = Path(db_path)
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
             self._keep_alive = None
+            logger.info(f"DatabaseConnection: Initializing persistent DB at {self.db_path}")
 
         self.timeout = timeout
 
@@ -38,13 +41,18 @@ class DatabaseConnection:
         try:
             conn.execute("PRAGMA foreign_keys = ON")
             yield conn
+        except Exception as e:
+            logger.error(f"DatabaseConnection: Error during database operation: {e}")
+            raise
         finally:
             if not self._is_memory:
                 conn.close()
+                logger.debug("DatabaseConnection: Connection closed.")
 
     def __del__(self):
         if hasattr(self, "_keep_alive") and self._keep_alive:
             self._keep_alive.close()
+            logger.info("DatabaseConnection: In-memory connection closed.")
 
 
 # Singleton instance for default path
