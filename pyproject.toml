@@ -44,6 +44,8 @@ dependencies = [
     "colorlog",
     "python-event-bus",
     "requests",
+    "Pillow",
+    "numpy",
 ]
 
 [project.optional-dependencies]
