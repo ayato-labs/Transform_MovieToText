@@ -1,3 +1,10 @@
+# [2.13.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.12.0...v2.13.0) (2026-04-05)
+
+
+### Features
+
+* implement android native edge transcription and mobile ui optimization ([6b438e9](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/6b438e94caf4639ece80bb69ac1de60832cc1c99))
+
 # [2.12.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.11.8...v2.12.0) (2026-04-04)
 
 
