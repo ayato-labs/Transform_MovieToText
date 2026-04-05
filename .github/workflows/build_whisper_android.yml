@@ -35,12 +35,22 @@ jobs:
             -DBUILD_SHARED_LIBS=ON \
             -DWHISPER_BUILD_EXAMPLES=OFF \
             -DWHISPER_BUILD_TESTS=OFF
-          make -j$(nproc) whisper
+          cmake --build . --config Release --target whisper -j$(nproc)
+
+      - name: List Build Output (Debug)
+        run: |
+          find external/whisper.cpp/build-android -name "*.so"
 
       - name: Prepare Artifacts
         run: |
           mkdir -p output/jniLibs/arm64-v8a
-          cp external/whisper.cpp/build-android/libwhisper.so output/jniLibs/arm64-v8a/
+          # Robustly find the library even if it's in a subfolder like 'src/'
+          LIB_PATH=$(find external/whisper.cpp/build-android -name "libwhisper.so" | head -n 1)
+          if [ -z "$LIB_PATH" ]; then
+            echo "Error: libwhisper.so not found!"
+            exit 1
+          fi
+          cp "$LIB_PATH" output/jniLibs/arm64-v8a/
 
       - name: Upload Native Library
         uses: actions/upload-artifact@v4
