@@ -19,7 +19,7 @@ jobs:
           git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git external/whisper.cpp
 
       - name: Set up Android NDK
-        uses: nndixon/setup-android-ndk@v1
+        uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25c
 
