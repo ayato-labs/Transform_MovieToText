@@ -1,3 +1,10 @@
+# [2.14.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.13.2...v2.14.0) (2026-04-05)
+
+
+### Features
+
+* unify android native and apk build pipelines ([57084e7](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/57084e7bdc0d86b33e1dc7c5fec7d550429cc123))
+
 ## [2.13.2](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.13.1...v2.13.2) (2026-04-05)
 
 
