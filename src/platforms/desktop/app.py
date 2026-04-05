@@ -11,7 +11,8 @@ from src.core.state import state
 from src.platforms.desktop.controllers.history_ctrl import HistoryController
 from src.platforms.desktop.controllers.minutes_ctrl import MinutesController
 from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
-from src.platforms.desktop.ui.views.chat_bot_view import ChatBotView
+from src.platforms.desktop.ui.views.about_view import AboutView
+from src.platforms.common.ui.views.chat_bot_view import ChatBotView
 from src.platforms.desktop.ui.views.file_transcription_view import FileTranscriptionView
 from src.platforms.desktop.ui.views.history_view import HistoryView
 from src.platforms.desktop.ui.views.live_transcription_view import LiveTranscriptionView
@@ -19,6 +20,9 @@ from src.platforms.desktop.ui.views.settings_view import SettingsView
 from src.platforms.desktop.ui.main_window import MainWindow
 
 logger = logging.getLogger(__name__)
+
+from src.core.setup_manager import setup_manager
+
 
 class DesktopApp:
     def __init__(self, page: ft.Page):
@@ -59,6 +63,16 @@ class DesktopApp:
         try:
             self._setup_page_properties()
             logger.info("DesktopApp: Starting initialization...")
+            
+            # Start background setup immediately if needed
+            setup_manager.check_env()
+            if not setup_manager.is_fully_ready:
+                logger.warning("DesktopApp: Some dependencies missing. Starting background setup.")
+                setup_manager.start_background_setup(
+                    on_status_change=self._on_setup_status_change,
+                    on_complete=self._on_setup_complete
+                )
+
             self.config_mgr = ConfigManager()
             
             self._update_boot_status("Loading AI standard modules...", 1)
@@ -85,11 +99,19 @@ class DesktopApp:
             self.file_trans_view = FileTranscriptionView(self.page, self.config_mgr, self.trans_ctrl, self.hw_info)
             self.live_trans_view = LiveTranscriptionView(self.page, self.config_mgr, self.trans_ctrl, self.hw_info)
             self.chat_view = ChatBotView(self.page, self.config_mgr)
+            self.about_view = AboutView()
             self.settings_view = SettingsView(self.config_mgr, self.hw_info, self.transcriber.MODEL_REQUIREMENTS, history_ctrl=self.history_ctrl)
             self.history_view = HistoryView(self.history_ctrl, self.config_mgr, self.folder_picker, self.page)
 
             self._update_boot_status("Building UI layout...", 5)
-            self.main_window = MainWindow(self.file_trans_view, self.live_trans_view, self.settings_view, self.history_view, self.chat_view)
+            self.main_window = MainWindow(
+                self.file_trans_view,
+                self.live_trans_view,
+                self.settings_view,
+                self.history_view,
+                self.chat_view,
+                self.about_view,
+            )
             self.page.controls.clear()
             self.page.add(self.main_window)
 
@@ -98,6 +120,27 @@ class DesktopApp:
 
         except Exception as ex:
             self._handle_critical_error(ex)
+
+    def _on_setup_status_change(self, status: str):
+        """Update UI with background setup status."""
+        logger.info(f"SETUP_STATUS: {status}")
+        # If in boot screen, use boot status
+        if hasattr(self, "boot_text") and self.boot_text.page:
+            self.boot_text.value = f"Finalizing environment: {status}"
+            self.page.update()
+        
+        # If MainWindow is already active, notify it
+        if hasattr(self, "main_window") and self.main_window.page:
+            self.main_window.update_setup_status(status)
+
+    def _on_setup_complete(self):
+        """Handle setup completion."""
+        logger.info("SETUP_COMPLETE: Environment is now ready.")
+        if hasattr(self, "main_window") and self.main_window.page:
+            self.main_window.update_setup_status("Ready", is_critical=False)
+            # Notify views to re-check their dependencies
+            self.file_trans_view.refresh_dependency_state()
+            self.live_trans_view.refresh_dependency_state()
 
     def _setup_page_properties(self):
         self.page.title = "Movie to Text v2.0 (Desktop)"

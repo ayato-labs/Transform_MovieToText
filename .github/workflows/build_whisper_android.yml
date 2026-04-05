@@ -1,0 +1,49 @@
+name: Build Whisper Android Native
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build_whisper_android.yml'
+      - 'src/core/android_whisper_engine.py'
+
+jobs:
+  build-native:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Clone whisper.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git external/whisper.cpp
+
+      - name: Set up Android NDK
+        uses: nndixon/setup-android-ndk@v1
+        with:
+          ndk-version: r25c
+
+      - name: Build whisper.cpp for Android (arm64-v8a)
+        run: |
+          cd external/whisper.cpp
+          mkdir build-android
+          cd build-android
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-24 \
+            -DBUILD_SHARED_LIBS=ON \
+            -DWHISPER_BUILD_EXAMPLES=OFF \
+            -DWHISPER_BUILD_TESTS=OFF
+          make -j$(nproc) whisper
+
+      - name: Prepare Artifacts
+        run: |
+          mkdir -p output/jniLibs/arm64-v8a
+          cp external/whisper.cpp/build-android/libwhisper.so output/jniLibs/arm64-v8a/
+
+      - name: Upload Native Library
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-android-native-arm64
+          path: output/jniLibs/

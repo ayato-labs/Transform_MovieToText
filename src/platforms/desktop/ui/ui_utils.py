@@ -15,10 +15,18 @@ _model_cache = {}
 CACHE_TTL = 3600  # 1 hour in seconds
 
 
-def sync_llm_models(page: ft.Page, config_mgr, provider: str, dd_model: ft.Dropdown, status_text: ft.Text = None):
+def sync_llm_models(page: ft.Page, config_mgr, provider: str, dd_model: ft.Dropdown, status_text: ft.Text = None, on_empty_results=None):
     """
     Common utility to fetch available LLM models for a provider and update a dropdown.
     Includes 1-hour caching, loading state, error handling, and background threading.
+    
+    Args:
+        page: Flet page instance.
+        config_mgr: Configuration manager.
+        provider: Provider name (e.g., 'gemini', 'openai').
+        dd_model: The dropdown control for models.
+        status_text: Optional status text control for feedback.
+        on_empty_results: Callback function(provider) if no models are returned.
     """
     logger.info(f"Syncing LLM models for provider: {provider}")
 
@@ -29,9 +37,16 @@ def sync_llm_models(page: ft.Page, config_mgr, provider: str, dd_model: ft.Dropd
         cache_entry = _model_cache[provider]
         if current_time - cache_entry["timestamp"] < CACHE_TTL:
             logger.info(f"Using cached model list for {provider} (TTL: {CACHE_TTL}s)")
-            _update_dropdown_ui(dd_model, cache_entry["models"], config_mgr, provider, status_text)
+            if not cache_entry["models"] and on_empty_results:
+                on_empty_results(provider)
+            else:
+                _update_dropdown_ui(dd_model, cache_entry["models"], config_mgr, provider, status_text)
+            
             if page:
-                page.update()
+                try:
+                    page.update()
+                except Exception:
+                    pass
             return
 
     # 2. If not cached or expired, show loading state and fetch
@@ -45,7 +60,10 @@ def sync_llm_models(page: ft.Page, config_mgr, provider: str, dd_model: ft.Dropd
         status_text.value = f"📡 {provider} の利用可能モデルを取得中..."
 
     if page:
-        page.update()
+        try:
+            page.update()
+        except Exception:
+            pass
 
     def fetch_task():
         try:
@@ -54,24 +72,31 @@ def sync_llm_models(page: ft.Page, config_mgr, provider: str, dd_model: ft.Dropd
             client = LLMFactory.create_client(provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
             models = client.get_available_models()
 
-            # Fallback if empty
-            if not models:
-                logger.warning(f"No models returned for {provider}, using defaults.")
-                models = DEFAULT_LLM_MODELS.get(provider, ["default"])
-
             # Update Cache
             _model_cache[provider] = {"models": models, "timestamp": time.time()}
 
-            # Update UI
-            _update_dropdown_ui(dd_model, models, config_mgr, provider, status_text, original_status)
+            if not models:
+                logger.warning(f"No models returned for {provider}.")
+                if on_empty_results:
+                    on_empty_results(provider)
+                else:
+                    # Fallback if no callback provided
+                    fallback = DEFAULT_LLM_MODELS.get(provider, ["default"])
+                    _update_dropdown_ui(dd_model, fallback, config_mgr, provider, status_text, original_status)
+            else:
+                # Update UI with actual models
+                _update_dropdown_ui(dd_model, models, config_mgr, provider, status_text, original_status)
 
         except Exception as e:
             logger.error(f"Error fetching models for {provider}: {e}")
             fallback = DEFAULT_LLM_MODELS.get(provider, ["error-fallback"])
-            _update_dropdown_ui(dd_model, fallback, config_mgr, provider, status_text, f"⚠️ モデル取得失敗: {e}")
+            _update_dropdown_ui(dd_model, fallback, config_mgr, provider, status_text, f"⚠️ {provider} モデル取得失敗: {str(e)[:40]}")
 
         if page:
-            page.update()
+            try:
+                page.update()
+            except Exception:
+                pass
 
     # Run in background
     threading.Thread(target=fetch_task, daemon=True).start()

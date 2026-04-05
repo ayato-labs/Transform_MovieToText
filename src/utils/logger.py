@@ -15,6 +15,19 @@ except ImportError:
 LOG_BUFFER = deque(maxlen=200)
 
 
+# Custom log levels
+LOG_LEVEL_SETUP = 25  # Between INFO (20) and WARNING (30)
+logging.addLevelName(LOG_LEVEL_SETUP, "SETUP")
+
+
+def setup_info(msg, *args, **kwargs):
+    logging.log(LOG_LEVEL_SETUP, msg, *args, **kwargs)
+
+
+def setup_error(msg, *args, **kwargs):
+    logging.error(f"[SETUP_ERROR] {msg}", *args, **kwargs)
+
+
 class DequeHandler(logging.Handler):
     """Custom handler to store logs in a memory buffer (deque)."""
 
@@ -48,7 +61,7 @@ def get_system_info():
         import subprocess
 
         gpu_cmd = "nvidia-smi --query-gpu=name --format=csv,noheader"
-        gpu_info = subprocess.check_output(gpu_cmd, shell=True).decode().strip()
+        gpu_info = subprocess.check_output(gpu_cmd, shell=True, stderr=subprocess.DEVNULL).decode().strip()
         info["gpu"] = gpu_info if gpu_info else "None detected"
     except Exception:
         info["gpu"] = "None detected or nvidia-smi missing"
@@ -97,6 +110,7 @@ def setup_logger():
                 log_colors={
                     "DEBUG": "cyan",
                     "INFO": "green",
+                    "SETUP": "bold_cyan",
                     "WARNING": "yellow",
                     "ERROR": "red",
                     "CRITICAL": "bold_red",

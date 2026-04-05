@@ -1,5 +1,4 @@
 import logging
-
 import flet as ft
 
 from src.common.ui.view_models.live_transcription_vm import LiveTranscriptionViewModel
@@ -7,6 +6,7 @@ from src.core.config_manager import ConfigManager
 from src.core.constants import DEFAULT_PROVIDERS, WHISPER_MODELS
 from src.core.history_mgr import history_mgr
 from src.core.state import state
+from src.core.setup_manager import setup_manager
 from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 from src.platforms.desktop.ui.ui_utils import sync_llm_models
 
@@ -30,6 +30,26 @@ class LiveTranscriptionView(ft.Column):
         self._setup_vm_callbacks()
 
         self._build_ui()
+        self.refresh_dependency_state(initial=True)
+
+    def refresh_dependency_state(self, initial=False):
+        """Update UI based on background setup status."""
+        is_ready = setup_manager.is_fully_ready
+        is_recording = state.get("is_recording", False)
+
+        if not is_ready:
+            self.btn_live.disabled = True
+            self.btn_live.text = "セットアップ中..."
+            self.btn_live.icon = ft.Icons.DOWNLOAD_FOR_OFFLINE
+            self.status_text.value = "⚠️ AI 文字起こしコンポーネントを準備中です..."
+        elif not is_recording:
+            self.btn_live.disabled = False
+            self.btn_live.text = "録音開始"
+            self.btn_live.icon = ft.Icons.MIC
+            self.status_text.value = "機材準備完了..."
+        
+        if not initial:
+            self._safe_update()
 
     def _setup_vm_callbacks(self):
         self.vm.on_status_changed = self._on_vm_status_changed
@@ -71,8 +91,12 @@ class LiveTranscriptionView(ft.Column):
         self._safe_update()
 
     def _safe_update(self):
-        if self._page:
-            self.update()
+        """Safely updates the control if it is attached to a page."""
+        if self.page:
+            try:
+                self.update()
+            except Exception:
+                pass
 
     def _build_ui(self):
         # --- Top Selection Area ---
@@ -140,7 +164,14 @@ class LiveTranscriptionView(ft.Column):
             options=[],  # Filled dynamically
             on_change=self._on_llm_change,
         )
-        sync_llm_models(self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text)
+        sync_llm_models(
+            self._page, 
+            self.config_mgr, 
+            self.dd_provider.value, 
+            self.dd_llm, 
+            self.status_text,
+            on_empty_results=self._handle_empty_models
+        )
 
         # Text Areas Container
         self.result_text = ft.TextField(
@@ -341,6 +372,41 @@ class LiveTranscriptionView(ft.Column):
         self.tf_new_project.disabled = True
         self.raw_transcript_text.value = ""
         self.tabs.selected_index = 0
+        self._safe_update()
+
+    def _on_provider_change(self, e):
+        provider = self.dd_provider.value
+        self.config_mgr.set_active_provider(provider)
+        sync_llm_models(
+            self._page,
+            self.config_mgr,
+            provider,
+            self.dd_llm,
+            self.status_text,
+            on_empty_results=self._handle_empty_models
+        )
+
+    def _on_llm_change(self, e):
+        self.config_mgr.set_last_model(self.dd_llm.value)
+
+    def _handle_empty_models(self, provider: str):
+        """Callback when a provider returns no models."""
+        logger.warning(f"LiveTranscriptionView: Provider {provider} returned no models. Hiding.")
+        
+        # Remove from dropdown options
+        new_options = [opt for opt in self.dd_provider.options if opt.key != provider]
+        self.dd_provider.options = new_options
+        
+        # If currently selected, fallback to something else
+        if self.dd_provider.value == provider:
+            if new_options:
+                fallback = new_options[0].key
+                self.dd_provider.value = fallback
+                self.config_mgr.set_active_provider(fallback)
+                sync_llm_models(self._page, self.config_mgr, fallback, self.dd_llm, self.status_text, on_empty_results=self._handle_empty_models)
+            else:
+                self.dd_provider.value = None
+        
         self._safe_update()
 
     def _stop_ui_state(self):

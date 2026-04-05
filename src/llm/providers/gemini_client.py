@@ -17,7 +17,7 @@ class GeminiLLMClient(BaseLLMClient):
         logger.info("GeminiLLMClient initialized.")
 
     def get_available_models(self) -> list[str]:
-        """Fetches and filters Gemini models."""
+        """Fetches and filters Gemini models. Returns an empty list on error instead of raising."""
         try:
             logger.info("Fetching available Gemini models...")
             start_time = time.time()
@@ -36,8 +36,9 @@ class GeminiLLMClient(BaseLLMClient):
             logger.info(f"Successfully fetched {len(result)} models in {duration:.2f}s.")
             return result
         except Exception as e:
-            logger.error(f"Failed to fetch Gemini models: {e}")
-            raise RuntimeError(f"Failed to fetch models: {str(e)}") from e
+            logger.error(f"Failed to fetch Gemini models (Possible API Key issue): {e}")
+            # Return empty list instead of raising to allow app to continue booting
+            return []
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
         """Generates meeting minutes using Gemini, with optional multimodal context."""
@@ -84,7 +85,7 @@ class GeminiLLMClient(BaseLLMClient):
             return response.text
         except Exception as e:
             logger.error(f"Gemini generation failed: {e}")
-            raise RuntimeError(f"Failed to generate minutes: {str(e)}") from e
+            return f"⚠️ Minutes generation failed. Please check your Gemini API key in Settings.\nError: {e}"
 
     def extract_category(self, transcript: str, model_name: str) -> str:
         """Extracts a short category/label (1-3 keywords) from the transcript."""
@@ -165,4 +166,4 @@ class GeminiLLMClient(BaseLLMClient):
             return response.text
         except Exception as e:
             logger.error(f"Gemini chat failed: {e}")
-            raise RuntimeError(f"Chat failed: {str(e)}") from e
+            return f"⚠️ Chat failed. (API Key error?)\nError: {e}"

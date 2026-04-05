@@ -20,6 +20,7 @@ from src.core.event_bus import (
     event_bus,
 )
 from src.core.history_mgr import history_mgr as _history_mgr
+from src.core.platform_utils import is_android
 from src.core.utils import sanitize_filename
 from src.core.whisper_transcriber import WhisperTranscriber
 from src.llm.factory import LLMFactory
@@ -233,12 +234,14 @@ class TranscriptionService:
         self.live_mgr.start()
         event_bus.publish(EVENT_STATUS_UPDATE, "🔴 録音中...")
 
-        # Visual Recorder
-        if self.config_mgr.get_visual_capture_enabled():
-            logger.info("start_live_recording: Starting VisualRecorder.")
-            from src.platforms.desktop.recorder.visual_recorder import visual_recorder
-
-            visual_recorder.start(meeting_id)
+        # Visual Recorder (Desktop only)
+        if not is_android() and self.config_mgr.get_visual_capture_enabled():
+            try:
+                logger.info("start_live_recording: Starting VisualRecorder.")
+                from src.platforms.desktop.recorder.visual_recorder import visual_recorder
+                visual_recorder.start(meeting_id)
+            except ImportError:
+                logger.warning("VisualRecorder not available on this platform.")
 
         logger.info(f"start_live_recording: Successfully started session (id={meeting_id})")
         return meeting_id
@@ -261,9 +264,12 @@ class TranscriptionService:
             return
 
         logger.info("stop_live_recording: Terminating recorders and starting finalization...")
-        from src.platforms.desktop.recorder.visual_recorder import visual_recorder
-
-        visual_recorder.stop()
+        if not is_android():
+            try:
+                from src.platforms.desktop.recorder.visual_recorder import visual_recorder
+                visual_recorder.stop()
+            except ImportError:
+                pass
 
         def _finalize_worker():
             logger.info("_finalize_worker: Starting background finalization...")

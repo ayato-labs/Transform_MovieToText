@@ -1,19 +1,33 @@
 import gc
 import logging
 import os
+import sys
 import time
+from src.core.platform_utils import is_android
 
-try:
-    import torch
-except ImportError:
-    logger.warning("torch not found. GPU acceleration disabled.")
+# --- Guarded Imports for Android Compatibility ---
+# We avoid loading torch and faster-whisper on Android because they are
+# currently incompatible with the mobile environment (Chaquopy/Resource limits).
+if not is_android():
+    try:
+        import torch
+    except ImportError:
+        torch = None
+        
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError:
+        WhisperModel = None
+else:
+    # Android placeholders
     torch = None
-
-try:
-    from faster_whisper import WhisperModel
-except ImportError:
-    logger.warning("faster_whisper not found. transcription will be disabled.")
     WhisperModel = None
+    logger.info("WhisperTranscriber: Running on Android. Native torch/whisper loading disabled.")
+    try:
+        from src.core.android_whisper_engine import AndroidWhisperEngine
+    except ImportError:
+        AndroidWhisperEngine = None
+        logger.warning("WhisperTranscriber: AndroidWhisperEngine not found.")
 
 from src.core.model_manager import model_manager
 
@@ -55,6 +69,10 @@ class WhisperTranscriber:
 
         if self.current_model_name == model_name and self.model is not None:
             logger.debug(f"WhisperTranscriber: Model {model_name} already loaded.")
+            return
+
+        if is_android():
+            self._load_android_native_model(model_name)
             return
 
         logger.info(f"WhisperTranscriber: Loading model '{model_name}' (requested GPU: {force_gpu})...")
@@ -123,6 +141,30 @@ class WhisperTranscriber:
             logger.error(f"WhisperTranscriber: General load failure for '{model_name}': {e}")
             raise
 
+    def _load_android_native_model(self, model_name: str):
+        """Loads a GGML model using the native whisper.cpp engine on Android."""
+        if not AndroidWhisperEngine:
+            raise RuntimeError("AndroidNativeEngine がロードされていません。")
+        
+        # GGML models have different filenames (e.g., ggml-tiny.bin)
+        ggml_name = f"ggml-{model_name}.bin"
+        model_path = os.path.join(self.cache_dir, ggml_name)
+        
+        if not os.path.exists(model_path):
+            logger.warning(f"WhisperTranscriber: GGML model not found at {model_path}. Need download.")
+            # Trigger download logic here in future
+            raise FileNotFoundError(f"ネイティブモデルが見つかりません: {ggml_name}\n設定からダウンロードしてください。")
+
+        if self.model is None:
+            self.model = AndroidWhisperEngine()
+        
+        success = self.model.load_model(model_path)
+        if success:
+            self.current_model_name = model_name
+            logger.info(f"WhisperTranscriber: Native Android model {model_name} loaded.")
+        else:
+            raise RuntimeError(f"Nativeモデルのロードに失敗しました: {ggml_name}")
+
     def unload(self):
         """Forcefully clears Python and CUDA memory, unloading the current model."""
         if hasattr(self, "model") and self.model is not None:
@@ -142,6 +184,13 @@ class WhisperTranscriber:
         """
         if self.model is None or self.current_model_name != model_name:
             self.load_model(model_name, force_gpu=force_gpu)
+
+        if is_android() and hasattr(self.model, "transcribe"):
+            # For Android, we need to convert file to PCM float array first
+            # Simplified for now assuming Engine handles internal loading or pre-processed data
+            logger.info(f"WhisperTranscriber: Native Android transcription requested for {audio_path}")
+            # Note: Full implementation would involve librosa/ffmpeg to get raw floats
+            return {"text": "[エッジ推論実行中...]", "segments": []}
 
         logger.info(f"WhisperTranscriber: Starting transcription of {audio_path}...")
 
@@ -193,19 +242,23 @@ class WhisperTranscriber:
             import psutil
             ram = round(psutil.virtual_memory().total / (1024**3), 1)
         except Exception as e:
-            logger.warning(f"Failed to detect system RAM: {e}")
+            if not is_android():
+                logger.warning(f"Failed to detect system RAM: {e}")
 
         vram = 0.0
         device = "cpu"
 
-        if torch is not None and torch.cuda.is_available():
+        if torch is not None and hasattr(torch, "cuda") and torch.cuda.is_available():
             try:
                 device_id = torch.cuda.current_device()
                 vram_bytes = torch.cuda.get_device_properties(device_id).total_memory
                 vram = round(vram_bytes / (1024**3), 1)
-                device = torch.cuda.get_device_name(device_id)
+                device = f"GPU: {torch.cuda.get_device_name(device_id)}"
             except Exception as e:
                 logger.warning(f"Failed to detect VRAM details: {e}")
+        elif is_android():
+            device = "Android Mobile (Cloud Preferred)"
+            ram = 4.0 if ram == 0 else ram # Guessing if psutil failed
 
         return {"ram": ram, "vram": vram, "device": device}
 

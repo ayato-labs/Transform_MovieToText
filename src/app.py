@@ -29,16 +29,9 @@ def main(page: ft.Page):
         from src.platforms.android.app import AndroidApp
         AndroidApp(page)
     else:
-        logger.info("Main: Desktop detected. Checking setup and launching DesktopApp.")
-        from src.core.setup_wizard import is_env_ready, main as setup_main
+        logger.info("Main: Desktop detected. Launching DesktopApp.")
         from src.platforms.desktop.app import DesktopApp
-        
-        missing = is_env_ready()
-        if missing:
-            logger.warning(f"Main: Missing dependencies: {missing}. Launching Setup Wizard.")
-            setup_main(page)
-        else:
-            DesktopApp(page)
+        DesktopApp(page)
 
 
 def init_logging():
