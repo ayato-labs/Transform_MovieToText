@@ -35,7 +35,7 @@ class QueryAnalyzer:
         "マーケ": "Marketing-Promotion",
     }
 
-    def __init__(self, projects: list[str], categories: list[str], config_mgr: ConfigManager = None, provider: str = None, model: str = None):
+    def __init__(self, projects: list[str], categories: list[str], config_mgr: ConfigManager = None, provider: str = None, model: str = None, client=None):
         self.projects = projects
         self.categories = categories
         self.config_mgr = config_mgr or ConfigManager()
@@ -50,18 +50,22 @@ class QueryAnalyzer:
         else:
             self.model_id = model
 
-        # Initialize LLM Client via Factory
-        try:
-            p_conf = self.config_mgr.get_provider_config(self.active_provider)
-            self.client = LLMFactory.create_client(
-                provider_name=self.active_provider,
-                api_key=p_conf.get("api_key"),
-                base_url=p_conf.get("base_url")
-            )
-            logger.info(f"QueryAnalyzer: Initialized with {self.active_provider} ({self.model_id})")
-        except Exception as e:
-            logger.error(f"QueryAnalyzer: Failed to initialize LLM client: {e}")
-            self.client = None
+        # Initialize LLM Client via Factory OR use provided client (DI)
+        if client:
+            self.client = client
+            logger.info(f"QueryAnalyzer: Initialized with provided client ({self.model_id})")
+        else:
+            try:
+                p_conf = self.config_mgr.get_provider_config(self.active_provider)
+                self.client = LLMFactory.create_client(
+                    provider_name=self.active_provider,
+                    api_key=p_conf.get("api_key"),
+                    base_url=p_conf.get("base_url")
+                )
+                logger.info(f"QueryAnalyzer: Initialized with {self.active_provider} ({self.model_id})")
+            except Exception as e:
+                logger.error(f"QueryAnalyzer: Failed to initialize LLM client: {e}")
+                self.client = None
 
     def analyze(self, query: str) -> dict:
         """
@@ -109,52 +113,67 @@ class QueryAnalyzer:
         found_projects = set()
         found_categories = set()
 
-        # 1. Direct and Synonym Matching
-        # Split into alphanumeric/cjk words to check against dictionary
-        words = re.findall(r"[a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\-]+", search_pool)
+        # 1. Direct Substring and Synonym Matching (Crucial for Japanese/Non-spaced text)
+        for proj in self.projects:
+            if proj.lower() in search_pool.lower():
+                found_projects.add(proj)
+        
+        for cat in self.categories:
+            if cat.lower() in search_pool.lower():
+                found_categories.add(cat)
 
+        for syn_key, syn_val in self.SYNONYMS.items():
+            if syn_key in search_pool:
+                if syn_val in self.categories:
+                    found_categories.add(syn_val)
+                elif syn_val in self.projects:
+                    found_projects.add(syn_val)
+
+        # 2. Token-based and Fuzzy Matching
+        words = re.findall(r"[a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\-]+", search_pool)
+        
         for word in words:
             if len(word) < 2:
                 continue
+            
+            # Fuzzy Matching (FTS-friendly)
+            if word not in found_projects and word not in found_categories:
+                p_match = difflib.get_close_matches(word, self.projects, n=1, cutoff=0.8)
+                if p_match:
+                    found_projects.add(p_match[0])
+                    continue
 
-            # Check Synonyms
-            normalized = self.SYNONYMS.get(word, word)
+                t_match = difflib.get_close_matches(word, self.categories, n=1, cutoff=0.8)
+                if t_match:
+                    found_categories.add(t_match[0])
+                    continue
 
-            # Match Projects
-            if normalized in self.projects:
-                found_projects.add(normalized)
-                continue
+        # 3. Keyword extraction
+        # Physically remove identified metadata and synonyms from the query to isolate keywords
+        exclude_set = found_projects | found_categories
+        
+        clean_pool = search_pool
+        # Sort by length descending to replace longer phrases first
+        for meta in sorted(list(exclude_set), key=len, reverse=True):
+            clean_pool = clean_pool.replace(meta, " ")
+        
+        # Also remove synonym keys
+        for syn_key in sorted(list(self.SYNONYMS.keys()), key=len, reverse=True):
+            clean_pool = clean_pool.replace(syn_key, " ")
 
-            # Match Categories
-            if normalized in self.categories:
-                found_categories.add(normalized)
-                continue
-
-            # 2. Fuzzy Matching (FTS-friendly)
-            p_match = difflib.get_close_matches(normalized, self.projects, n=1, cutoff=0.7)
-            if p_match:
-                found_projects.add(p_match[0])
-                continue
-
-            t_match = difflib.get_close_matches(normalized, self.categories, n=1, cutoff=0.7)
-            if t_match:
-                found_categories.add(t_match[0])
-                continue
-
-        # 3. Keyword extraction (Fall back to query words if nothing meaningful found)
-        # We strip out matched metadata from keywords
+        # Now extract tokens from the cleaned pool
+        tokens = re.findall(r"[a-zA-Z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\-]+", clean_pool)
+        
         keywords = []
-        for word in words:
-            # Avoid long sentence-like 'words' and already identified metadata
-            if 2 <= len(word) <= 15 and word not in found_projects and word not in found_categories:
-                keywords.append(word)
+        for t in tokens:
+            if 2 <= len(t) <= 15:
+                keywords.append(t)
 
-        # If no keywords extracted, or they are too generic, try splitting by common Japanese particles/punctuations
+        # If still no keywords, split original query by punctuation as last resort
         if not keywords:
-            # Simple split by punctuation as a fallback
             parts = re.split(r"[、。！？\s]", original_query)
             for p in parts:
-                if 2 <= len(p) <= 10:
+                if 2 <= len(p) <= 15:
                     keywords.append(p)
 
         return {
