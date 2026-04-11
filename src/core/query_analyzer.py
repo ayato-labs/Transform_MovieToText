@@ -1,10 +1,9 @@
 import difflib
 import logging
-import os
 import re
 
-from dotenv import load_dotenv
-from google import genai
+from src.core.config_manager import ConfigManager
+from src.llm.factory import LLMFactory
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 class QueryAnalyzer:
     """
     Analyzes user queries to extract metadata (projects, categories) and keywords
-    using a 'Ultra-Minimal' strategy optimized for 1B parameter models.
+    using a 'Ultra-Minimal' strategy optimized for local 1B-8B parameter models.
     """
 
     # Common Japanese synonyms for standardization
@@ -36,24 +35,43 @@ class QueryAnalyzer:
         "マーケ": "Marketing-Promotion",
     }
 
-    def __init__(self, projects: list[str], categories: list[str]):
-        load_dotenv()
-        self.api_key = os.getenv("GEMINI_API_KEY")
-        self.client = genai.Client(api_key=self.api_key) if self.api_key else None
-
+    def __init__(self, projects: list[str], categories: list[str], config_mgr: ConfigManager = None, provider: str = None, model: str = None):
         self.projects = projects
         self.categories = categories
-        self.model_id = "gemma-3-1b-it"
+        self.config_mgr = config_mgr or ConfigManager()
+
+        # Determine provider and model
+        self.active_provider = provider or self.config_mgr.get_active_provider()
+        
+        # If model is not provided, try to get the last used model for that provider
+        if not model:
+            p_conf = self.config_mgr.get_provider_config(self.active_provider)
+            self.model_id = p_conf.get("model")
+        else:
+            self.model_id = model
+
+        # Initialize LLM Client via Factory
+        try:
+            p_conf = self.config_mgr.get_provider_config(self.active_provider)
+            self.client = LLMFactory.create_client(
+                provider_name=self.active_provider,
+                api_key=p_conf.get("api_key"),
+                base_url=p_conf.get("base_url")
+            )
+            logger.info(f"QueryAnalyzer: Initialized with {self.active_provider} ({self.model_id})")
+        except Exception as e:
+            logger.error(f"QueryAnalyzer: Failed to initialize LLM client: {e}")
+            self.client = None
 
     def analyze(self, query: str) -> dict:
         """
         Extracts metadata candidates using LLM and reconciles them with system data.
         """
-        if not self.client:
-            logger.warning("No Gemini API key found. Falling back to keyword-only search.")
+        if not self.client or not self.model_id:
+            logger.warning("QueryAnalyzer: No LLM client or model configured. Falling back to keyword-only search.")
             return {"projects": [], "categories": [], "keywords": [query]}
 
-        # 1. Get raw candidates from 1B model (Ultra-Minimal Bullet-point prompt)
+        # 1. Get raw candidates from model (Ultra-Minimal Bullet-point prompt)
         raw_output = self._get_llm_candidates(query)
 
         # 2. Parse and reconcile using code-based logic
@@ -62,6 +80,7 @@ class QueryAnalyzer:
     def _get_llm_candidates(self, query: str) -> str:
         prompt = f"""
 以下の質問を読み、関係する【プロジェクト名】や【カテゴリー名】を、提示されたリストの中からすべて抜き出して答えなさい。
+リストにないものは無視してください。
 
 【プロジェクト名リスト】
 {self.projects}
@@ -73,8 +92,9 @@ class QueryAnalyzer:
 答え:
 """
         try:
-            response = self.client.models.generate_content(model=self.model_id, contents=prompt)
-            return response.text
+            # Using generate instead of chat to handle simple completions or single-turn prompts
+            # This works for both Ollama and Gemini via our wrappers
+            return self.client.generate(prompt=prompt, model_name=self.model_id)
         except Exception as e:
             logger.error(f"Error during intent extraction: {e}")
             return ""
@@ -140,5 +160,5 @@ class QueryAnalyzer:
         return {
             "projects": sorted(found_projects),
             "categories": sorted(found_categories),
-            "keywords": sorted(list(set(keywords))[:8]),  # list(set(...))[:8] is fine to get slice first
+            "keywords": sorted(list(set(keywords))[:8]),
         }

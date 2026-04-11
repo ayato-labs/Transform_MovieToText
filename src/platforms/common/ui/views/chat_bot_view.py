@@ -239,7 +239,7 @@ class ChatBotView(ft.Column):
             all_projs = self.history_mgr.get_projects()
             all_cats = self.history_mgr.get_categories()
 
-            analyzer = QueryAnalyzer(all_projs, all_cats)
+            analyzer = QueryAnalyzer(all_projs, all_cats, config_mgr=self.config_mgr)
             intent = analyzer.analyze(query)
 
             logger.info(f"RAG Intent Extracted: {intent}")
