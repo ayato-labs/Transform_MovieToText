@@ -43,4 +43,4 @@ class MinutesController:
         threading.Thread(target=_worker, daemon=True).start()
 
     def get_available_models(self, provider: str):
-        return self.service.get_available_models(provider)
+        return self.config_mgr.get_llm_models(provider)

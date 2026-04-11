@@ -1,7 +1,0 @@
-# This is a dummy error log for testing purposes.
-# Ensuring this file is clean UTF-8 (No BOM) for CI consistency.
-ERROR: Unexpected failure during capture.
-DEBUG: Traceback (most recent call last):
-  File "src/core/live_processor.py", line 42, in process
-    raise RuntimeError("Simulated failure")
-RuntimeError: Simulated failure

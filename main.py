@@ -7,8 +7,8 @@ import flet as ft
 # Ensure src is in path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from src.utils.logger import setup_logger  # noqa: E402
 from src.app import main as app_main  # noqa: E402
+from src.utils.logger import setup_logger  # noqa: E402
 
 
 def main(page: ft.Page):
@@ -25,6 +25,6 @@ def main(page: ft.Page):
 if __name__ == "__main__":
     # Initialize professional logging
     setup_logger()
-    
+
     # Launch Flet app as a desktop window
     ft.app(target=main)

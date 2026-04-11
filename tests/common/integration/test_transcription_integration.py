@@ -31,7 +31,7 @@ def test_env():
     service = TranscriptionService(mock_config, mock_transcriber, history_mgr=history_mgr)
 
     # Patch the singleton inside the service/controller to use our test instance
-    with patch("src.core.transcription_service._history_mgr", history_mgr), patch("src.pc.controllers.transcription_ctrl.history_mgr", history_mgr):
+    with patch("src.core.transcription_service._history_mgr", history_mgr), patch("src.platforms.desktop.controllers.transcription_ctrl.history_mgr", history_mgr):
         yield service, history_mgr, event_bus, long_text
 
 
@@ -79,7 +79,7 @@ def test_live_recording_integration_abort(test_env):
     service, history, bus, long_text = test_env
 
     # Mock visual recorder to avoid threading issues in tests
-    with patch("src.pc.recorder.visual_recorder.visual_recorder.start"), patch("src.core.live_processor.LiveTranscriptionManager.start"):
+    with patch("src.platforms.desktop.recorder.visual_recorder.visual_recorder.start"), patch("src.core.live_processor.LiveTranscriptionManager.start"):
         meeting_id = service.start_live_recording(model_name="m", source="System", project_name="IntegrationProject")
 
         assert meeting_id is not None

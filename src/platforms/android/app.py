@@ -1,25 +1,26 @@
 import logging
 import os
 import threading
+
 import flet as ft
 
 from src.core.config_manager import ConfigManager
-from src.core.platform_utils import get_log_path, is_android
-from src.core.state import state
+from src.core.platform_utils import get_log_path
 from src.platforms.android.ui.layouts import MobileLayout
 
 logger = logging.getLogger(__name__)
+
 
 class AndroidApp:
     def __init__(self, page: ft.Page):
         self.page = page
         self.config_mgr = None
         self.transcriber = None
-        
+
         # UI Elements for Booting
         self.boot_text = ft.Text("Initializing MTT Mobile...", size=14, color=ft.Colors.BLUE_200)
         self.boot_progress = ft.ProgressBar(width=250, color=ft.Colors.BLUE_400, bgcolor=ft.Colors.BLACK12)
-        
+
         # Navigation State
         self.nav_bar = ft.NavigationBar(
             destinations=[
@@ -30,7 +31,7 @@ class AndroidApp:
             on_change=self._on_nav_change,
             bgcolor=ft.Colors.SURFACE_VARIANT,
         )
-        
+
         self._show_boot_screen()
         # Initialize in a separate thread to keep UI responsive
         threading.Thread(target=self._init_app_async, daemon=True).start()
@@ -69,23 +70,25 @@ class AndroidApp:
             self._setup_page_properties()
             self._update_boot_status("Loading Configuration...", 0.3)
             self.config_mgr = ConfigManager()
-            
+
             self._update_boot_status("Preparing AI Services...", 0.6)
             # Guarded import handled in WhisperTranscriber internally now
             from src.core.whisper_transcriber import WhisperTranscriber
+
             self.transcriber = WhisperTranscriber()
 
             self._update_boot_status("Building User Interface...", 0.9)
             # Lazy load views to speed up initial boot
             from src.platforms.common.ui.views.chat_bot_view import ChatBotView
+
             self.chat_view = ChatBotView(self.page, self.config_mgr)
-            
+
             # Simple placeholders for other views until native implementation
             self.history_view = ft.Column([ft.Text("履歴機能は準備中です。デスクトップ版と同期予定。")], scroll=ft.ScrollMode.ADAPTIVE)
             self.settings_view = ft.Column([ft.Text("設定画面は準備中です。")], scroll=ft.ScrollMode.ADAPTIVE)
 
             self.views = [self.history_view, self.chat_view, self.settings_view]
-            
+
             # Switch to main UI
             self._update_ui(0)
             logger.info("AndroidApp: Final boot successful.")
@@ -99,14 +102,10 @@ class AndroidApp:
     def _update_ui(self, index: int):
         self.nav_bar.selected_index = index
         title = ["履歴", "AIチャット", "設定"][index]
-        
+
         # Use our MobileLayout helper
-        view = MobileLayout(
-            content=self.views[index],
-            title=title,
-            nav_bar=self.nav_bar
-        )
-        
+        view = MobileLayout(content=self.views[index], title=title, nav_bar=self.nav_bar)
+
         self.page.views.clear()
         self.page.views.append(view)
         self.page.update()
@@ -119,9 +118,10 @@ class AndroidApp:
 
     def _handle_critical_error(self, ex):
         import traceback
+
         error_stack = traceback.format_exc()
         logger.critical(f"ANDROID FATAL BOOT: {ex}\n{error_stack}")
-        
+
         self.page.clean()
         self.page.add(
             ft.Container(
@@ -158,13 +158,14 @@ class AndroidApp:
         path = get_log_path()
         try:
             if os.path.exists(path):
-                with open(path, "r", encoding="utf-8") as f:
+                with open(path, encoding="utf-8") as f:
                     self.page.set_clipboard(f.read())
                 self.page.snack_bar = ft.SnackBar(ft.Text("Logs copied to clipboard!"))
                 self.page.snack_bar.open = True
                 self.page.update()
         except Exception as ex:
             logger.error(f"Failed to copy logs: {ex}")
+
 
 def main(page: ft.Page):
     AndroidApp(page)

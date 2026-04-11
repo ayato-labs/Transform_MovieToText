@@ -5,7 +5,7 @@ import pytest
 
 from src.core.history_mgr import HistoryManager
 from src.core.transcription_service import TranscriptionService
-from src.pc.controllers.history_ctrl import HistoryController
+from src.platforms.desktop.controllers.history_ctrl import HistoryController
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ def test_generate_minutes_for_meeting_logic(transcription_service, temp_db, monk
 
 def test_history_controller_bridge(history_controller, temp_db, monkeypatch):
     """Verify Controller correctly retrieves combined details."""
-    monkeypatch.setattr("src.pc.controllers.history_ctrl.history_mgr", temp_db)
+    monkeypatch.setattr("src.platforms.desktop.controllers.history_ctrl.history_mgr", temp_db)
 
     meeting_id = temp_db.add_meeting(title="Controller Test", transcript="...", audio_path="...")
     temp_db.add_visual_context(meeting_id, 1.0, "p1.jpg")

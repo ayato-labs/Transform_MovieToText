@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.pc.recorder.audio_recorder import AudioRecorder
-from src.pc.recorder.ffmpeg import FFmpegRecorder
+from src.platforms.desktop.recorder.audio_recorder import AudioRecorder
+from src.platforms.desktop.recorder.ffmpeg import FFmpegRecorder
 
 
 def test_ffmpeg_recorder_command():
@@ -39,7 +39,7 @@ def test_ffmpeg_recorder_command():
 
 @pytest.mark.skipif(sys.platform != "win32", reason="pyaudiowpatch is Windows-only")
 def test_audio_recorder_start_stop():
-    with patch("src.pc.recorder.audio_recorder.pyaudio.PyAudio") as mock_pa:
+    with patch("src.platforms.desktop.recorder.audio_recorder.pyaudio.PyAudio") as mock_pa:
         mock_pa.return_value.get_default_input_device_info.return_value = {"name": "TestMic"}
         mock_stream = MagicMock()
         mock_pa.return_value.open.return_value = mock_stream

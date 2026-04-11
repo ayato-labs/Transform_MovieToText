@@ -4,8 +4,8 @@ import pytest
 
 from src.core.history_mgr import history_mgr
 from src.core.state import state
-from src.pc.controllers.minutes_ctrl import MinutesController
-from src.pc.controllers.transcription_ctrl import TranscriptionController
+from src.platforms.desktop.controllers.minutes_ctrl import MinutesController
+from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 
 
 @pytest.fixture

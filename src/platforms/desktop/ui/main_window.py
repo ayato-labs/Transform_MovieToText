@@ -2,9 +2,9 @@ import logging
 
 import flet as ft
 
+from src.platforms.common.ui.views.chat_bot_view import ChatBotView
 from src.platforms.desktop.ui.theme_manager import ThemeManager
 from src.platforms.desktop.ui.views.about_view import AboutView
-from src.platforms.common.ui.views.chat_bot_view import ChatBotView
 from src.platforms.desktop.ui.views.file_transcription_view import FileTranscriptionView
 from src.platforms.desktop.ui.views.history_view import HistoryView
 from src.platforms.desktop.ui.views.live_transcription_view import LiveTranscriptionView
@@ -42,40 +42,25 @@ class MainWindow(ft.Row):
             bgcolor=ft.Colors.TRANSPARENT,
             destinations=[
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.ATTACH_FILE_OUTLINED, 
-                    selected_icon=ft.Icons.ATTACH_FILE, 
+                    icon=ft.Icons.ATTACH_FILE_OUTLINED,
+                    selected_icon=ft.Icons.ATTACH_FILE,
                     label="文字起こし",
-                    padding=ft.padding.symmetric(vertical=5)
+                    padding=ft.padding.symmetric(vertical=5),
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.MIC_OUTLINED, 
-                    selected_icon=ft.Icons.MIC, 
-                    label="録音",
-                    padding=ft.padding.symmetric(vertical=5)
+                    icon=ft.Icons.MIC_OUTLINED, selected_icon=ft.Icons.MIC, label="録音", padding=ft.padding.symmetric(vertical=5)
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.HISTORY_OUTLINED, 
-                    selected_icon=ft.Icons.HISTORY, 
-                    label="履歴",
-                    padding=ft.padding.symmetric(vertical=5)
+                    icon=ft.Icons.HISTORY_OUTLINED, selected_icon=ft.Icons.HISTORY, label="履歴", padding=ft.padding.symmetric(vertical=5)
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.CHAT_ROUNDED, 
-                    selected_icon=ft.Icons.CHAT_ROUNDED, 
-                    label="AI",
-                    padding=ft.padding.symmetric(vertical=5)
+                    icon=ft.Icons.CHAT_ROUNDED, selected_icon=ft.Icons.CHAT_ROUNDED, label="AI", padding=ft.padding.symmetric(vertical=5)
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.SETTINGS_OUTLINED, 
-                    selected_icon=ft.Icons.SETTINGS, 
-                    label="設定",
-                    padding=ft.padding.symmetric(vertical=5)
+                    icon=ft.Icons.SETTINGS_OUTLINED, selected_icon=ft.Icons.SETTINGS, label="設定", padding=ft.padding.symmetric(vertical=5)
                 ),
                 ft.NavigationRailDestination(
-                    icon=ft.Icons.INFO_OUTLINED, 
-                    selected_icon=ft.Icons.INFO, 
-                    label="情報",
-                    padding=ft.padding.symmetric(vertical=5)
+                    icon=ft.Icons.INFO_OUTLINED, selected_icon=ft.Icons.INFO, label="情報", padding=ft.padding.symmetric(vertical=5)
                 ),
             ],
             on_change=self._on_nav_change,
@@ -103,12 +88,15 @@ class MainWindow(ft.Row):
 
         self.controls = [
             ft.Container(
-                content=ft.Column([
-                    ft.Container(height=20), # Spacer
-                    self.nav_rail,
-                    ft.Container(expand=True), # Filler
-                    self.setup_container
-                ], spacing=0),
+                content=ft.Column(
+                    [
+                        ft.Container(height=20),  # Spacer
+                        self.nav_rail,
+                        ft.Container(expand=True),  # Filler
+                        self.setup_container,
+                    ],
+                    spacing=0,
+                ),
                 width=80,
                 bgcolor=ThemeManager.BACKGROUND,
             ),
@@ -124,7 +112,7 @@ class MainWindow(ft.Row):
             self.setup_container.visible = True
         else:
             self.setup_container.visible = False
-        
+
         self.update()
 
     def switch_tab(self, index: int):

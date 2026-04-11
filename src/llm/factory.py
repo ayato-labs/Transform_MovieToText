@@ -1,5 +1,6 @@
 import logging
 
+from src.llm.providers.cloud_gateway_client import AyatoCloudClient
 from src.llm.providers.gemini_client import GeminiLLMClient
 from src.llm.providers.ollama_client import OllamaCloudClient, OllamaLocalClient
 
@@ -21,6 +22,8 @@ class LLMFactory:
 
         if provider_name == "gemini":
             return GeminiLLMClient(api_key=api_key)
+        if provider_name == "ayato_cloud":
+            return AyatoCloudClient(token=api_key, base_url=base_url)
         if provider_name == "ollama_local":
             return OllamaLocalClient(base_url=base_url)
         if provider_name == "ollama_cloud":

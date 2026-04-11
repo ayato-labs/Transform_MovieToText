@@ -1,13 +1,10 @@
 import os
-import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
 # Ensure src is in path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 from src.core.history_mgr import HistoryManager
-from src.pc.ui.views.chat_bot_view import ChatBotView
+from src.platforms.common.ui.views.chat_bot_view import ChatBotView
 
 
 class TestSystemCompleteWorkflow(unittest.TestCase):
@@ -40,7 +37,7 @@ class TestSystemCompleteWorkflow(unittest.TestCase):
 
         # 2. Chat Query (Story: User asks about the secret to pizza)
         # CRITICAL: We patch the global history_mgr in the view module
-        with patch("src.pc.ui.views.chat_bot_view.history_mgr", self.mgr), patch("src.pc.ui.views.chat_bot_view.threading.Thread"):
+        with patch("src.platforms.common.ui.views.chat_bot_view.history_mgr", self.mgr), patch("src.platforms.common.ui.views.chat_bot_view.threading.Thread"):
             view = ChatBotView(self.page, self.config_mgr)
 
         query = "What is the secret for pizza?"

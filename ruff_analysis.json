@@ -1,0 +1,758 @@
+[
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 21,
+      "row": 40
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\core\\database_manager.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 24,
+            "row": 40
+          },
+          "location": {
+            "column": 9,
+            "row": 40
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `mysql_config`"
+    },
+    "location": {
+      "column": 9,
+      "row": 40
+    },
+    "message": "Local variable `mysql_config` is assigned to but never used",
+    "noqa_row": 40,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "F823",
+    "end_location": {
+      "column": 23,
+      "row": 78
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\core\\setup_manager.py",
+    "fix": null,
+    "location": {
+      "column": 13,
+      "row": 78
+    },
+    "message": "Local variable `subprocess` referenced before assignment",
+    "noqa_row": 78,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/undefined-local"
+  },
+  {
+    "cell": null,
+    "code": "F841",
+    "end_location": {
+      "column": 20,
+      "row": 83
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\core\\setup_manager.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 84
+          },
+          "location": {
+            "column": 1,
+            "row": 83
+          }
+        }
+      ],
+      "message": "Remove assignment to unused variable `use_pip`"
+    },
+    "location": {
+      "column": 13,
+      "row": 83
+    },
+    "message": "Local variable `use_pip` is assigned to but never used",
+    "noqa_row": 83,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unused-variable"
+  },
+  {
+    "cell": null,
+    "code": "B025",
+    "end_location": {
+      "column": 25,
+      "row": 97
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\core\\whisper_transcriber.py",
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 97
+    },
+    "message": "try-except block with duplicate exception `Exception`",
+    "noqa_row": 97,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/duplicate-try-block-exception"
+  },
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 36,
+      "row": 133
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\core\\whisper_transcriber.py",
+    "fix": null,
+    "location": {
+      "column": 16,
+      "row": 133
+    },
+    "message": "Undefined name `AndroidWhisperEngine`",
+    "noqa_row": 133,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "F821",
+    "end_location": {
+      "column": 46,
+      "row": 146
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\core\\whisper_transcriber.py",
+    "fix": null,
+    "location": {
+      "column": 26,
+      "row": 146
+    },
+    "message": "Undefined name `AndroidWhisperEngine`",
+    "noqa_row": 146,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/undefined-name"
+  },
+  {
+    "cell": null,
+    "code": "E402",
+    "end_location": {
+      "column": 49,
+      "row": 23
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\platforms\\desktop\\app.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 23
+    },
+    "message": "Module level import not at top of file",
+    "noqa_row": 23,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file"
+  },
+  {
+    "cell": null,
+    "code": "SIM105",
+    "end_location": {
+      "column": 25,
+      "row": 48
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\platforms\\desktop\\ui\\ui_utils.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "import contextlib\n",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        },
+        {
+          "content": "with contextlib.suppress(Exception)",
+          "end_location": {
+            "column": 20,
+            "row": 45
+          },
+          "location": {
+            "column": 17,
+            "row": 45
+          }
+        },
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 49
+          },
+          "location": {
+            "column": 1,
+            "row": 47
+          }
+        }
+      ],
+      "message": "Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`"
+    },
+    "location": {
+      "column": 17,
+      "row": 45
+    },
+    "message": "Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`",
+    "noqa_row": 45,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/suppressible-exception"
+  },
+  {
+    "cell": null,
+    "code": "SIM105",
+    "end_location": {
+      "column": 17,
+      "row": 65
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\platforms\\desktop\\ui\\ui_utils.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "import contextlib\n",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        },
+        {
+          "content": "with contextlib.suppress(Exception)",
+          "end_location": {
+            "column": 12,
+            "row": 62
+          },
+          "location": {
+            "column": 9,
+            "row": 62
+          }
+        },
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 66
+          },
+          "location": {
+            "column": 1,
+            "row": 64
+          }
+        }
+      ],
+      "message": "Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`"
+    },
+    "location": {
+      "column": 9,
+      "row": 62
+    },
+    "message": "Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`",
+    "noqa_row": 62,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/suppressible-exception"
+  },
+  {
+    "cell": null,
+    "code": "SIM105",
+    "end_location": {
+      "column": 21,
+      "row": 97
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\platforms\\desktop\\ui\\ui_utils.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "import contextlib\n",
+          "end_location": {
+            "column": 1,
+            "row": 8
+          },
+          "location": {
+            "column": 1,
+            "row": 8
+          }
+        },
+        {
+          "content": "with contextlib.suppress(Exception)",
+          "end_location": {
+            "column": 16,
+            "row": 94
+          },
+          "location": {
+            "column": 13,
+            "row": 94
+          }
+        },
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 98
+          },
+          "location": {
+            "column": 1,
+            "row": 96
+          }
+        }
+      ],
+      "message": "Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`"
+    },
+    "location": {
+      "column": 13,
+      "row": 94
+    },
+    "message": "Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`",
+    "noqa_row": 94,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/suppressible-exception"
+  },
+  {
+    "cell": null,
+    "code": "SIM105",
+    "end_location": {
+      "column": 21,
+      "row": 462
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\platforms\\desktop\\ui\\views\\file_transcription_view.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "import contextlib\n",
+          "end_location": {
+            "column": 1,
+            "row": 22
+          },
+          "location": {
+            "column": 1,
+            "row": 22
+          }
+        },
+        {
+          "content": "with contextlib.suppress(Exception)",
+          "end_location": {
+            "column": 16,
+            "row": 459
+          },
+          "location": {
+            "column": 13,
+            "row": 459
+          }
+        },
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 463
+          },
+          "location": {
+            "column": 1,
+            "row": 461
+          }
+        }
+      ],
+      "message": "Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`"
+    },
+    "location": {
+      "column": 13,
+      "row": 459
+    },
+    "message": "Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`",
+    "noqa_row": 459,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/suppressible-exception"
+  },
+  {
+    "cell": null,
+    "code": "SIM105",
+    "end_location": {
+      "column": 21,
+      "row": 100
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\platforms\\desktop\\ui\\views\\live_transcription_view.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "import contextlib\n",
+          "end_location": {
+            "column": 1,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 13
+          }
+        },
+        {
+          "content": "with contextlib.suppress(Exception)",
+          "end_location": {
+            "column": 16,
+            "row": 97
+          },
+          "location": {
+            "column": 13,
+            "row": 97
+          }
+        },
+        {
+          "content": "",
+          "end_location": {
+            "column": 1,
+            "row": 101
+          },
+          "location": {
+            "column": 1,
+            "row": 99
+          }
+        }
+      ],
+      "message": "Replace `try`-`except`-`pass` with `with contextlib.suppress(Exception): ...`"
+    },
+    "location": {
+      "column": 13,
+      "row": 97
+    },
+    "message": "Use `contextlib.suppress(Exception)` instead of `try`-`except`-`pass`",
+    "noqa_row": 97,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/suppressible-exception"
+  },
+  {
+    "cell": null,
+    "code": "SIM210",
+    "end_location": {
+      "column": 48,
+      "row": 141
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\platforms\\desktop\\ui\\views\\settings_view.py",
+    "fix": {
+      "applicability": "unsafe",
+      "edits": [
+        {
+          "content": "bool(disabled)",
+          "end_location": {
+            "column": 48,
+            "row": 141
+          },
+          "location": {
+            "column": 21,
+            "row": 141
+          }
+        }
+      ],
+      "message": "Replace with `bool(...)"
+    },
+    "location": {
+      "column": 21,
+      "row": 141
+    },
+    "message": "Use `bool(...)` instead of `True if ... else False`",
+    "noqa_row": 141,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/if-expr-with-true-false"
+  },
+  {
+    "cell": null,
+    "code": "SIM108",
+    "end_location": {
+      "column": 50,
+      "row": 55
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\src\\utils\\setup_helper.py",
+    "fix": null,
+    "location": {
+      "column": 9,
+      "row": 50
+    },
+    "message": "Use ternary operator `base_path = Path(sys._MEIPASS) if getattr(sys, \"frozen\", False) else Path(__file__).parents[2]` instead of `if`-`else`-block",
+    "noqa_row": 50,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp"
+  },
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\common\\integration\\test_local_smart_flow.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "stream did not contain valid UTF-8",
+    "noqa_row": null,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 164,
+      "row": 34
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\common\\integration\\test_transcription_integration.py",
+    "fix": null,
+    "location": {
+      "column": 151,
+      "row": 34
+    },
+    "message": "Line too long (163 > 150)",
+    "noqa_row": 34,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 153,
+      "row": 82
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\common\\integration\\test_transcription_integration.py",
+    "fix": null,
+    "location": {
+      "column": 151,
+      "row": 82
+    },
+    "message": "Line too long (152 > 150)",
+    "noqa_row": 82,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\common\\unit\\core\\test_history_mgr_unit.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "stream did not contain valid UTF-8",
+    "noqa_row": null,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  },
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\common\\unit\\core\\test_transcription_service_unit.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "stream did not contain valid UTF-8",
+    "noqa_row": null,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  },
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\common\\unit\\llm\\fake_llm_client.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "stream did not contain valid UTF-8",
+    "noqa_row": null,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  },
+  {
+    "cell": null,
+    "code": "I001",
+    "end_location": {
+      "column": 68,
+      "row": 29
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\platforms\\desktop\\e2e\\test_app_launch.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "    from src.core.config_manager import ConfigManager\r\n    from src.core.transcription_service import TranscriptionService\r\n    from src.platforms.desktop.ui.views.settings_view import SettingsView\r\n",
+          "end_location": {
+            "column": 1,
+            "row": 30
+          },
+          "location": {
+            "column": 1,
+            "row": 26
+          }
+        }
+      ],
+      "message": "Organize imports"
+    },
+    "location": {
+      "column": 5,
+      "row": 26
+    },
+    "message": "Import block is un-sorted or un-formatted",
+    "noqa_row": 26,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unsorted-imports"
+  },
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\platforms\\desktop\\unit\\test_chat_bot_view.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "stream did not contain valid UTF-8",
+    "noqa_row": null,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  },
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\platforms\\desktop\\unit\\test_local_smart_ctrl.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "stream did not contain valid UTF-8",
+    "noqa_row": null,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  },
+  {
+    "cell": null,
+    "code": "E902",
+    "end_location": {
+      "column": 1,
+      "row": 1
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\platforms\\desktop\\unit\\ui\\test_controllers.py",
+    "fix": null,
+    "location": {
+      "column": 1,
+      "row": 1
+    },
+    "message": "stream did not contain valid UTF-8",
+    "noqa_row": null,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/io-error"
+  },
+  {
+    "cell": null,
+    "code": "I001",
+    "end_location": {
+      "column": 69,
+      "row": 10
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\system\\test_complete_workflow.py",
+    "fix": {
+      "applicability": "safe",
+      "edits": [
+        {
+          "content": "from src.platforms.desktop.ui.views.chat_bot_view import ChatBotView\r\n\r\nfrom src.core.history_mgr import HistoryManager\r\n\r\n\r\n",
+          "end_location": {
+            "column": 1,
+            "row": 13
+          },
+          "location": {
+            "column": 1,
+            "row": 9
+          }
+        }
+      ],
+      "message": "Organize imports"
+    },
+    "location": {
+      "column": 1,
+      "row": 9
+    },
+    "message": "Import block is un-sorted or un-formatted",
+    "noqa_row": 9,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/unsorted-imports"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 162,
+      "row": 43
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\system\\test_complete_workflow.py",
+    "fix": null,
+    "location": {
+      "column": 151,
+      "row": 43
+    },
+    "message": "Line too long (161 > 150)",
+    "noqa_row": 43,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  },
+  {
+    "cell": null,
+    "code": "E501",
+    "end_location": {
+      "column": 156,
+      "row": 40
+    },
+    "filename": "C:\\Users\\saiha\\My_Service\\programing\\Trancform_MovieToText\\tests\\system\\test_recording_flow.py",
+    "fix": null,
+    "location": {
+      "column": 151,
+      "row": 40
+    },
+    "message": "Line too long (155 > 150)",
+    "noqa_row": 40,
+    "severity": "error",
+    "url": "https://docs.astral.sh/ruff/rules/line-too-long"
+  }
+]

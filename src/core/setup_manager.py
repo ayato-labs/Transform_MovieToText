@@ -1,13 +1,17 @@
 import importlib
-import subprocess
-import threading
 import logging
+import subprocess
 import sys
+import threading
+
+from src.utils.setup_helper import SetupHelper
 
 logger = logging.getLogger(__name__)
 
 # List of heavy dependencies that should be handled in the background
 HEAVY_DEPS = ["faster-whisper", "torch", "torchvision", "torchaudio", "opencv-python"]
+PRIMARY_MODEL = "gemma3:1b"
+
 
 class SetupManager:
     def __init__(self):
@@ -26,18 +30,18 @@ class SetupManager:
                 importlib.import_module(import_name)
             except ImportError:
                 self._missing_deps.append(dep)
-        
-        self._is_ready = len(self._missing_deps) == 0
+
+        self._is_ready = (len(self._missing_deps) == 0) and SetupHelper.is_ollama_installed() and SetupHelper.has_model(PRIMARY_MODEL)
         return self._is_ready, self._missing_deps
 
     def start_background_setup(self, on_status_change=None, on_complete=None):
         """Initiates setup in a background thread."""
         if self._is_running:
             return
-        
+
         self._on_status_change = on_status_change
         self._on_complete = on_complete
-        
+
         ready, missing = self.check_env()
         if ready:
             if self._on_complete:
@@ -49,12 +53,24 @@ class SetupManager:
 
     def _run_install_thread(self, missing_deps):
         from src.utils.logger import setup_error, setup_info
-        
+
         setup_info(f"--- STARTING SETUP: Missing {missing_deps} ---")
         if self._on_status_change:
             self._on_status_change(f"Preparing to install {len(missing_deps)} components...")
 
-        use_pip = False
+        # 1. Handle External Binaries (Ollama)
+        if not SetupHelper.is_ollama_installed():
+            if self._on_status_change:
+                self._on_status_change("AI Engine missing. Installing Ollama (Remote)...")
+
+            success = SetupHelper.install_ollama_remote()
+            if not success:
+                setup_error("Ollama installation failed.")
+                if self._on_status_change:
+                    self._on_status_change("Ollama Setup Failed. Please install manually.")
+                return
+
+        # 2. Handle Heavy Python Dependencies
         try:
             # Try UV first
             setup_info("Checking if 'uv' is available...")
@@ -63,23 +79,16 @@ class SetupManager:
             setup_info(f"Using 'uv' for installation: {' '.join(cmd)}")
         except (subprocess.CalledProcessError, FileNotFoundError):
             setup_info("'uv' not found or failed to run. Falling back to 'pip'.")
-            use_pip = True
             cmd = [sys.executable, "-m", "pip", "install"] + missing_deps
             setup_info(f"Using 'pip' for installation: {' '.join(cmd)}")
 
         try:
             process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                shell=True,
-                bufsize=1,
-                universal_newlines=True
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True, bufsize=1, universal_newlines=True
             )
 
             setup_info(">>> INSTALLATION PROCESS STARTED (Streaming logs below) <<<")
-            
+
             # Real-time streaming to terminal and UI
             for line in process.stdout:
                 line_strip = line.strip()
@@ -87,7 +96,7 @@ class SetupManager:
                     # Print directly to system terminal for immediate feedback
                     sys.stdout.write(f"  [SETUP] {line_strip}\n")
                     sys.stdout.flush()
-                    
+
                     if self._on_status_change:
                         # Truncate for UI status bar
                         status = line_strip[:40] + "..." if len(line_strip) > 40 else line_strip
@@ -96,7 +105,20 @@ class SetupManager:
             process.wait()
 
             if process.returncode == 0:
-                setup_info(">>> INSTALLATION SUCCESSFUL! <<<")
+                setup_info(">>> PYTHON INSTALLATION SUCCESSFUL! <<<")
+
+                # 3. Handle Primary Model Pull (Final Step)
+                if not SetupHelper.has_model(PRIMARY_MODEL):
+                    if self._on_status_change:
+                        self._on_status_change(f"Constructing AI Brain: Pulling {PRIMARY_MODEL}...")
+
+                    # We do this synchronously in the thread to ensure it's ready before complete
+                    try:
+                        subprocess.run(["ollama", "pull", PRIMARY_MODEL], check=True)
+                        setup_info(f"Successfully pulled {PRIMARY_MODEL}")
+                    except Exception as e:
+                        setup_error(f"Failed to pull {PRIMARY_MODEL}: {e}")
+
                 self._is_ready = True
                 if self._on_complete:
                     self._on_complete()
@@ -104,7 +126,7 @@ class SetupManager:
                 setup_error(f"Installation failed with exit code {process.returncode}")
                 if self._on_status_change:
                     self._on_status_change("Setup failed (see terminal).")
-        
+
         except Exception as e:
             setup_error(f"Unexpected error during setup: {e}", exc_info=True)
             if self._on_status_change:
@@ -120,6 +142,7 @@ class SetupManager:
     @property
     def is_fully_ready(self):
         return self._is_ready
+
 
 # Singleton instance
 setup_manager = SetupManager()

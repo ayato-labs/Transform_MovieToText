@@ -25,7 +25,7 @@ def test_view_instantiation_smoke():
     """
     from src.core.config_manager import ConfigManager
     from src.core.transcription_service import TranscriptionService
-    from src.pc.ui.views.settings_view import SettingsView
+    from src.platforms.desktop.ui.views.settings_view import SettingsView
 
     _ = MagicMock(spec=ft.Page)
     config_mgr = MagicMock(spec=ConfigManager)

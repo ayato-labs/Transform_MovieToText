@@ -1,11 +1,7 @@
 import logging
-import os
-import sys
 import time
 
 # Ensure project root is in sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 import numpy as np
 import psutil
 import torch

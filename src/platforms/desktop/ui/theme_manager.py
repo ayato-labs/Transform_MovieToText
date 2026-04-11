@@ -1,20 +1,21 @@
 import flet as ft
 
+
 class ThemeManager:
     # Colors inspired by Windows 11 / Slate / Zinc
     BACKGROUND = "#111111"  # Deep Zinc
-    SURFACE = "#1E1E1E"     # Lighter Zinc
-    ACCENT = "#0078D4"      # Windows Blue
+    SURFACE = "#1E1E1E"  # Lighter Zinc
+    ACCENT = "#0078D4"  # Windows Blue
     ACCENT_LIGHT = "#47A1EB"
     TEXT_PRIMARY = "#FFFFFF"
     TEXT_SECONDARY = "#A1A1AA"
     BORDER = "#2E2E2E"
-    
+
     @staticmethod
     def apply_theme(page: ft.Page):
         page.theme_mode = ft.ThemeMode.DARK
         page.bgcolor = ThemeManager.BACKGROUND
-        
+
         # Windows 11 specific font if available
         page.theme = ft.Theme(
             color_scheme_seed=ThemeManager.ACCENT,
@@ -29,13 +30,13 @@ class ThemeManager:
                 unselected_label_text_style=ft.TextStyle(size=11, color=ThemeManager.TEXT_SECONDARY),
                 selected_label_text_style=ft.TextStyle(size=11, weight=ft.FontWeight.BOLD, color=ThemeManager.ACCENT),
                 label_type=ft.NavigationRailLabelType.SELECTED,
-            )
+            ),
         )
-        
+
         # Configure window properties for a native feel
         page.window_bgcolor = ft.Colors.TRANSPARENT
         page.window_title_bar_buttons_icon_color = ThemeManager.TEXT_PRIMARY
-        
+
         # Update styling tokens
         page.update()
 

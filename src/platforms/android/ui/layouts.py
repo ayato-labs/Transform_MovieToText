@@ -1,5 +1,6 @@
 import flet as ft
 
+
 def MobileLayout(content: ft.Control, title: str = "MTT Mobile", nav_bar: ft.NavigationBar = None):
     """
     Common layout wrapper for mobile views.
