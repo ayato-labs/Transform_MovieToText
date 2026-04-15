@@ -1,3 +1,13 @@
+# [2.16.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.15.0...v2.16.0) (2026-04-15)
+
+
+### Features
+
+* implement QueryAnalyzer for metadata extraction and add ChatBotView UI for RAG-powered queries ([a568ee1](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/a568ee181dc41a862ee759e349d1dd8b5e7b9267))
+* implement RAG-powered ChatBotView and add documentation directory to gitignore ([af502ee](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/af502ee1648622ae5fe904bf56b9a9c108b608cc))
+* implement RAG-powered ChatBotView with debounced input and local smart integration utilities ([3a7d921](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/3a7d921c6b2b4863198853e248648d2d7a296bbf))
+* implement settings view and core configuration management for project and LLM provider settings ([a459c2f](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/a459c2fbd298c567a5cffb450fa86db43977f0ea))
+
 # [2.15.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.14.0...v2.15.0) (2026-04-11)
 
 
