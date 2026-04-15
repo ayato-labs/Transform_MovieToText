@@ -218,6 +218,28 @@ class MeetingRepository:
             conn.execute("UPDATE meetings_fts SET project_name = ? WHERE project_name = ?", (new_name, old_name))
             conn.commit()
 
+    def get_roi_metrics(self) -> dict:
+        """
+        Calculates the Return on Investment (ROI) metrics based on processed text volume.
+        Assumes ~300 chars = 1 minute of audio.
+        Assumes SaaS transcription + summary cost = ~100 JPY / min.
+        Assumes manual transcription + formatting time = audio length * 2.
+        """
+        with self.db.get_connection() as conn:
+            cursor = conn.execute("SELECT SUM(LENGTH(transcript)) FROM meetings WHERE transcript IS NOT NULL")
+            total_chars = cursor.fetchone()[0] or 0
+
+        estimated_minutes = total_chars / 300.0
+        cost_avoided_jpy = estimated_minutes * 100.0
+        time_saved_hours = (estimated_minutes * 2.0) / 60.0
+
+        return {
+            "total_chars": int(total_chars),
+            "estimated_minutes": int(estimated_minutes),
+            "cost_avoided_jpy": int(cost_avoided_jpy),
+            "time_saved_hours": round(time_saved_hours, 1)
+        }
+
 
 class VisualContextRepository:
     def __init__(self, db: DatabaseConnection = db_conn):

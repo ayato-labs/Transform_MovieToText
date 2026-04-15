@@ -165,6 +165,10 @@ class HistoryManager:
         results.sort(key=lambda x: x.get("_rank_score", 0), reverse=True)
         return results[:limit]
 
+    def get_roi_metrics(self) -> dict:
+        """Exposes ROI metrics calculation from the repository."""
+        return self.meetings.get_roi_metrics()
+
 
 # Singleton instance
 history_mgr = HistoryManager()

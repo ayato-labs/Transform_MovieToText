@@ -1,88 +1,87 @@
 <p align="center">
-  <img src="assets/icon.png" alt="Ayato Transcriber" width="120"/>
+  <img src="assets/icon.png" alt="Transform_MovieToText" width="120"/>
 </p>
 
-<h1 align="center">Ayato Transcriber</h1>
+<h1 align="center">Transform_MovieToText</h1>
 
 <p align="center">
-  <strong>Privacy-First, Local AI Transcription & Knowledge Engine</strong>
+  <strong>100% Local AI Transcription & Knowledge Engine for Windows</strong><br/>
+  1バイトも外部に送信しない、完全ローカル完結のAI議事録 & ナレッジ検索
 </p>
 
 <p align="center">
   <img src="https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/ci.yml/badge.svg" alt="CI">
   <img src="https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/actions/workflows/desktop_distribution.yml/badge.svg" alt="Desktop Build">
   <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/privacy-100%25_local-green.svg" alt="Privacy">
+  <img src="https://img.shields.io/badge/cost-free-brightgreen.svg" alt="Cost">
   <img src="https://img.shields.io/badge/license-AGPL--3.0-orange.svg" alt="License">
   <img src="https://img.shields.io/badge/code%20style-ruff-purple.svg" alt="Ruff">
 </p>
 
 ---
 
-### 🛡️ 「1バイトも送信しない。100%ローカル実行可能なRAG（検索）エンジン」
+## 課題
 
-> **「企業のセキュリティポリシーを一切変更せずに、明日から導入できるAI議事録」**
-> **「1バイトも送信しない。100%ローカル実行可能なRAG（検索）エンジン」**
-> **「クラウドAIの『見えないコスト』と『プライバシーリスク』からの解放」**
-
----
-
-## 🧭 Design Philosophy: Strategic Data Sovereignty
-### 「守るべき資産」と「共有すべき知」の戦略的使い分け
-
-現代のAI時代において、データの管理はこれまで以上に重要です。データの性質に応じて、インフラを使い分けることが真のガバナンスだと私たちは考えます。
-
-- **Cloud AI (Active Option):** 機密性は低いが特定のドメイン知識が必要なデータ。これらはクラウドLLMに渡すことで、ビッグテックのモデル学習・最適化の恩恵を最大限に享受し、より高度な推論結果を得る戦略が有効です。
-- **Local AI (Default Protection):** 独自のビジネスプロセス、未公開の知的財産、そして究極のプライバシーに関わるデータ。これらは **1バイトも外に出すべきではありません。**
-
-Ayato Transcriber は、この「戦略的使い分け」をユーザー自身がコントロールできる、自由で安全なデータ活用の基盤を提供します。
+| ビジネス上の課題 | 既存SaaSの限界 | 本アプリの回答 |
+| :--- | :--- | :--- |
+| 機密会議の内容をAIに渡せない | クラウドに音声データが送信される | **全処理がローカル完結。回線を抜いても動作する** |
+| SaaS費用が毎月かさむ | Whisper API + GPT-4 で1時間あたり数百円 | **導入費0円、月額0円、利用制限なし** |
+| 過去の会議内容を探し出せない | 手動でファイルを検索する必要がある | **AIチャットに質問するだけで即座にソース付き回答** |
 
 ---
 
-**クラウドに一切のデータを送信しないことが可能な設計**により、モード選択によって設定をすることで、弁護士・研究者・技術者など、機密性の高い情報を扱うプロフェッショナルが安心して利用できます。
+## 主な機能
+
+### 文字起こし
+- **ファイル文字起こし** -- MP4, MP3, WAV 等から高精度なテキストを抽出
+- **リアルタイム文字起こし** -- オンライン会議の音声をリアルタイムでキャプチャ
+- **物理カット＋重ね合わせ方式** -- 5秒のオーバーラップで継ぎ目のない長時間処理を実現
+
+### AI議事録
+- 文字起こし完了後、ローカルLLMが自動で清書・要約・構造化
+- 概要、決定事項、ネクストアクションを一括出力
+
+### ナレッジ検索 (Non-Embedding RAG)
+- 過去の全会議データに対して自然言語で質問
+- AIの回答には**引用元（会議名・日時）がシステムロジックとして自動付与**
+- プロジェクト単位での絞り込みに対応
+
+### ROIダッシュボード
+- 処理実績から「節約された作業時間」「回避されたSaaSコスト」をリアルタイム算出
+- 導入効果を数値で証明
 
 ---
 
-## Design Philosophy
-
-| 原則 | 説明 |
-|------|------|
-| **Privacy by Architecture** | 音声データ、文字起こし結果、AIの推論結果がネットワークを通過しません。Whisper と Ollama をローカルで実行します。 |
-| **Hardware-Aware Optimization** | システムの RAM / VRAM を自動検出し、最適な AI モデルを推奨します。ハイエンドGPUがなくても動作します。 |
-| **Zero Configuration** | `run.bat` をダブルクリックするだけで、Python・依存関係・AIモデルがすべて自動構築されます。 |
-
----
-
-## Architecture
+## アーキテクチャ
 
 ```mermaid
 graph TB
-    subgraph "Desktop App (Flet)"
+    subgraph "Desktop App - Flet"
         UI["UI Layer<br/>File / Live / History / Chat / Settings"]
-        CTRL["Controller Layer<br/>Transcription / Minutes / History"]
+        CTRL["Controller Layer"]
     end
 
     subgraph "Core Engine"
-        WT["WhisperTranscriber<br/>(faster-whisper)"]
+        WT["WhisperTranscriber<br/>faster-whisper"]
         TS["TranscriptionService"]
         LP["LiveProcessor<br/>Real-time chunking"]
         RA["ResourceAdvisor<br/>HW-aware model selection"]
     end
 
-    subgraph "AI Providers (Pluggable)"
+    subgraph "AI Provider - Ollama Local Only"
         LLM_F["LLMFactory"]
-        GEM["Gemini"]
-        OLL["Ollama Local"]
-        OLC["Ollama Cloud"]
+        OLL["OllamaLocalClient<br/>localhost:11434"]
+    end
+
+    subgraph "Non-Embedding RAG"
+        QA["QueryAnalyzer<br/>LLM Intent Extraction"]
+        META["Metadata Filter<br/>Project / Category / FTS5"]
     end
 
     subgraph "Persistence"
         DB[("SQLite<br/>history.db + FTS5")]
         FS["Local Filesystem<br/>MP3 / Frames"]
-    end
-
-    subgraph "RAG Search"
-        QA["QueryAnalyzer<br/>(1B Model + Regex)"]
-        META["Metadata Filter<br/>Project / Tag / FTS5"]
     end
 
     UI --> CTRL
@@ -91,12 +90,9 @@ graph TB
     TS --> WT
     TS --> LP
     TS --> RA
-    LLM_F --> GEM
     LLM_F --> OLL
-    LLM_F --> OLC
     TS --> DB
     TS --> FS
-    CTRL --> DB
     CTRL --> QA
     QA --> META
     META --> DB
@@ -104,88 +100,78 @@ graph TB
 
 ---
 
-## Key Features
+## Non-Embedding RAG: 軽量で高速な検索アーキテクチャ
 
-### 1. Multi-Source Transcription
-- **ファイル文字起こし**: MP4, MP3, WAV 等の動画・音声ファイルから高精度なテキストを抽出。
-- **ライブ文字起こし**: システム音声（オンライン会議等）やマイク入力をリアルタイムでキャプチャ。
-- **ビジュアル解析**: 画面キャプチャによるスライド変化の検知。音声だけでは失われる「視覚的文脈」を保存。
+本アプリは、一般的なRAGシステムで用いられるベクトルデータベースや Embedding モデルを**意図的に採用していません**。
 
-### 2. AI-Powered Meeting Intelligence
-- **自動議事録生成**: 概要、決定事項、ネクストアクションを構造化して出力。
-- **マルチプロバイダー**: Gemini / Ollama Local / Ollama Cloud をワンクリックで切り替え。
-- **AIチャット**: 過去の全会議データに対して自然言語で質問可能。RAG (Retrieval-Augmented Generation) による文脈検索。
+| 観点 | 一般的なRAG (Embedding) | 本アプリ (Non-Embedding) |
+| :--- | :--- | :--- |
+| **検索方式** | ベクトル類似度検索 | SQLite FTS5 全文検索 + LLM意図解析 |
+| **追加モデル** | Embeddingモデルのロードが必要 | 不要（既存LLMを流用） |
+| **メモリ消費** | 高い（ベクトルインデックス常駐） | 極めて低い（SQLiteのみ） |
+| **精度** | 文脈の「雰囲気」で検索 | キーワード＋メタデータでピンポイント検索 |
+| **ローカル適性** | GPU/RAMを大量消費 | 8GB RAMのPCでも快適に動作 |
 
-### 3. Hardware-Aware Intelligence
-PC のスペックに応じて、最適な AI モデルを自動選択します。
+**処理フロー:**
+1. ユーザーの質問をLLMが解析し、「検索キーワード」「対象プロジェクト」「対象カテゴリー」を抽出
+2. 抽出されたメタデータでSQLite FTS5を高速検索（ハードウェア負荷はほぼゼロ）
+3. 絞り込まれたドキュメントのみをLLMに渡し、ソース付きで回答を生成
+
+---
+
+## ハードウェア自動最適化
+
+PCのスペックを自動検出し、最適なAIモデルを選択します。ハイエンドGPUがなくてもCPUフォールバックで動作します。
 
 | Tier | RAM | VRAM | Whisper Model | LLM Model |
-|------|-----|------|---------------|-----------|
+| :--- | :--- | :--- | :--- | :--- |
 | Entry | 8GB+ | - | `base` | `llama3.2:1b-instruct-q4_K_M` |
-| SmallGPU | 8GB+ | 4GB+ | `small` | `phi3.5:3.8b-mini-instruct-q4_K_M` |
+| Small GPU | 8GB+ | 4GB+ | `small` | `phi3.5:3.8b-mini-instruct-q4_K_M` |
 | Standard | 16GB+ | 8GB+ | `medium` | `llama3.1:8b-instruct-q4_K_M` |
 | Pro | 32GB+ | 10GB+ | `large-v3` | `gemma2:9b-instruct-q4_K_M` |
 | Monster | 64GB+ | 22GB+ | `large-v3` | `llama3.3:70b-instruct-q4_K_M` |
 
 ---
 
-## Tech Stack
+## テクノロジースタック
 
-| Category | Technology | Why |
-|----------|-----------|-----|
-| **Speech-to-Text** | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | OpenAI Whisper の CTranslate2 最適化版。CPU/GPU 両対応で高速。 |
-| **LLM Integration** | [Ollama](https://ollama.com/) / [Gemini](https://ai.google.dev/) | ローカルLLMとクラウドLLMを同一インターフェースで切り替え可能。 |
-| **Desktop UI** | [Flet](https://flet.dev/) | Flutter ベースの Python UI フレームワーク。クロスプラットフォーム対応。 |
-| **Audio Capture** | [PyAudioWPatch](https://github.com/s0d3s/PyAudioWPatch) | Windows WASAPI loopback によるシステム音のキャプチャ。 |
-| **RAG Search** | QueryAnalyzer + SQLite FTS5 | **[現行]** 1B LLM による意図解析 + メタデータフィルタ。低スペック環境で高精度・低レイテンシを実現。 |
-| **Embeddings** | [FastEmbed](https://github.com/qdrant/fastembed) | **[アーカイブ済]** ベクトル検索インフラ。現行のメタデータ検索で代替。 |
-| **Package Manager** | [uv](https://github.com/astral-sh/uv) | Rust 製の超高速 Python パッケージマネージャ。 |
-| **Linter** | [Ruff](https://github.com/astral-sh/ruff) | Rust 製の超高速 Python リンター & フォーマッター。 |
-| **CI/CD** | GitHub Actions | 自動テスト、自動リリース、デスクトップバイナリの自動ビルド。 |
-
----
-
-## Quality Assurance
-
-本プロジェクトでは、3 層のテスト戦略によりソフトウェア品質を担保しています。
-
-```
-tests/
-  unit/          ... 関数・メソッド単位の独立テスト (モック使用)
-  integration/   ... Whisper モデルの実ロードを含む連携テスト
-  e2e/           ... ファイル選択 -> 文字起こし -> DB保存 -> AI要約 の全フロー検証
-```
-
-- **静的解析**: `ruff` による自動リント & フォーマット (CI で強制)
-- **自動リリース**: `python-semantic-release` によるセマンティック・バージョニング
-- **クロスプラットフォーム・ビルド**: GitHub Actions で Windows / macOS のデスクトップバイナリを自動生成
+| カテゴリ | 技術 | 選定理由 |
+| :--- | :--- | :--- |
+| **音声認識** | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) | OpenAI Whisper の CTranslate2 最適化版。CPU/GPU 両対応で高速 |
+| **推論エンジン** | [Ollama](https://ollama.com/) | ローカルLLMモデル管理のデファクト。外部通信を遮断した推論 |
+| **検索基盤** | SQLite FTS5 | 非Embedding型 RAG。メモリ消費を極限まで抑え秒速検索 |
+| **UI** | [Flet](https://flet.dev/) | Flutter ベースの Python UI。美しくクロスプラットフォーム |
+| **音声キャプチャ** | [PyAudioWPatch](https://github.com/s0d3s/PyAudioWPatch) | Windows WASAPI loopback によるシステム音キャプチャ |
+| **パッケージ管理** | [uv](https://github.com/astral-sh/uv) | Rust製の超高速 Python パッケージマネージャ |
+| **リンター** | [Ruff](https://github.com/astral-sh/ruff) | Rust製の Python リンター & フォーマッター |
+| **CI/CD** | GitHub Actions | 自動テスト、セマンティックリリース、デスクトップバイナリ自動ビルド |
 
 ---
 
-## Getting Started
+## クイックスタート
 
-### Option 1: Desktop App (推奨)
+### Option 1: デスクトップアプリ（推奨）
 
-Python のインストール不要。[Releases](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/releases) から最新バイナリをダウンロードしてください。
+Pythonのインストール不要です。
+
+1. [Releases](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/releases) から最新のインストーラーをダウンロード
+2. [ollama.com](https://ollama.com/) から Ollama をインストール
+3. アプリを起動 -- 以上
 
 ### Option 2: Thin Client (Windows)
 
-`run.bat` をダブルクリックするだけで、Python / PyTorch / 全依存関係が自動インストールされます。
+`run.bat` をダブルクリックするだけで、Python・依存関係・AIモデルがすべて自動構築されます。
 
-```
-TransformMovieToText-Windows-ThinClient.zip をダウンロード -> 展開 -> run.bat を実行
-```
-
-### Option 3: From Source
+### Option 3: ソースから起動
 
 ```bash
 git clone https://github.com/Ayato-AI-for-Auto/Transform_MovieToText.git
 cd Transform_MovieToText
 
-# ローカルインストール
+# 依存関係のインストール
 uv pip install -e .
 
-# GPU を使う場合
+# GPU を使う場合（CUDA 12.1）
 uv pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu121
 
 # 起動
@@ -194,85 +180,56 @@ uv run main.py
 
 ---
 
-## System Requirements
+## システム要件
 
-| Item | Requirement |
-|------|-------------|
-| **OS** | Windows 10 / 11 (Primary), macOS (Experimental) |
-| **FFmpeg** | システムにインストール済み、PATH が通っていること |
-| **RAM** | 8GB 以上 (16GB+ 推奨) |
+| 項目 | 要件 |
+| :--- | :--- |
+| **OS** | Windows 10 / 11（Primary）、macOS（Experimental） |
+| **FFmpeg** | システムにインストール済み、PATHが通っていること |
+| **RAM** | 8GB 以上（16GB+ 推奨） |
 | **GPU** | NVIDIA CUDA 対応 GPU があれば高速化。なくても動作可能 |
+| **Ollama** | バックグラウンドで起動していること |
 
 ---
 
-## Project Structure
+## 品質保証
+
+3層のテスト戦略でソフトウェア品質を担保しています。
 
 ```
-.
-├── src/
-│   ├── core/           # ビジネスロジック (Whisper, LLM, DB, RAG, Config)
-│   ├── controllers/    # UIとCoreの仲介層
-│   ├── llm/            # LLMプロバイダー (Factory Pattern)
-│   ├── recorder/       # 音声キャプチャ (Strategy Pattern)
-│   ├── ui/             # Flet UI コンポーネント
-│   └── utils/          # 共通ユーティリティ
-├── tests/
-│   ├── unit/           # 単体テスト
-│   ├── integration/    # 結合テスト
-│   └── e2e/            # 総合テスト
-├── data/               # ランタイムデータ (DB, 履歴, 一時ファイル)
-├── .github/workflows/  # CI/CD パイプライン
-└── docs/               # 設計ドキュメント
+tests/
+  unit/          # 関数・メソッド単位の独立テスト
+  integration/   # Whisperモデルの実ロードを含む連携テスト
+  e2e/           # ファイル選択 -> 文字起こし -> DB保存 -> AI要約 の全フロー検証
 ```
+
+- **静的解析**: Ruff による自動リント（CI で強制）
+- **自動リリース**: python-semantic-release によるセマンティック・バージョニング
+- **バイナリビルド**: GitHub Actions で Windows / macOS のデスクトップバイナリを自動生成
 
 ---
 
-## Versioning
+## バージョニング
 
-[Conventional Commits](https://www.conventionalcommits.org/) に準拠し、`python-semantic-release` による自動バージョニングを行っています。
+[Conventional Commits](https://www.conventionalcommits.org/) に準拠しています。
 
 | Prefix | Effect | Example |
-|--------|--------|---------|
+| :--- | :--- | :--- |
 | `feat:` | Minor version bump | `2.6.0` -> `2.7.0` |
 | `fix:` | Patch version bump | `2.6.0` -> `2.6.1` |
 | `BREAKING CHANGE:` | Major version bump | `2.x.x` -> `3.0.0` |
 
 ---
 
----
+## ライセンス
 
-## 🧭 ライセンスとエディション (Licensing & Editions)
-
-本プロジェクトは **GNU Affero General Public License v3.0 (AGPL-3.0)** の下で公開されています。個人の非営利利用や研究目的では自由にご利用いただけますが、**商用利用や高度な機能（Pro/Enterprise）については商用ライセンスの購入が必要です。**
-
-### エディション比較 (Edition Comparison)
-
-| 機能 / 特典 | Free (Community) | Pro (Business) | Enterprise |
-| :--- | :---: | :---: | :---: |
-| **文字起こし (Whisper)** | ✅ ローカルのみ | ✅ ローカル | ✅ ローカル |
-| **LLM 推論 (Local)** | ✅ **Gemma 限定** | ✅ 無制限 | ✅ 無制限 |
-| **外部 AI API (Gemini等)** | ❌ | ✅ | ✅ |
-| **データベース** | ✅ SQLite | ✅ SQLite | ✅ **MySQL / PostgreSQL** |
-| **プライバシー保証** | 100% On-Device | 100% On-Device | 100% On-Device |
-| **ライセンス** | **AGPL-3.0** | **Commercial** | **Commercial** |
-
-### 商用利用・導入支援について
-以下のようなケースでは、別途商用ライセンスの発行および導入支援を承ります。
-- **社内業務での本格的な利用**: セキュリティポリシーに準拠した社内インフラへの展開
-- **中央集権型管理**: MySQL 等の外部 DB への移行、複数人でのデータ共有
-- **高度な権限管理**: ログイン認証、ユーザーごとの閲覧・編集権限の構築
-- **既存システム連携**: 社内ポータルや外部ナレッジベースとの API 連携
-
-> [!IMPORTANT]
-> **「情報は社外に出さない（No Cloud Leakage）」** という本プロダクトのコアバリューは、すべてのエディションで共通の設計思想です。
-
-**[お問い合わせ先]**  
-[cwblog69@gmail.com]  
-（個別要件に応じたお見積もり・ライセンス発行をさせていただきます）
-
----
-
-## 📋 License
-
-[GNU Affero General Public License v3.0 (AGPL-3.0)](LICENSE)  
+**GNU Affero General Public License v3.0 (AGPL-3.0)**
 Copyright (c) 2026 Ayato-AI
+
+「データは個人の資産である」という信念のもと、オープンソースかつプライバシー重視で開発されています。
+
+---
+
+<p align="center">
+  <strong>Transform_MovieToText -- あなたの会議を、検索可能な資産に変える。</strong>
+</p>

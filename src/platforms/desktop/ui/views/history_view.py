@@ -47,9 +47,41 @@ class HistoryView(ft.Column):
             visible=False,  # Initially hidden
         )
 
+        # ROI Dashboard Banner
+        self.roi_banner = ft.Container(
+            content=ft.Row(
+                [
+                    ft.Column(
+                        [
+                            ft.Text("節約された合計時間", size=12, color=ft.Colors.BLUE_200),
+                            ft.Text("0.0時間", size=22, weight="bold", key="time_saved"),
+                        ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        expand=True,
+                    ),
+                    ft.VerticalDivider(width=1, color=ft.Colors.WHITE24),
+                    ft.Column(
+                        [
+                            ft.Text("削減コスト (SaaS換算)", size=12, color=ft.Colors.GREEN_200),
+                            ft.Text("¥0", size=22, weight="bold", key="cost_saved"),
+                        ],
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        expand=True,
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+            ),
+            padding=20,
+            bgcolor=ft.Colors.BLACK26,
+            border_radius=15,
+            border=ft.border.all(1, ft.Colors.WHITE10),
+            margin=ft.margin.only(bottom=10),
+        )
+
         self.controls = [
-            ft.Text("会議履歴", size=24, weight="bold"),
-            ft.Text("過去の録音と議事録を確認・書き出せます。"),
+            ft.Text("会議履歴 ＆ ROIダッシュボード", size=24, weight="bold"),
+            ft.Text("過去の資産を活用し、どれだけの時間とコストが削減されたかを確認できます。"),
+            self.roi_banner,
             ft.Row([self.search_field, ft.IconButton(ft.Icons.REFRESH, on_click=lambda _: self._refresh_history())]),
             ft.Row([self.project_dropdown, self.clear_filter_btn]),
             ft.Divider(),
@@ -78,6 +110,14 @@ class HistoryView(ft.Column):
 
     def _refresh_history(self):
         self.history_list.controls.clear()
+
+        # Update ROI Metrics
+        metrics = self.controller.get_roi_metrics()
+        # The Flet elements within the container are columns, we need to access the text controls
+        # Finding them by key is easier if we store references or use the control's key/index.
+        # Inside the Row under Column 0 and 1.
+        self.roi_banner.content.controls[0].controls[1].value = f"{metrics['time_saved_hours']}時間"
+        self.roi_banner.content.controls[2].controls[1].value = f"¥{metrics['cost_avoided_jpy']:,}"
 
         # Get both filters
         search_query = self.search_field.value.strip() if self.search_field.value else None

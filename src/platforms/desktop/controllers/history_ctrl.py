@@ -15,6 +15,10 @@ class HistoryController:
     def __init__(self):
         pass
 
+    def get_roi_metrics(self):
+        """Fetches calculated ROI results from HistoryManager."""
+        return history_mgr.get_roi_metrics()
+
     def get_meetings(self):
         return history_mgr.get_all_meetings()
 
