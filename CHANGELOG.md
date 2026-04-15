@@ -1,3 +1,11 @@
+# [2.17.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.16.0...v2.17.0) (2026-04-15)
+
+
+### Features
+
+* implement local knowledge base scanner and secure Ollama client with cloud model filtering ([544ff88](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/544ff88dbc9098a8982254fad676894f91f40acb))
+* implement meeting history management with FTS5 search, project filtering, and ROI dashboard integration ([f94b10b](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/f94b10b7a185a7b1b7d61750b6b70459e1465a35))
+
 # [2.16.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.15.0...v2.16.0) (2026-04-15)
 
 
