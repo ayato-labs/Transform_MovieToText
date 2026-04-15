@@ -83,29 +83,12 @@ class ChatBotView(ft.Column):
             bgcolor=ft.Colors.BLACK12,
         )
 
-        edition = self.config_mgr.get_edition()
-        allowed_providers = EDITION_RESTRICTIONS.get(edition, {}).get("allowed_providers", [])
-
-        # Provider & Model Selection
-        self.dd_provider = ft.Dropdown(
-            label="AIプロバイダー",
-            width=180,
-            options=[ft.dropdown.Option(p) for p in allowed_providers],
-            value=self.config_mgr.get_active_provider(),
-        )
-        self.dd_provider.on_change = self._on_provider_change
-        self.dd_llm = ft.Dropdown(
-            label="LLMモデル",
+        # Project Selection
+        self.dd_project = ft.Dropdown(
+            label="対象プロジェクト",
             width=200,
-            options=[ft.dropdown.Option("取得中...", disabled=True)],
-            value=None,
-        )
-        self.local_smart_btn = ft.IconButton(
-            icon=ft.Icons.AUTO_AWESOME_OUTLINED,
-            selected_icon=ft.Icons.AUTO_AWESOME,
-            selected=self.local_smart_enabled,
-            tooltip="Local Smart: ハードウェアに最適な設定を自動適用",
-            on_click=self._toggle_local_smart,
+            options=[ft.dropdown.Option("すべてのプロジェクト")],
+            value="すべてのプロジェクト",
         )
 
         self.status_text = ft.Text("待機中...", size=12, color=ft.Colors.GREY_500)
@@ -116,7 +99,7 @@ class ChatBotView(ft.Column):
                     ft.Column(
                         [
                             ft.Text("AIチャット (RAG)", size=24, weight=ft.FontWeight.BOLD),
-                            ft.Text("蓄積された文字起こしデータから、AIが質問に回答します", size=13, color=ft.Colors.GREY_500),
+                            ft.Text("蓄積された文字起こしデータから、AIが質問に回答します (100% Local)", size=13, color=ft.Colors.GREEN_400),
                         ]
                     ),
                     ft.Row(
@@ -131,7 +114,7 @@ class ChatBotView(ft.Column):
                                 ),
                                 padding=ft.padding.only(right=10),
                             ),
-                            self.dd_provider,
+                            self.dd_project,
                             self.dd_llm,
                             self.local_smart_btn,
                         ],
@@ -192,11 +175,23 @@ class ChatBotView(ft.Column):
             logger.debug(f"ChatBotView: Skipping update as control is not yet ready: {e}")
 
     def _initial_load(self):
+        # Update project list
+        self._update_project_options()
+        
         if self.local_smart_enabled:
             self._apply_local_smart()
         else:
-            provider = self.config_mgr.get_active_provider()
+            provider = "ollama_local" # Fixed to local
             self._update_model_options(provider)
+        self._safe_update()
+
+    def _update_project_options(self):
+        projects = self.history_mgr.get_projects()
+        opts = [ft.dropdown.Option("すべてのプロジェクト")]
+        for p in projects:
+            if p:
+                opts.append(ft.dropdown.Option(p))
+        self.dd_project.options = opts
         self._safe_update()
 
     def _on_provider_change(self, e):
@@ -228,13 +223,14 @@ class ChatBotView(ft.Column):
         self.config_mgr.set_local_smart_enabled(self.local_smart_enabled)
 
         if self.local_smart_enabled:
-            self.local_smart_ctrl.apply_optimization(self.dd_provider, self.dd_llm, self.status_text)
+            # Note: Provider dropdown is removed, passing dummy to controller if needed
+            self.local_smart_ctrl.apply_optimization(None, self.dd_llm, self.status_text)
         else:
-            self.local_smart_ctrl.restore_manual_mode(self.dd_provider, self.dd_llm, self.status_text, update_callback=self._update_model_options)
+            self.local_smart_ctrl.restore_manual_mode(None, self.dd_llm, self.status_text, update_callback=self._update_model_options)
         self._safe_update()
 
     def _apply_local_smart(self):
-        self.local_smart_ctrl.apply_optimization(self.dd_provider, self.dd_llm, self.status_text)
+        self.local_smart_ctrl.apply_optimization(None, self.dd_llm, self.status_text)
         self._safe_update()
 
     def _on_send_click(self, e):
@@ -261,11 +257,16 @@ class ChatBotView(ft.Column):
 
             logger.info(f"RAG Intent Extracted: {intent}")
 
-            # 2. Metadata-Filtered Search (Multi-filter)
-            # Use extracted keywords for FTS5, scoped by projects/categories
+            # 2. Metadata-Filtered Search
+            # Prioritize manual project filter if selected
+            manual_filter = self.dd_project.value
+            filter_projs = intent["projects"]
+            if manual_filter and manual_filter != "すべてのプロジェクト":
+                filter_projs = [manual_filter]
+
             search_text = " ".join(intent["keywords"]) if intent["keywords"] else query
             results = self.history_mgr.get_meetings_filtered(
-                project_names=intent["projects"], categories=intent["categories"], search_query=search_text, limit=5
+                project_names=filter_projs, categories=intent["categories"], search_query=search_text, limit=5
             )
 
             # 3. Format Context with Metadata
@@ -303,17 +304,18 @@ class ChatBotView(ft.Column):
                 f"[Context Info]\n{context}\n"
             )
 
-            # 4. Actual LLM Call with Context (Unified Chat Interface)
-            provider = self.dd_provider.value
+            # 4. Actual LLM Call with Context
+            # Fixed to local provider
+            provider = "ollama_local"
             llm_model = self.dd_llm.value
 
             # Build standardized message list
             messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": query}]
 
             conf = self.config_mgr.get_provider_config(provider)
-            client = self.config_mgr.get_llm_client(provider, conf.get("api_key"))
+            client = self.config_mgr.get_llm_client(provider)
 
-            # Call using standardized 'messages' instead of incompatible 'message=' or 'system_instruction='
+            # Call using standardized 'messages'
             response = client.chat(model_name=llm_model, messages=messages)
 
             # 5. Automatically append source information (Title / Project / Timestamp)
@@ -328,7 +330,10 @@ class ChatBotView(ft.Column):
                         seen_sources.add(s_label)
 
                 if source_bullets:
-                    source_footer = "\n\n---\n**参考にした会議:**\n" + "\n".join(source_bullets)
+                    # Professional styling for citations
+                    source_footer = "\n\n---\n**🔍 引用元（ナレッジソース）:**\n" + "\n".join(source_bullets)
+                    # Add encouragement about privacy
+                    source_footer += "\n\n*※ この回答は完全にローカルで生成されており、データは外部へ送信されていません。*"
                     response += source_footer
 
             self.chat_history.controls.append(ChatMessage(response, is_user=False))

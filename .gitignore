@@ -68,3 +68,6 @@ recordings/
 # SharedMemoryServer local data
 .shared_memory/
 /config.json
+
+# Documentation
+docs/
