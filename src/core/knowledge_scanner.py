@@ -84,28 +84,45 @@ class KnowledgeScanner:
         """Parses a single file and adds it to the history manager."""
         try:
             with open(file_path, encoding="utf-8", errors="ignore") as f:
-                if ext == ".csv":
-                    reader = csv.reader(f)
-                    content = "\n".join([", ".join(row) for row in reader])
-                else:
-                    content = f.read()
+                raw_content = f.read()
 
-            title = os.path.basename(file_path)
-            
-            # Simple heuristic for project name
-            project_name = "Knowledge Library"
+            if ext == ".csv":
+                import io
+                reader = csv.reader(io.StringIO(raw_content))
+                content = "\n".join([", ".join(row) for row in reader])
+                title = os.path.basename(file_path)
+                project_name = "Knowledge Library"
+                category = "CSV"
+            else:
+                # MD/TXT: Handle YAML Frontmatter
+                header_data = {}
+                content = raw_content
+                if raw_content.startswith("---"):
+                    parts = raw_content.split("---", 2)
+                    if len(parts) >= 3:
+                        header_str = parts[1]
+                        content = parts[2].strip()
+                        # Simple YAML-ish parser
+                        for line in header_str.splitlines():
+                            if ":" in line:
+                                k, v = line.split(":", 1)
+                                header_data[k.strip().lower()] = v.strip().strip("\"'")
+
+                title = header_data.get("title") or os.path.basename(file_path)
+                project_name = header_data.get("project") or "Knowledge Library"
+                category = header_data.get("category") or ext.upper()[1:]
 
             self.history_mgr.add_meeting(
                 title=title,
                 transcript=content,
                 audio_path="",
                 project_name=project_name,
-                category=ext.upper()[1:],  # MD, TXT, CSV
+                category=category,
                 source_type="document",
                 file_path=file_path,
                 file_mtime=mtime
             )
-            logger.info(f"KnowledgeScanner: Indexed {title}")
+            logger.info(f"KnowledgeScanner: Indexed {title} (Project: {project_name})")
 
         except Exception as e:
             logger.error(f"Error reading file {file_path}: {e}")

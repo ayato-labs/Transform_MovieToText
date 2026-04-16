@@ -21,6 +21,7 @@ class HistoryView(ft.Column):
         self.config_mgr = config_mgr
         self.folder_picker = folder_picker
         self.selected_meeting_id = None
+        self.export_type = "audio"  # "audio" or "md"
         self.audio_player = None
 
         # Search debouncer to avoid flooding DB during typing
@@ -199,9 +200,9 @@ class HistoryView(ft.Column):
                                     visible=bool(audio_path),
                                 ),
                                 ft.TextButton(
-                                    "議事録を生成",
-                                    icon=ft.Icons.STARS,
-                                    on_click=lambda _, m=meeting: self._generate_minutes(m),
+                                    "ナレッジ共有(MD)",
+                                    icon=ft.Icons.SHARE,
+                                    on_click=lambda _, mid=meeting_id: self._start_export_md(mid),
                                 ),
                                 ft.VerticalDivider(width=10, color=ft.Colors.TRANSPARENT),
                                 ft.IconButton(
@@ -478,6 +479,12 @@ class HistoryView(ft.Column):
                                             on_click=lambda _, mid=m["id"]: self._start_export(mid),
                                         ),
                                         ft.IconButton(
+                                            ft.Icons.SHARE,
+                                            icon_color="green400",
+                                            tooltip="ナレッジをMDで書き出し",
+                                            on_click=lambda _, mid=m["id"]: self._start_export_md(mid),
+                                        ),
+                                        ft.IconButton(
                                             ft.Icons.DELETE,
                                             icon_color="red400",
                                             tooltip="削除",
@@ -549,13 +556,22 @@ class HistoryView(ft.Column):
 
     def _start_export(self, meeting_id):
         self.selected_meeting_id = meeting_id
+        self.export_type = "audio"
+        self.folder_picker.get_directory_path()
+
+    def _start_export_md(self, meeting_id):
+        self.selected_meeting_id = meeting_id
+        self.export_type = "md"
         self.folder_picker.get_directory_path()
 
     def _on_folder_result(self, e):
         if not e.path or not self.selected_meeting_id:
             return
 
-        success, message = self.controller.export_audio(self.selected_meeting_id, e.path)
+        if self.export_type == "audio":
+            success, message = self.controller.export_audio(self.selected_meeting_id, e.path)
+        else:
+            success, message = self.controller.export_meeting_as_md(self.selected_meeting_id, e.path)
 
         if self._page:
             self._page.snack_bar = ft.SnackBar(ft.Text(message))

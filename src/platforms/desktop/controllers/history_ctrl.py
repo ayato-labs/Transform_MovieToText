@@ -92,6 +92,63 @@ class HistoryController:
             logger.error(f"Failed to update meeting {meeting_id}: {e}")
             return False
 
+    def export_meeting_as_md(self, meeting_id: int, target_dir: str):
+        """Exports meeting text and metadata as a Markdown file with YAML frontmatter."""
+        details = self.get_meeting_details(meeting_id)
+        if not details:
+            return False, "データが見つかりません。"
+        
+        m = details["meeting"]
+        title = m.get("title", "Untitled")
+        project = m.get("project_name", "その他")
+        category = m.get("category", "")
+        timestamp = m.get("timestamp", "")
+        minutes = m.get("minutes", "")
+        transcript = m.get("transcript", "")
+
+        # Format as Markdown with YAML Frontmatter
+        md_lines = [
+            "---",
+            f'title: "{title}"',
+            f'project: "{project}"',
+            f'category: "{category}"',
+            f'date: "{timestamp}"',
+            "source: \"Transform_MovieToText Export\"",
+            "---",
+            "",
+            f"# {title}",
+            "",
+            "## 議事録 / 要約",
+            minutes if minutes else "（未生成）",
+            "",
+            "---",
+            "",
+            "## 文字起こし全文",
+            "<details>",
+            "<summary>クリックして展開</summary>",
+            "",
+            transcript,
+            "",
+            "</details>"
+        ]
+        
+        content = "\n".join(md_lines)
+        
+        try:
+            from src.core.utils import sanitize_filename
+            safe_title = sanitize_filename(title)
+            safe_date = timestamp.split(" ")[0].replace("-", "")
+            filename = f"Knowledge_{safe_date}_{safe_title}.md"
+            dest_path = os.path.join(target_dir, filename)
+            
+            with open(dest_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            
+            return True, f"ナレッジを書き出しました: {filename}"
+        except Exception as e:
+            logger.error(f"Failed to export knowledge md: {e}")
+            return False, f"書き出し失敗: {e}"
+
     def sync_knowledge(self, target_dir):
         """Triggers knowledge directory sync via HistoryManager."""
         return history_mgr.sync_knowledge(target_dir)
