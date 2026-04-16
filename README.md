@@ -182,6 +182,7 @@ Pythonのインストール不要です。
 No more searching through endless folders. Chat with all your knowledge sources simultaneously.
 - **Meeting Intelligence**: Query across months of meeting transcripts and AI summaries.
 - **Local Document Indexing**: Automatically index `.md`, `.txt`, and `.csv` files from your local folders.
+- **Decentralized Team Sharing**: Export meetings as `.md` files with **YAML Frontmatter** (Project/Category metadata). Share via Dropbox/NAS to enable "Git-style" local-first team sync.
 - **Zero-Cloud RAG**: Context retrieval and answer generation happen 100% on your machine.
 - **Smart Citations**: AI responses include clickable source links (Meeting 🎙️ or Document 📄).
 
