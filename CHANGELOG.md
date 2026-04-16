@@ -1,3 +1,10 @@
+# [2.18.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.17.0...v2.18.0) (2026-04-16)
+
+
+### Features
+
+* implement KnowledgeScanner for local document indexing and add history management controller and UI views ([9d6b53b](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/commit/9d6b53bc51e887de9d87589ebb9f1b88178e882d))
+
 # [2.17.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.16.0...v2.17.0) (2026-04-15)
 
 
