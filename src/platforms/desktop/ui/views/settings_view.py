@@ -186,29 +186,25 @@ class SettingsView(ft.Column):
     def _show_model_delete_confirmation(self, model_name):
         def confirm_delete(e_close):
             if self.page:
-                confirm_dialog.open = False
-                self.page.update()
+                self.page.close(confirm_dialog)
             self._execute_model_deletion(model_name)
 
         def cancel_delete(e_close):
             if self.page:
-                confirm_dialog.open = False
-                self.page.update()
+                self.page.close(confirm_dialog)
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("AIモデルの削除"),
             content=ft.Text(f"モデル「{model_name}」をPCから完全に削除しますか？\n再度使用するには再ダウンロードが必要です。"),
             actions=[
                 ft.TextButton("キャンセル", on_click=cancel_delete),
-                ft.TextButton("削除する", on_click=confirm_delete, font_weight="bold", color=ft.Colors.RED),
+                ft.TextButton(content=ft.Text("削除する", weight="bold", color=ft.Colors.RED), on_click=confirm_delete),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
         if self.page:
-            self.page.dialog = confirm_dialog
-            confirm_dialog.open = True
-            self.page.update()
+            self.page.open(confirm_dialog)
 
     def _execute_model_deletion(self, model_name):
         provider = self.config_mgr.get_active_provider()
@@ -262,29 +258,25 @@ class SettingsView(ft.Column):
 
         def confirm_delete(e_close):
             if self.page:
-                confirm_dialog.open = False
-                self.page.update()
+                self.page.close(confirm_dialog)
             self._execute_project_deletion(project_name)
 
         def cancel_delete(e_close):
             if self.page:
-                confirm_dialog.open = False
-                self.page.update()
+                self.page.close(confirm_dialog)
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("プロジェクトの削除"),
             content=ft.Text(f"プロジェクト「{project_name}」を削除しますか？\n所属していたデータは「その他」に移動されます。"),
             actions=[
                 ft.TextButton("キャンセル", on_click=cancel_delete),
-                ft.TextButton("削除する", on_click=confirm_delete, font_weight="bold", color=ft.Colors.RED),
+                ft.TextButton(content=ft.Text("削除する", weight="bold", color=ft.Colors.RED), on_click=confirm_delete),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
         if self.page:
-            self.page.dialog = confirm_dialog
-            confirm_dialog.open = True
-            self.page.update()
+            self.page.open(confirm_dialog)
 
     def _execute_project_deletion(self, project_name):
         if not self.history_ctrl:

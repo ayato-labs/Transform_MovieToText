@@ -288,15 +288,19 @@ class OllamaLocalClient(BaseLLMClient):
             return response["message"]["content"]
         except Exception as e:
             err_str = str(e)
-            if "model requires more system memory" in err_str:
-                logger.error(f"Ollama local RAM exhaustion: {err_str}")
-                raise RuntimeError(
-                    f"メモリ不足によりモデルを起動できませんでした。より軽量なバージョン"
-                    f"（例: {model_name.split(':')[0]}:3.8b-mini-instruct-q4_K_M）を"
-                    f"手動で 'ollama pull' して試してください。\n詳細: {err_str}"
-                ) from e
+            import ollama
+            if isinstance(e, ollama.ResponseError):
+                if e.status_code == 404:
+                    msg = f"モデル '{model_name}' がPCにインストールされていません。設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    logger.error(f"Ollama local chat failed (404): {msg}")
+                    raise RuntimeError(msg) from e
+                elif e.status_code == 500 and "more system memory" in err_str:
+                    msg = f"メモリ不足によりモデル '{model_name}' を起動できませんでした。PCのメモリが不足しているか、モデルが大きすぎます。設定画面からより軽量なモデルを選択してください。\n詳細: {err_str}"
+                    logger.error(f"Ollama local RAM exhaustion (500): {err_str}")
+                    raise RuntimeError(msg) from e
+            
             logger.error(f"Ollama local generation failed: {e}")
-            raise RuntimeError(f"Failed to generate minutes: {str(e)}") from e
+            raise RuntimeError(f"Chat/Generation failed: {str(e)}") from e
 
     def extract_category(self, transcript: str, model_name: str) -> str:
         """Extracts a short category/label (1-3 keywords) from the transcript."""
@@ -353,5 +357,17 @@ class OllamaLocalClient(BaseLLMClient):
             response = self.client.chat(model=model_name, messages=messages)
             return response["message"]["content"]
         except Exception as e:
+            err_str = str(e)
+            import ollama
+            if isinstance(e, ollama.ResponseError):
+                if e.status_code == 404:
+                    msg = f"モデル '{model_name}' がPCにインストールされていません。設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    logger.error(f"Ollama local chat failed (404): {msg}")
+                    raise RuntimeError(msg) from e
+                elif e.status_code == 500 and "more system memory" in err_str:
+                    msg = f"メモリ不足によりモデル '{model_name}' を起動できませんでした。PCのメモリが不足しているか、モデルが大きすぎます。設定画面からより軽量なモデルを選択してください。\n詳細: {err_str}"
+                    logger.error(f"Ollama local RAM exhaustion (500): {err_str}")
+                    raise RuntimeError(msg) from e
+            
             logger.error(f"Ollama local chat failed: {e}")
             raise RuntimeError(f"Chat failed: {str(e)}") from e
