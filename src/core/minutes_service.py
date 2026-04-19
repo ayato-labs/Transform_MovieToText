@@ -1,6 +1,7 @@
 import logging
 
 from src.core.config_manager import ConfigManager
+from src.core.event_bus import EVENT_STATUS_UPDATE, event_bus
 from src.core.history_mgr import history_mgr
 from src.llm.factory import LLMFactory
 
@@ -89,14 +90,20 @@ class MinutesService:
         )
         
         for i, chunk in enumerate(chunks):
-            logger.debug(f"Mapping chunk {i+1}/{len(chunks)}")
+            status = f"🧠 AI解析中 (Map): {i+1}/{len(chunks)} セクションを処理中..."
+            logger.debug(status)
+            event_bus.publish(EVENT_STATUS_UPDATE, status)
+            
             prompt = map_prompt_template.format(chunk_text=chunk)
             # Use chat() for finer control over prompts during intermediate steps
             summary = client.chat(model_name=model, messages=[{"role": "user", "content": prompt}])
             summaries.append(f"セクション {i+1} の要約:\n{summary}")
 
         # Reduce Phase: Combine summaries into final minutes
-        logger.info("Reduce Phase: Combining intermediate summaries...")
+        status = "🧠 AI解析中 (Reduce): 中間要約を統合して最終議事録を作成中..."
+        logger.info(status)
+        event_bus.publish(EVENT_STATUS_UPDATE, status)
+        
         combined_summaries = "\n\n".join(summaries)
         
         reduce_prompt = (
@@ -106,11 +113,8 @@ class MinutesService:
             f"--- セクション要約群 ---\n{combined_summaries}"
         )
         
-        # In the final reduce step, we might want to include visual contexts if it's not too many
-        # For now, we'll use generate_minutes but with the combined_summaries as "transcript"
-        # to leverage its multimodal support if images exist.
+        # In the final reduce step, we use the combined summaries as the "transcript"
         return client.generate_minutes(combined_summaries, model, visual_contexts=visual_contexts)
-
 
     def get_available_models(self, provider: str) -> list[str]:
         """Fetches available models for a given provider."""
