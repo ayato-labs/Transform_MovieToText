@@ -54,6 +54,9 @@ class FileTranscriptionView(ft.Column):
             local_smart_btn=self.local_smart_btn
         )
 
+        # IMPORTANT: Start initial load thread AFTER helper is fully assigned to self
+        threading.Thread(target=lambda: self.smart_helper.initial_load(self._update_model_options), daemon=True).start()
+
         self.refresh_dependency_state(initial=True)
 
     def _setup_view_elements(self):
@@ -223,9 +226,6 @@ class FileTranscriptionView(ft.Column):
                 alignment=ft.MainAxisAlignment.END,
             ),
         ]
-
-        # Initial data load
-        threading.Thread(target=lambda: self.smart_helper.initial_load(self._update_model_options), daemon=True).start()
 
     def refresh_dependency_state(self, initial=False):
         """Update UI based on background setup status."""

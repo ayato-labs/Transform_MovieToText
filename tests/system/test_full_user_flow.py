@@ -64,5 +64,29 @@ class TestFullUserFlow(unittest.TestCase):
             self.assertEqual(view.tabs.selected_index, 1) # Should have switched to AI tab
             self.assertIn("完了", view.status_text.value)
 
+    @patch("src.core.history_mgr.history_mgr.get_projects", return_value=["Project A"])
+    @patch("src.llm.factory.LLMFactory.create_client")
+    @patch("src.core.resource_advisor.ResourceAdvisor.get_system_specs", return_value=(16.0, 8.0))
+    def test_file_transcription_view_initialization(self, mock_specs, mock_create_client, mock_projects):
+        # This test specifically target the AttributeError regression in constructor
+        from src.platforms.desktop.ui.views.file_transcription_view import FileTranscriptionView
+        
+        mock_client = MagicMock()
+        mock_client.get_available_models.return_value = ["gemma3:4b"]
+        mock_create_client.return_value = mock_client
+        
+        page = MagicMock(spec=ft.Page)
+        page.overlay = []
+        config_mgr = ConfigManager()
+        transcriber = MagicMock()
+        ctrl = TranscriptionController(config_mgr, transcriber)
+        
+        # Instantiate. Should not raise AttributeError: 'FileTranscriptionView' object has no attribute 'smart_helper'
+        view = FileTranscriptionView(page, config_mgr, ctrl, hw_info={"ram": 16.0, "vram": 8.0, "device": "GPU"})
+        
+        # Verify helper is initialized
+        self.assertIsNotNone(view.smart_helper)
+        self.assertEqual(view.smart_helper.config_mgr, config_mgr)
+
 if __name__ == "__main__":
     unittest.main()
