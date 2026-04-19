@@ -125,3 +125,23 @@ class MinutesService:
         except Exception as e:
             logger.error(f"Failed to fetch models for {provider}: {e}")
             return []
+
+    def get_models_info(self, provider: str) -> list[dict]:
+        """Fetches detailed model information."""
+        try:
+            conf = self.config_mgr.get_provider_config(provider)
+            client = LLMFactory.create_client(provider_name=provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
+            return client.get_models_info()
+        except Exception as e:
+            logger.error(f"Failed to fetch models info for {provider}: {e}")
+            return []
+
+    def delete_model(self, provider: str, model_name: str) -> bool:
+        """Deletes a model from the provider."""
+        try:
+            conf = self.config_mgr.get_provider_config(provider)
+            client = LLMFactory.create_client(provider_name=provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
+            return client.delete_model(model_name)
+        except Exception as e:
+            logger.error(f"Failed to delete model {model_name} from {provider}: {e}")
+            return False

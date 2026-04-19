@@ -99,7 +99,9 @@ class DesktopApp:
             self.live_trans_view = LiveTranscriptionView(self.page, self.config_mgr, self.trans_ctrl, self.hw_info)
             self.chat_view = ChatBotView(self.page, self.config_mgr)
             self.about_view = AboutView()
-            self.settings_view = SettingsView(self.config_mgr, self.hw_info, self.transcriber.MODEL_REQUIREMENTS, history_ctrl=self.history_ctrl)
+            self.settings_view = SettingsView(
+                self.config_mgr, self.hw_info, self.transcriber.MODEL_REQUIREMENTS, history_ctrl=self.history_ctrl, minutes_ctrl=self.minutes_ctrl
+            )
             self.history_view = HistoryView(self.history_ctrl, self.config_mgr, self.folder_picker, self.page)
 
             self._update_boot_status("Building UI layout...", 5)

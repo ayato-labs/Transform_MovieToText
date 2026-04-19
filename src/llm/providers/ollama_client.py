@@ -139,6 +139,57 @@ class OllamaLocalClient(BaseLLMClient):
             logger.error(f"Failed to list local Ollama models: {e}")
             return []
 
+    def get_models_info(self) -> list[dict]:
+        """Returns detailed information about local models including size."""
+        try:
+            models_info = self.client.list()
+            results = []
+            
+            # Extract basic list
+            model_list = []
+            if hasattr(models_info, "models"):
+                model_list = models_info.models
+            elif isinstance(models_info, dict) and "models" in models_info:
+                model_list = models_info["models"]
+
+            for m in model_list:
+                name = ""
+                size = 0
+                if hasattr(m, "model"):
+                    name = m.model
+                    size = getattr(m, "size", 0)
+                elif hasattr(m, "name"):
+                    name = m.name
+                    size = getattr(m, "size", 0)
+                elif isinstance(m, dict):
+                    name = m.get("name") or m.get("model")
+                    size = m.get("size", 0)
+                
+                if name and not _is_cloud_model(name) and self._verify_local_model(name):
+                    results.append({
+                        "name": name,
+                        "size_bytes": size,
+                        "size_gb": round(size / (1024**3), 2) if size else 0
+                    })
+            
+            return sorted(results, key=lambda x: x["name"])
+        except Exception as e:
+            logger.error(f"Failed to fetch detailed Ollama models info: {e}")
+            return []
+
+    def delete_model(self, model_name: str) -> bool:
+        """Deletes a local model from Ollama storage."""
+        try:
+            logger.warning(f"OllamaLocalClient: Deleting model '{model_name}'...")
+            self.client.delete(model_name)
+            if model_name in self._verified_local_models:
+                self._verified_local_models.remove(model_name)
+            logger.info(f"OllamaLocalClient: Successfully deleted model '{model_name}'.")
+            return True
+        except Exception as e:
+            logger.error(f"OllamaLocalClient: Failed to delete model '{model_name}': {e}")
+            return False
+
     # ========================================================================
     # Layer 2: Model Locality Verification via show API
     # ========================================================================
