@@ -66,16 +66,18 @@ class OllamaLocalClient(BaseLLMClient):
     """
 
     def __init__(self, base_url="http://localhost:11434", **kwargs):
-        # Layer 0: Enforce localhost binding
-        is_local = any(loopback in base_url for loopback in ["localhost", "127.0.0.1", "0.0.0.0"])
-        if not is_local:
+        # Layer 0: Enforce loopback-only binding
+        # Removed '0.0.0.0' as it can represent all interfaces on some systems
+        is_loopback = any(loopback in base_url for loopback in ["localhost", "127.0.0.1"])
+        if not is_loopback:
             logger.critical(
-                f"SECURITY ALERT: Attempted to initialize Ollama with external URL '{base_url}'. "
-                f"Forcing localhost to protect data sovereignty."
+                f"SECURITY ALERT: Attempted to initialize Ollama with external or non-loopback URL '{base_url}'. "
+                f"Forcing 127.0.0.1 to protect data sovereignty."
             )
-            base_url = "http://localhost:11434"
+            base_url = "http://127.0.0.1:11434"
 
         self.host = base_url
+        # The ollama-python Client accepts a 'host' parameter which it uses for all requests.
         self.client = Client(host=self.host)
         self._last_model_name = None
         self._verified_local_models: set[str] = set()  # Cache of verified local models
