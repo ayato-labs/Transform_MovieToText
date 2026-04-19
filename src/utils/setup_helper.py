@@ -14,7 +14,7 @@ class SetupHelper:
     """
 
     OLLAMA_PORT = 11434
-    DEFAULT_MODEL = "gemma3:1b"
+    DEFAULT_MODEL = "gemma3:2b"
 
     @staticmethod
     def is_ollama_running() -> bool:
@@ -82,3 +82,36 @@ class SetupHelper:
         import threading
 
         threading.Thread(target=_target, daemon=True).start()
+
+    @staticmethod
+    def pull_model_streaming(model_name: str, progress_callback: callable):
+        """
+        Pulls a model using the Ollama SDK and reports progress via callback.
+        callback(status_text, progress_float)
+        """
+        import ollama
+        try:
+            logger.info(f"Streaming pull for {model_name} started.")
+            for part in ollama.pull(model_name, stream=True):
+                status = part.get("status", "")
+                completed = part.get("completed", 0)
+                total = part.get("total", 0)
+                
+                progress = 0.0
+                if total > 0:
+                    progress = completed / total
+                
+                # Human readable status
+                if total > 0:
+                    status_text = f"Downloading {model_name}: {status} ({completed/(1024**2):.1f}/{total/(1024**2):.1f} MB)"
+                else:
+                    status_text = f"Ollama: {status}"
+                
+                progress_callback(status_text, progress)
+            
+            logger.info(f"Streaming pull for {model_name} completed.")
+            return True
+        except Exception as e:
+            logger.error(f"Streaming pull failed: {e}")
+            progress_callback(f"Pull failed: {e}", 0.0)
+            return False

@@ -59,10 +59,35 @@ class DesktopApp:
         self.boot_progress.value = progress / 5.0
         self.page.update()
 
+    def _on_setup_status_change(self, status: str):
+        """Update UI with background setup status."""
+        logger.info(f"SETUP_STATUS: {status}")
+        # If in boot screen, use boot status
+        if hasattr(self, "boot_text") and self.boot_text.page:
+            self.boot_text.value = f"Finalizing environment: {status}"
+            self.page.update()
+
+        # If MainWindow is already active, notify it
+        if hasattr(self, "main_window") and self.main_window.page:
+            self.main_window.update_setup_status(status)
+
     def _init_app_safe(self):
         try:
             self._setup_page_properties()
             logger.info("DesktopApp: Starting initialization...")
+
+            # Progress listener for boot/setup
+            from src.core.event_bus import EVENT_TRANSCRIPTION_PROGRESS, event_bus
+            
+            @event_bus.subscribe(EVENT_TRANSCRIPTION_PROGRESS)
+            def on_setup_progress(progress):
+                if hasattr(self, "boot_progress") and self.boot_progress.page:
+                    # Map 0.0-1.0 progress within the final stage (4.0-5.0 range)
+                    self.boot_progress.value = (4.0 + progress) / 5.0
+                    self.page.update()
+                
+                if hasattr(self, "main_window") and self.main_window.page:
+                    self.main_window.update_setup_progress(progress)
 
             # Start background setup immediately if needed
             setup_manager.check_env()
@@ -122,23 +147,12 @@ class DesktopApp:
         except Exception as ex:
             self._handle_critical_error(ex)
 
-    def _on_setup_status_change(self, status: str):
-        """Update UI with background setup status."""
-        logger.info(f"SETUP_STATUS: {status}")
-        # If in boot screen, use boot status
-        if hasattr(self, "boot_text") and self.boot_text.page:
-            self.boot_text.value = f"Finalizing environment: {status}"
-            self.page.update()
-
-        # If MainWindow is already active, notify it
-        if hasattr(self, "main_window") and self.main_window.page:
-            self.main_window.update_setup_status(status)
-
     def _on_setup_complete(self):
         """Handle setup completion."""
         logger.info("SETUP_COMPLETE: Environment is now ready.")
         if hasattr(self, "main_window") and self.main_window.page:
             self.main_window.update_setup_status("Ready", is_critical=False)
+            self.main_window.update_setup_progress(0.0)
             # Notify views to re-check their dependencies
             self.file_trans_view.refresh_dependency_state()
             self.live_trans_view.refresh_dependency_state()
