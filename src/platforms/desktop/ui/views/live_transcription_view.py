@@ -1,4 +1,5 @@
 import logging
+import threading
 
 import flet as ft
 
@@ -8,6 +9,7 @@ from src.core.constants import DEFAULT_PROVIDERS, WHISPER_MODELS
 from src.core.history_mgr import history_mgr
 from src.core.setup_manager import setup_manager
 from src.core.state import state
+from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 from src.platforms.desktop.ui.ui_utils import safe_update_control, sync_llm_models
 
@@ -25,6 +27,8 @@ class LiveTranscriptionView(ft.Column):
         self.config_mgr = config_mgr
         self.ctrl = ctrl
         self.hw_info = hw_info
+        self.local_smart_ctrl = LocalSmartController(config_mgr)
+        self.local_smart_enabled = config_mgr.get_local_smart_enabled()
 
         # Initialize ViewModel
         self.vm = LiveTranscriptionViewModel(config_mgr, ctrl)
@@ -110,8 +114,9 @@ class LiveTranscriptionView(ft.Column):
             label="AIプロバイダー",
             width=180,
             options=provider_options,
-            value=self.config_mgr.get_active_provider(),
+            value="ollama_local",
             on_change=self._on_provider_change,
+            visible=False,
         )
 
         self.sw_visual = ft.Switch(label="画面録画中", value=self.config_mgr.get_visual_capture_enabled(), on_change=self._on_visual_change)
@@ -128,6 +133,15 @@ class LiveTranscriptionView(ft.Column):
         )
 
         self.status_text = ft.Text("機材準備完了...", color=ft.Colors.GREEN_400)
+
+        # Local Smart Toggle
+        self.local_smart_btn = ft.IconButton(
+            icon=ft.Icons.AUTO_AWESOME_OUTLINED,
+            selected_icon=ft.Icons.AUTO_AWESOME,
+            on_click=self._toggle_local_smart,
+            tooltip="Local Smart: Optimize models for my hardware",
+            selected=self.local_smart_enabled,
+        )
 
         # --- Project Selection ---
         existing_projects = history_mgr.get_projects()
@@ -160,9 +174,6 @@ class LiveTranscriptionView(ft.Column):
             width=220,
             options=[],  # Filled dynamically
             on_change=self._on_llm_change,
-        )
-        sync_llm_models(
-            self._page, self.config_mgr, self.dd_provider.value, self.dd_llm, self.status_text, on_empty_results=self._handle_empty_models
         )
 
         # Text Areas Container
@@ -212,9 +223,9 @@ class LiveTranscriptionView(ft.Column):
             ft.Divider(height=20, color=ft.Colors.GREY_800),
             ft.Row(
                 [
+                    ft.Text("Smart Local Optimization:", weight=ft.FontWeight.BOLD),
                     self.dd_whisper,
-                    self.dd_provider,
-                    self.dd_llm,
+                    self.local_smart_btn,
                     ft.Container(
                         content=ft.Column(
                             [
@@ -225,6 +236,14 @@ class LiveTranscriptionView(ft.Column):
                         ),
                         margin=ft.margin.only(left=10),
                     ),
+                ],
+                spacing=10,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            ft.Row(
+                [
+                    self.dd_provider,
+                    self.dd_llm,
                 ],
                 spacing=10,
             ),
@@ -258,6 +277,40 @@ class LiveTranscriptionView(ft.Column):
                 border_radius=15,
             ),
         ]
+
+        # Initial data load
+        threading.Thread(target=self._initial_load, daemon=True).start()
+
+    def _initial_load(self):
+        if self.local_smart_enabled:
+            self._apply_local_smart()
+        else:
+            provider = self.config_mgr.get_active_provider()
+            self._update_model_options(provider)
+        self._safe_update()
+
+    def _toggle_local_smart(self, e):
+        self.local_smart_enabled = not self.local_smart_enabled
+        self.local_smart_btn.selected = self.local_smart_enabled
+
+        # Save to config
+        self.config_mgr.set_local_smart_enabled(self.local_smart_enabled)
+
+        if self.local_smart_enabled:
+            self._apply_local_smart()
+        else:
+            self.local_smart_ctrl.restore_manual_mode(
+                self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper, update_callback=self._update_model_options
+            )
+
+        self._safe_update()
+
+    def _apply_local_smart(self):
+        self.local_smart_ctrl.apply_optimization(self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper)
+        self._safe_update()
+
+    def _update_model_options(self, provider: str):
+        sync_llm_models(self._page, self.config_mgr, provider, self.dd_llm, self.status_text, on_empty_results=self._handle_empty_models)
 
     def _create_whisper_option(self, model_name: str):
         return ft.dropdown.Option(key=model_name, text=model_name)
@@ -354,6 +407,7 @@ class LiveTranscriptionView(ft.Column):
         self.dd_whisper.disabled = True
         self.dd_project.disabled = True
         self.tf_new_project.disabled = True
+        self.local_smart_btn.disabled = True
         self.raw_transcript_text.value = ""
         self.tabs.selected_index = 0
         self._safe_update()
@@ -361,7 +415,7 @@ class LiveTranscriptionView(ft.Column):
     def _on_provider_change(self, e):
         provider = self.dd_provider.value
         self.config_mgr.set_active_provider(provider)
-        sync_llm_models(self._page, self.config_mgr, provider, self.dd_llm, self.status_text, on_empty_results=self._handle_empty_models)
+        self._update_model_options(provider)
 
     def _on_llm_change(self, e):
         self.config_mgr.set_last_model(self.dd_llm.value)
@@ -380,7 +434,7 @@ class LiveTranscriptionView(ft.Column):
                 fallback = new_options[0].key
                 self.dd_provider.value = fallback
                 self.config_mgr.set_active_provider(fallback)
-                sync_llm_models(self._page, self.config_mgr, fallback, self.dd_llm, self.status_text, on_empty_results=self._handle_empty_models)
+                self._update_model_options(fallback)
             else:
                 self.dd_provider.value = None
 
@@ -394,6 +448,7 @@ class LiveTranscriptionView(ft.Column):
         self.dd_whisper.disabled = False
         self.dd_project.disabled = False
         self.tf_new_project.disabled = False
+        self.local_smart_btn.disabled = False
 
     def init_view(self):
         pass
