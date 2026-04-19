@@ -11,6 +11,7 @@ from src.core.setup_manager import setup_manager
 from src.core.state import state
 from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
+from src.platforms.desktop.ui.local_smart_helper import LocalSmartUIHelper
 from src.platforms.desktop.ui.ui_utils import safe_update_control, sync_llm_models
 
 logger = logging.getLogger(__name__)
@@ -28,13 +29,24 @@ class LiveTranscriptionView(ft.Column):
         self.ctrl = ctrl
         self.hw_info = hw_info
         self.local_smart_ctrl = LocalSmartController(config_mgr)
-        self.local_smart_enabled = config_mgr.get_local_smart_enabled()
 
         # Initialize ViewModel
         self.vm = LiveTranscriptionViewModel(config_mgr, ctrl)
         self._setup_vm_callbacks()
 
         self._build_ui()
+        
+        # Initialize Shared Helper
+        self.smart_helper = LocalSmartUIHelper(
+            config_mgr,
+            self.local_smart_ctrl,
+            self.dd_provider,
+            self.dd_llm,
+            self.status_text,
+            dd_whisper=self.dd_whisper,
+            local_smart_btn=self.local_smart_btn
+        )
+
         self.refresh_dependency_state(initial=True)
 
     def refresh_dependency_state(self, initial=False):
@@ -140,7 +152,7 @@ class LiveTranscriptionView(ft.Column):
             selected_icon=ft.Icons.AUTO_AWESOME,
             on_click=self._toggle_local_smart,
             tooltip="Local Smart: Optimize models for my hardware",
-            selected=self.local_smart_enabled,
+            selected=self.config_mgr.get_local_smart_enabled(),
         )
 
         # --- Project Selection ---
@@ -279,35 +291,10 @@ class LiveTranscriptionView(ft.Column):
         ]
 
         # Initial data load
-        threading.Thread(target=self._initial_load, daemon=True).start()
-
-    def _initial_load(self):
-        if self.local_smart_enabled:
-            self._apply_local_smart()
-        else:
-            provider = self.config_mgr.get_active_provider()
-            self._update_model_options(provider)
-        self._safe_update()
+        threading.Thread(target=lambda: self.smart_helper.initial_load(self._update_model_options), daemon=True).start()
 
     def _toggle_local_smart(self, e):
-        self.local_smart_enabled = not self.local_smart_enabled
-        self.local_smart_btn.selected = self.local_smart_enabled
-
-        # Save to config
-        self.config_mgr.set_local_smart_enabled(self.local_smart_enabled)
-
-        if self.local_smart_enabled:
-            self._apply_local_smart()
-        else:
-            self.local_smart_ctrl.restore_manual_mode(
-                self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper, update_callback=self._update_model_options
-            )
-
-        self._safe_update()
-
-    def _apply_local_smart(self):
-        self.local_smart_ctrl.apply_optimization(self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper)
-        self._safe_update()
+        self.smart_helper.toggle_smart(update_callback=self._update_model_options)
 
     def _update_model_options(self, provider: str):
         sync_llm_models(self._page, self.config_mgr, provider, self.dd_llm, self.status_text, on_empty_results=self._handle_empty_models)

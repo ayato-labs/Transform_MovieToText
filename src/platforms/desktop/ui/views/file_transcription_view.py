@@ -18,6 +18,7 @@ from src.core.minutes_service import MinutesService
 from src.core.setup_manager import setup_manager
 from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
+from src.platforms.desktop.ui.local_smart_helper import LocalSmartUIHelper
 from src.platforms.desktop.ui.ui_utils import safe_update_control, sync_llm_models
 
 logger = logging.getLogger(__name__)
@@ -35,17 +36,27 @@ class FileTranscriptionView(ft.Column):
         self.ctrl = ctrl
         self.hw_info = hw_info
         self.service = ctrl.service
-        self.local_smart_enabled = self.config_mgr.get_local_smart_enabled()
         self.minutes_service = MinutesService(config_mgr)
         self.local_smart_ctrl = LocalSmartController(config_mgr)
         self.router = IntentRouter(config_mgr)
 
         self._setup_view_elements()
         self._setup_event_handlers()
+        
+        # Initialize Shared Helper
+        self.smart_helper = LocalSmartUIHelper(
+            config_mgr, 
+            self.local_smart_ctrl, 
+            self.dd_provider, 
+            self.dd_llm, 
+            self.status_text, 
+            dd_whisper=self.dd_whisper, 
+            local_smart_btn=self.local_smart_btn
+        )
+
         self.refresh_dependency_state(initial=True)
 
     def _setup_view_elements(self):
-        # Move all UI construction here (previously in __init__ implicitly)
         # File Pickers
         self.file_picker = ft.FilePicker()
         self.file_picker.on_result = self._on_file_picked
@@ -69,19 +80,13 @@ class FileTranscriptionView(ft.Column):
             label="AIプロバイダー",
             width=180,
             options=[ft.dropdown.Option(p) for p in allowed_providers],
-            value=self.config_mgr.get_active_provider(),
+            value="ollama_local",
             on_change=self._on_provider_change,
+            visible=False,
         )
 
         self.status_text = ft.Text("待機中...", color=ft.Colors.GREY_500)
         self.progress_bar = ft.ProgressBar(value=0, visible=False, color=ft.Colors.BLUE_400, height=8)
-
-        self.model_dropdown = ft.Dropdown(
-            label="Whisper Model",
-            width=250,
-            options=[self._create_whisper_option(m) for m in WHISPER_MODELS],
-            value=self.config_mgr.get_whisper_model(),
-        )
 
         self.local_smart_btn = ft.IconButton(
             icon=ft.Icons.AUTO_AWESOME_OUTLINED,
@@ -99,7 +104,7 @@ class FileTranscriptionView(ft.Column):
             on_change=self._on_llm_change,
         )
 
-        existing_projects = self.service.history_mgr.get_projects() if hasattr(self.service, "history_mgr") else history_mgr.get_projects()
+        existing_projects = history_mgr.get_projects()
         project_options = [
             ft.dropdown.Option("その他", "その他 (デフォルト)"),
             ft.dropdown.Option("__new__", "＋新規プロジェクト作成"),
@@ -119,8 +124,6 @@ class FileTranscriptionView(ft.Column):
             hint_text="プロジェクト名を入力...",
             visible=False,
         )
-
-        threading.Thread(target=self._initial_load, daemon=True).start()
 
         self.sw_visual = ft.Switch(
             label="映像情報を使用", value=False, tooltip="動画ファイルから10秒ごとに画像を抽出してAIに送信します（分析精度が向上します）"
@@ -181,7 +184,7 @@ class FileTranscriptionView(ft.Column):
             ft.Row(
                 [
                     ft.Text("Smart Local Optimization:", weight=ft.FontWeight.BOLD),
-                    self.model_dropdown,
+                    self.dd_whisper,
                     self.local_smart_btn,
                     ft.Container(
                         content=ft.Column(
@@ -220,6 +223,9 @@ class FileTranscriptionView(ft.Column):
                 alignment=ft.MainAxisAlignment.END,
             ),
         ]
+
+        # Initial data load
+        threading.Thread(target=lambda: self.smart_helper.initial_load(self._update_model_options), daemon=True).start()
 
     def refresh_dependency_state(self, initial=False):
         """Update UI based on background setup status."""
@@ -276,21 +282,13 @@ class FileTranscriptionView(ft.Column):
         """Safely updates the control if it is attached to a page."""
         safe_update_control(self)
 
-    def _initial_load(self):
-        if self.local_smart_enabled:
-            self._apply_local_smart()
-        else:
-            provider = self.config_mgr.get_active_provider()
-            self._update_model_options(provider)
-        self._safe_update()
-
     def _on_provider_change(self, e):
         provider = self.dd_provider.value
         self.config_mgr.set_active_provider(provider)
-        sync_llm_models(self.page, self.config_mgr, provider, self.dd_llm, on_empty_results=self._handle_empty_models)
+        self._update_model_options(provider)
 
     def _handle_empty_models(self, provider: str):
-        """Callback when a provider returns no models (e.g. invalid key)."""
+        """Callback when a provider returns no models."""
         logger.warning(f"Provider {provider} returned no models. Hiding from UI.")
 
         # Remove from dropdown options
@@ -303,15 +301,13 @@ class FileTranscriptionView(ft.Column):
                 fallback = new_options[0].key
                 self.dd_provider.value = fallback
                 self.config_mgr.set_active_provider(fallback)
-                # Sync new provider's models
-                sync_llm_models(self.page, self.config_mgr, fallback, self.dd_llm, on_empty_results=self._handle_empty_models)
+                self._update_model_options(fallback)
             else:
                 self.dd_provider.value = None
 
         self._safe_update()
 
     def _update_model_options(self, provider: str):
-        # Delegate to common sync utility
         sync_llm_models(self.page, self.config_mgr, provider, self.dd_llm, on_empty_results=self._handle_empty_models)
 
     def _on_llm_change(self, e):
@@ -319,10 +315,8 @@ class FileTranscriptionView(ft.Column):
 
     def _on_file_picked(self, e):
         if not e.files:
-            logger.info("FileTranscriptionView: File selection cancelled.")
             return
         file_path = e.files[0].path
-        logger.info(f"FileTranscriptionView: Starting transcription for: {file_path} (Model: {self.dd_whisper.value})")
         self.btn_pick.disabled = True
         self.ctrl.start_file_transcription(file_path, self.dd_whisper.value)
 
@@ -333,20 +327,16 @@ class FileTranscriptionView(ft.Column):
         self.status_text.value = "🧠 AI 変換処理を開始します..."
         self._safe_update()
 
-        # TODO: Move AI transformation to a dedicated controller/service event flow later.
-        # For now, keep it here to maintain existing functionality while refactoring.
         threading.Thread(target=self._ai_worker, args=(text,), daemon=True).start()
 
     def _ai_worker(self, text: str):
         try:
             provider = self.dd_provider.value
             llm_model = self.dd_llm.value
-            # use_visual was unused. Removing to fix F841.
 
-            # This part still uses service directly but in a worker
-            system_prompt = "文字起こしデータの分析エキスパートとしてレポートを作成してください。"
-            ai_output = self.service.config_mgr.get_llm_client(provider, None).transform(
-                transcript=text, model_name=llm_model, system_instruction=system_prompt, visual_contexts=None
+            # Use MinutesService via controller to leverage Map-Reduce
+            ai_output = self.ctrl.minutes_service.generate_minutes_sync(
+                transcript=text, provider=provider, model=llm_model
             )
 
             self.result_text.value = ai_output
@@ -359,27 +349,7 @@ class FileTranscriptionView(ft.Column):
             self._safe_update()
 
     def _toggle_local_smart(self, e):
-        self.local_smart_enabled = not self.local_smart_enabled
-        self.local_smart_btn.selected = self.local_smart_enabled
-
-        # Save to config
-        self.config_mgr.set_local_smart_enabled(self.local_smart_enabled)
-
-        if self.local_smart_enabled:
-            self._apply_local_smart()
-        else:
-            self.local_smart_ctrl.restore_manual_mode(
-                self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper, update_callback=self._update_model_options
-            )
-
-        self._safe_update()
-
-    def _apply_local_smart(self):
-        self.local_smart_ctrl.apply_optimization(self.dd_provider, self.dd_llm, self.status_text, dd_whisper=self.dd_whisper)
-        self._safe_update()
-
-    def _on_category_change(self, e):
-        self.transcription_card.update_category(e.control.value)
+        self.smart_helper.toggle_smart(update_callback=self._update_model_options)
 
     def _on_project_change(self, e):
         is_new = self.dd_project.value == "__new__"
@@ -388,9 +358,7 @@ class FileTranscriptionView(ft.Column):
 
     def _on_save_picked(self, e):
         if not e.path:
-            logger.info("FileTranscriptionView: Save file cancelled.")
             return
-        logger.info(f"FileTranscriptionView: Saving result to {e.path}")
         with open(e.path, "w", encoding="utf-8") as f:
             f.write(self.result_text.value)
 
