@@ -49,8 +49,8 @@ class TestMinutesServiceUnit(unittest.TestCase):
             # Create a transcript long enough for Map-Reduce (> 4000 chars)
             long_transcript = "Meeting part 1. " * 500 # ~8000 chars
             
-            # Execute
-            result = self.service.generate_minutes_sync(long_transcript, "ollama_local", "gemma3:4b")
+            # Execute with a dummy meeting_id to trigger title update
+            result = self.service.generate_minutes_sync(long_transcript, "ollama_local", "gemma3:4b", meeting_id=123)
             
             # Verify result matches our fake integration response (Reduce Phase)
             self.assertEqual(result, "## Final Integrated Minutes")
@@ -60,6 +60,10 @@ class TestMinutesServiceUnit(unittest.TestCase):
             
             # Verify Reduce Phase call
             self.assertEqual(len(self.fake_client.generate_calls), 1)
+            
+            # Verify Title Generation Phase call
+            self.assertEqual(len(self.fake_client.title_calls), 1)
+            self.assertEqual(self.fake_client.title_calls[0]["transcript"], "## Final Integrated Minutes")
             
         finally:
             src.llm.factory.LLMFactory.create_client = original_create

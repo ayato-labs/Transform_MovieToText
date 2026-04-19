@@ -28,13 +28,13 @@ class TestFullUserFlow(unittest.TestCase):
         # Patch history_mgr methods that might not exist or need mocking
         with patch.object(history_mgr, 'get_projects', return_value=["Project A"]), \
              patch.object(history_mgr, 'update_minutes', return_value=True), \
-             patch.object(history_mgr, 'get_visual_contexts', return_value=[], create=True):
+             patch.object(history_mgr, 'get_visual_context', return_value=[], create=True):
             
             page = MagicMock(spec=ft.Page)
             page.overlay = []
             config_mgr = ConfigManager()
             transcriber = MagicMock()
-            ctrl = TranscriptionController(config_mgr, transcriber)
+            ctrl = TranscriptionController(config_mgr, transcriber, history_mgr=history_mgr)
             
             # 2. Instantiate View (Simulates user opening the Recording tab)
             view = LiveTranscriptionView(page, config_mgr, ctrl, hw_info={"ram": 16.0, "vram": 8.0, "device": "GPU"})

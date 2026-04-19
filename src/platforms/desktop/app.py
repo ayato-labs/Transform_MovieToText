@@ -110,9 +110,9 @@ class DesktopApp:
                 self.hw_info = {"ram": 0.0, "vram": 0.0, "device": "unknown"}
 
             self._update_boot_status("Initializing controllers...", 3)
-            self.trans_ctrl = TranscriptionController(self.config_mgr, self.transcriber)
-            self.minutes_ctrl = MinutesController(self.config_mgr)
             self.history_ctrl = HistoryController()
+            self.trans_ctrl = TranscriptionController(self.config_mgr, self.transcriber, history_mgr=self.history_ctrl.mgr)
+            self.minutes_ctrl = MinutesController(self.config_mgr)
 
             self._update_boot_status("Preparing workspace views...", 4)
             self.file_picker = ft.FilePicker(on_result=self._on_file_result)

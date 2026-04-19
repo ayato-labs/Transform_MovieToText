@@ -2,7 +2,8 @@ import logging
 
 from src.core.config_manager import ConfigManager
 from src.core.event_bus import EVENT_STATUS_UPDATE, event_bus
-from src.core.history_mgr import history_mgr
+from src.core.history_mgr import HistoryManager
+from src.core.history_mgr import history_mgr as _history_mgr
 from src.llm.factory import LLMFactory
 
 logger = logging.getLogger(__name__)
@@ -16,11 +17,15 @@ class MinutesService:
     CHUNK_SIZE = 4000  # Characters
     CHUNK_OVERLAP = 200
 
-    def __init__(self, config_mgr: ConfigManager):
+    def __init__(self, config_mgr: ConfigManager, history_mgr: HistoryManager | None = None):
         self.config_mgr = config_mgr
+        self.history_mgr = history_mgr or _history_mgr
 
     def _chunk_text(self, text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
         """Splits long text into overlapping chunks."""
+        if not text:
+            return [""]
+            
         if len(text) <= chunk_size:
             return [text]
         
@@ -50,7 +55,7 @@ class MinutesService:
         visual_contexts = []
         if meeting_id:
             try:
-                visual_contexts = history_mgr.get_visual_contexts(meeting_id)
+                visual_contexts = self.history_mgr.get_visual_context(meeting_id)
                 logger.info(f"Retrieved {len(visual_contexts)} visual contexts for meeting {meeting_id}")
             except Exception as e:
                 logger.warning(f"Failed to fetch visual contexts: {e}")
@@ -63,6 +68,21 @@ class MinutesService:
             else:
                 logger.info(f"Using Map-Reduce for transcript length {len(transcript)}")
                 res = self._generate_map_reduce(transcript, client, model, visual_contexts)
+            
+            # 3.5 Generate/Update Title based on the summary
+            if meeting_id and res:
+                try:
+                    event_bus.publish(EVENT_STATUS_UPDATE, "🧠 タイトルを構成中...")
+                    ai_title = client.generate_title(res, model)
+                    if ai_title:
+                        from datetime import datetime
+                        timestamp_ui = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        final_title = f"{ai_title} ({timestamp_ui})"
+                        self.history_mgr.update_meeting(meeting_id, title=final_title)
+                        logger.info(f"MinutesService: Updated title for meeting {meeting_id} -> {final_title}")
+                except Exception as e:
+                    logger.warning(f"MinutesService: Title generation failed: {e}")
+                    
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
             raise RuntimeError(f"Minutes generation failed: {e}") from e
@@ -70,7 +90,7 @@ class MinutesService:
         # 4. Update history and config
         if meeting_id:
             try:
-                history_mgr.update_minutes(meeting_id, res, model_name=model)
+                self.history_mgr.update_minutes(meeting_id, res, model_name=model)
             except Exception as e:
                 logger.error(f"Failed to update history with minutes: {e}")
 

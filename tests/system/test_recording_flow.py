@@ -20,6 +20,9 @@ LONG_TEXT = (
 @pytest.fixture
 def system_setup():
     """Setup a full controller-service-repo stack with in-memory DB."""
+    from src.core.event_bus import event_bus
+    event_bus.clear()
+    
     mock_config = Mock(spec=ConfigManager)
     mock_config.get_force_gpu.return_value = False
     mock_config.get_active_provider.return_value = "ollama_local"
@@ -41,7 +44,7 @@ def system_setup():
         patch("src.platforms.desktop.controllers.transcription_ctrl.history_mgr", history),
         patch("src.core.transcription_service._history_mgr", history),
     ):
-        ctrl = TranscriptionController(mock_config, mock_transcriber)
+        ctrl = TranscriptionController(mock_config, mock_transcriber, history_mgr=history)
         yield ctrl, history
 
 

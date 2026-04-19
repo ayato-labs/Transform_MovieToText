@@ -14,6 +14,7 @@ class FakeLLMClient(BaseLLMClient):
         self.responses = responses or {}
         self.generate_calls = []
         self.chat_calls = []
+        self.title_calls = []
         self._available_models = ["gemma3:2b", "gemma3:4b"]
 
     def get_available_models(self) -> list[str]:
@@ -35,7 +36,8 @@ class FakeLLMClient(BaseLLMClient):
         return "## Fake Minutes\n- Action: Do something."
 
     def generate_title(self, transcript: str, model_name: str) -> str:
-        return "Fake Title"
+        self.title_calls.append({"transcript": transcript, "model": model_name})
+        return "Generated Fake Title"
         
     def extract_category(self, text: str, model_name: str, categories: list[str]) -> str:
         return categories[0] if categories else "Unknown"

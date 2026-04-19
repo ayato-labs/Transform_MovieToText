@@ -35,6 +35,14 @@ class AppEventBus:
     def add_handler(event_name: str, handler: Callable):
         EventBus.subscribe(event_name, handler)
 
+    def clear(self):
+        """Clears all subscribers (useful for tests)."""
+        logger.info("AppEventBus: Clearing all subscribers.")
+        # python-event-bus doesn't have a clean clear(), so we reset the internal dict
+        if hasattr(EventBus, "_handlers"):
+            EventBus._handlers = {}
+        # Also clear any instance-level state if we add it in future
+
 
 # Singleton instance
 event_bus = AppEventBus()

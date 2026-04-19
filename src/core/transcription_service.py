@@ -365,8 +365,8 @@ class TranscriptionService:
             logger.debug(f"_get_best_llm_model: Automated model lookup failed for {provider}: {e}")
 
         # Hardcoded defaults as last resort
-        defaults = {"gemini": "gemini-1.5-flash", "google": "gemini-1.5-flash", "ollama_local": "llama3", "ollama_cloud": "llama3"}
-        return defaults.get(provider, "gemini-1.5-flash")
+        defaults = {"ollama_local": "gemma3:4b"}
+        return defaults.get(provider, "gemma3:4b")
 
     def _extract_category_internal(self, text: str) -> str:
         provider = self.config_mgr.get_active_provider()
@@ -383,6 +383,12 @@ class TranscriptionService:
     def _generate_title_internal(self, text: str) -> str:
         if not text or len(text.strip()) < 50:
             return ""
+        
+        # Limit text length for initial titling to avoid Ollama timeouts on huge transcripts
+        # We only need the beginning to get a decent initial title.
+        # Deep summarization handles the full title later.
+        processing_text = text[:5000]
+        
         provider = self.config_mgr.get_active_provider()
         llm_model = self._get_best_llm_model(provider)
 
@@ -390,6 +396,6 @@ class TranscriptionService:
         conf = self.config_mgr.get_provider_config(provider)
         llm_client = LLMFactory.create_client(provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
 
-        title = llm_client.generate_title(text, llm_model)
+        title = llm_client.generate_title(processing_text, llm_model)
         logger.info(f"_generate_title_internal: Result -> {title}")
         return title

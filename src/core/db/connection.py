@@ -15,12 +15,14 @@ class DatabaseConnection:
         logger.info(f"DatabaseConnection: Initializing with path: {db_path}")
         self._is_memory = str(db_path) == ":memory:"
         if self._is_memory:
-            # Use URI for sharing across connections in same process.
-            self.db_path = "file:memdb?mode=memory&cache=shared"
+            # SECURITY/STABILITY: Use unique URI name for each memory DB to prevent 
+            # cross-test leakage while allowing multi-threaded access within one instance.
+            import uuid
+            unique_id = uuid.uuid4().hex
+            self.db_path = f"file:memdb_{unique_id}?mode=memory&cache=shared"
             # Keep one connection open to ensure :memory: db stays alive
-            # MUST use check_same_thread=False for sharing across transcription threads
             self._keep_alive = sqlite3.connect(self.db_path, timeout=timeout, uri=True, check_same_thread=False)
-            logger.info("DatabaseConnection: In-memory database initialized.")
+            logger.info(f"DatabaseConnection: In-memory database initialized ({unique_id}).")
         else:
             self.db_path = Path(db_path)
             self.db_path.parent.mkdir(parents=True, exist_ok=True)

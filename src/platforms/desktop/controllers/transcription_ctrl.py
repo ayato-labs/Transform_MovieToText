@@ -27,10 +27,12 @@ class TranscriptionController:
     Handles Flet's state updates.
     """
 
-    def __init__(self, config_mgr: ConfigManager, transcriber: WhisperTranscriber):
+    def __init__(self, config_mgr: ConfigManager, transcriber: WhisperTranscriber, history_mgr=None):
         self.config_mgr = config_mgr
-        self.service = TranscriptionService(config_mgr, transcriber)
-        self.minutes_service = MinutesService(config_mgr)
+        # Note: TranscriptionService uses history_mgr singleton if not passed.
+        # We try to align them if a specific one is provided (mostly for tests).
+        self.service = TranscriptionService(config_mgr, transcriber, history_mgr=history_mgr)
+        self.minutes_service = MinutesService(config_mgr, history_mgr=history_mgr)
         self.router = IntentRouter(config_mgr)
         self._setup_event_handlers()
 

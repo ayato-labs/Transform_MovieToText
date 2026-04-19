@@ -261,7 +261,8 @@ class FileTranscriptionView(ft.Column):
             self.raw_transcript_text.value = result.get("text", "")
             self.progress_bar.visible = False
             self.btn_pick.disabled = False
-            self._run_ai_conversion(result.get("text", ""))
+            meeting_id = result.get("meeting_id")
+            self._run_ai_conversion(result.get("text", ""), meeting_id=meeting_id)
             self._safe_update()
 
         @event_bus.subscribe(EVENT_TRANSCRIPTION_ERROR)
@@ -320,23 +321,23 @@ class FileTranscriptionView(ft.Column):
         self.btn_pick.disabled = True
         self.ctrl.start_file_transcription(file_path, self.dd_whisper.value)
 
-    def _run_ai_conversion(self, text: str):
+    def _run_ai_conversion(self, text: str, meeting_id: int | None = None):
         if not text or len(text.strip()) < 10:
             return
 
         self.status_text.value = "🧠 AI 変換処理を開始します..."
         self._safe_update()
 
-        threading.Thread(target=self._ai_worker, args=(text,), daemon=True).start()
+        threading.Thread(target=self._ai_worker, args=(text, meeting_id), daemon=True).start()
 
-    def _ai_worker(self, text: str):
+    def _ai_worker(self, text: str, meeting_id: int | None = None):
         try:
             provider = self.dd_provider.value
             llm_model = self.dd_llm.value
 
             # Use MinutesService via controller to leverage Map-Reduce
             ai_output = self.ctrl.minutes_service.generate_minutes_sync(
-                transcript=text, provider=provider, model=llm_model
+                transcript=text, provider=provider, model=llm_model, meeting_id=meeting_id
             )
 
             self.result_text.value = ai_output
