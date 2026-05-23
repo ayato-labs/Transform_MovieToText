@@ -1,3 +1,25 @@
+# [2.19.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.18.0...v2.19.0) (2026-05-23)
+
+
+### Bug Fixes
+
+* automatic title generation, test isolation, and UI race conditions ([4bfd43b](https://github.com/ayato-labs/Transform_MovieToText/commit/4bfd43b1e222a9e67c20bc4cd75b51717e301c0e))
+* **core:** add missing os import in setup_helper.py ([b4db5ff](https://github.com/ayato-labs/Transform_MovieToText/commit/b4db5ff5c578d6ab48171ba3edf55ac3fca55e26))
+* **core:** prevent STATUS_STACK_BUFFER_OVERRUN crash during whisper unload on Windows ([770d35d](https://github.com/ayato-labs/Transform_MovieToText/commit/770d35d9fe7a8f321508debc7f5a73da33d258a8))
+* **ui,llm:** handle Flet dialog/button deprecations and improve Ollama error messages ([633706c](https://github.com/ayato-labs/Transform_MovieToText/commit/633706cbd25ad295dc8dd5decab4a61dd304181f))
+* **ui:** ensure smart_helper is initialized before initial_load thread in FileTranscriptionView ([2565493](https://github.com/ayato-labs/Transform_MovieToText/commit/2565493b4265a61db2dfc67adde1c6db41c37827))
+* **ui:** handle None UI components in LocalSmartController and ensure OLLAMA_HOST is set ([f2c39ee](https://github.com/ayato-labs/Transform_MovieToText/commit/f2c39ee8002394a1baa54cc2cc2e6eb87c27afc5))
+
+
+### Features
+
+* add progress updates to Map-Reduce and integrate with controller ([ca829a8](https://github.com/ayato-labs/Transform_MovieToText/commit/ca829a842ec387e5410a4542bc4386f1d06491bd))
+* implement AI model lifecycle management (view/delete local models) ([22c01f5](https://github.com/ayato-labs/Transform_MovieToText/commit/22c01f5200a6d0bca3ceddf1880ad1e4082ef3af))
+* implement Map-Reduce summarization for long transcripts ([f502e21](https://github.com/ayato-labs/Transform_MovieToText/commit/f502e2109621ca3abcc01ac766d1467716c2dda5))
+* implement security hardening (Zero-Trust Local API) ([7dfa066](https://github.com/ayato-labs/Transform_MovieToText/commit/7dfa0669dfe8f51d1a0d5078bf703886cfc9d4e4))
+* implement setup progress visualization with streaming Ollama pull ([c4a1e11](https://github.com/ayato-labs/Transform_MovieToText/commit/c4a1e11b3bcaf0631584a18e0489258b26b43601))
+* **ui:** add Local Smart automatic setup to live transcription view ([d72ab92](https://github.com/ayato-labs/Transform_MovieToText/commit/d72ab92f8ec45bfeb8ed8f5f854ab549b70045d0))
+
 # [2.18.0](https://github.com/Ayato-AI-for-Auto/Transform_MovieToText/compare/v2.17.0...v2.18.0) (2026-04-16)
 
 
