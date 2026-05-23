@@ -29,8 +29,7 @@ class TestSystemCompleteWorkflow(unittest.TestCase):
             os.remove(self.db_path)
 
     @patch("src.llm.providers.ollama_client.OllamaLocalClient.chat")
-    @patch("src.llm.providers.ollama_client.OllamaCloudClient.chat")
-    def test_full_user_story_flow(self, mock_chat_cloud, mock_chat):
+    def test_full_user_story_flow(self, mock_chat):
         # 1. Data Generation (Story: A user just finished a meeting about "Pizza")
         self.mgr.add_meeting(title="Pizza Strategy", transcript="The best pizza has pineapple.", audio_path="mock.mp3")
         self.mgr.update_minutes(1, minutes="Summary: Pineapple is recommended for pizza.")

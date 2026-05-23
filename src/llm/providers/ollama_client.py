@@ -66,16 +66,18 @@ class OllamaLocalClient(BaseLLMClient):
     """
 
     def __init__(self, base_url="http://localhost:11434", **kwargs):
-        # Layer 0: Enforce localhost binding
-        is_local = any(loopback in base_url for loopback in ["localhost", "127.0.0.1", "0.0.0.0"])
-        if not is_local:
+        # Layer 0: Enforce loopback-only binding
+        # Removed '0.0.0.0' as it can represent all interfaces on some systems
+        is_loopback = any(loopback in base_url for loopback in ["localhost", "127.0.0.1"])
+        if not is_loopback:
             logger.critical(
-                f"SECURITY ALERT: Attempted to initialize Ollama with external URL '{base_url}'. "
-                f"Forcing localhost to protect data sovereignty."
+                f"SECURITY ALERT: Attempted to initialize Ollama with external or non-loopback URL '{base_url}'. "
+                f"Forcing 127.0.0.1 to protect data sovereignty."
             )
-            base_url = "http://localhost:11434"
+            base_url = "http://127.0.0.1:11434"
 
         self.host = base_url
+        # The ollama-python Client accepts a 'host' parameter which it uses for all requests.
         self.client = Client(host=self.host)
         self._last_model_name = None
         self._verified_local_models: set[str] = set()  # Cache of verified local models
@@ -138,6 +140,57 @@ class OllamaLocalClient(BaseLLMClient):
         except Exception as e:
             logger.error(f"Failed to list local Ollama models: {e}")
             return []
+
+    def get_models_info(self) -> list[dict]:
+        """Returns detailed information about local models including size."""
+        try:
+            models_info = self.client.list()
+            results = []
+            
+            # Extract basic list
+            model_list = []
+            if hasattr(models_info, "models"):
+                model_list = models_info.models
+            elif isinstance(models_info, dict) and "models" in models_info:
+                model_list = models_info["models"]
+
+            for m in model_list:
+                name = ""
+                size = 0
+                if hasattr(m, "model"):
+                    name = m.model
+                    size = getattr(m, "size", 0)
+                elif hasattr(m, "name"):
+                    name = m.name
+                    size = getattr(m, "size", 0)
+                elif isinstance(m, dict):
+                    name = m.get("name") or m.get("model")
+                    size = m.get("size", 0)
+                
+                if name and not _is_cloud_model(name) and self._verify_local_model(name):
+                    results.append({
+                        "name": name,
+                        "size_bytes": size,
+                        "size_gb": round(size / (1024**3), 2) if size else 0
+                    })
+            
+            return sorted(results, key=lambda x: x["name"])
+        except Exception as e:
+            logger.error(f"Failed to fetch detailed Ollama models info: {e}")
+            return []
+
+    def delete_model(self, model_name: str) -> bool:
+        """Deletes a local model from Ollama storage."""
+        try:
+            logger.warning(f"OllamaLocalClient: Deleting model '{model_name}'...")
+            self.client.delete(model_name)
+            if model_name in self._verified_local_models:
+                self._verified_local_models.remove(model_name)
+            logger.info(f"OllamaLocalClient: Successfully deleted model '{model_name}'.")
+            return True
+        except Exception as e:
+            logger.error(f"OllamaLocalClient: Failed to delete model '{model_name}': {e}")
+            return False
 
     # ========================================================================
     # Layer 2: Model Locality Verification via show API
@@ -235,15 +288,19 @@ class OllamaLocalClient(BaseLLMClient):
             return response["message"]["content"]
         except Exception as e:
             err_str = str(e)
-            if "model requires more system memory" in err_str:
-                logger.error(f"Ollama local RAM exhaustion: {err_str}")
-                raise RuntimeError(
-                    f"メモリ不足によりモデルを起動できませんでした。より軽量なバージョン"
-                    f"（例: {model_name.split(':')[0]}:3.8b-mini-instruct-q4_K_M）を"
-                    f"手動で 'ollama pull' して試してください。\n詳細: {err_str}"
-                ) from e
+            import ollama
+            if isinstance(e, ollama.ResponseError):
+                if e.status_code == 404:
+                    msg = f"モデル '{model_name}' がPCにインストールされていません。設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    logger.error(f"Ollama local chat failed (404): {msg}")
+                    raise RuntimeError(msg) from e
+                elif e.status_code == 500 and "more system memory" in err_str:
+                    msg = f"メモリ不足によりモデル '{model_name}' を起動できませんでした。PCのメモリが不足しているか、モデルが大きすぎます。設定画面からより軽量なモデルを選択してください。\n詳細: {err_str}"
+                    logger.error(f"Ollama local RAM exhaustion (500): {err_str}")
+                    raise RuntimeError(msg) from e
+            
             logger.error(f"Ollama local generation failed: {e}")
-            raise RuntimeError(f"Failed to generate minutes: {str(e)}") from e
+            raise RuntimeError(f"Chat/Generation failed: {str(e)}") from e
 
     def extract_category(self, transcript: str, model_name: str) -> str:
         """Extracts a short category/label (1-3 keywords) from the transcript."""
@@ -300,5 +357,17 @@ class OllamaLocalClient(BaseLLMClient):
             response = self.client.chat(model=model_name, messages=messages)
             return response["message"]["content"]
         except Exception as e:
+            err_str = str(e)
+            import ollama
+            if isinstance(e, ollama.ResponseError):
+                if e.status_code == 404:
+                    msg = f"モデル '{model_name}' がPCにインストールされていません。設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    logger.error(f"Ollama local chat failed (404): {msg}")
+                    raise RuntimeError(msg) from e
+                elif e.status_code == 500 and "more system memory" in err_str:
+                    msg = f"メモリ不足によりモデル '{model_name}' を起動できませんでした。PCのメモリが不足しているか、モデルが大きすぎます。設定画面からより軽量なモデルを選択してください。\n詳細: {err_str}"
+                    logger.error(f"Ollama local RAM exhaustion (500): {err_str}")
+                    raise RuntimeError(msg) from e
+            
             logger.error(f"Ollama local chat failed: {e}")
             raise RuntimeError(f"Chat failed: {str(e)}") from e

@@ -9,12 +9,13 @@ from src.core.minutes_service import MinutesService
 from src.core.query_analyzer import QueryAnalyzer
 from src.platforms.common.ui.ui_utils import Debouncer
 from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
+from src.platforms.desktop.ui.local_smart_helper import LocalSmartUIHelper
+from src.platforms.desktop.ui.ui_utils import sync_llm_models
 
 logger = logging.getLogger(__name__)
 
 
 class ChatMessage(ft.Row):
-    # ... (ChatMessage class implementation)
     def __init__(self, text: str, is_user: bool):
         super().__init__()
         self.vertical_alignment = ft.CrossAxisAlignment.START
@@ -26,7 +27,7 @@ class ChatMessage(ft.Row):
             avatar if is_user else None,
             ft.Column(
                 [
-                    ft.Text("USER" if is_user else "AI助理", weight=ft.FontWeight.BOLD, size=12),
+                    ft.Text("USER" if is_user else "AIアシスタント", weight=ft.FontWeight.BOLD, size=12),
                     ft.Container(
                         content=ft.Text(text, selectable=True),
                         bgcolor=ft.Colors.BLACK26 if is_user else ft.Colors.BLUE_GREY_900,
@@ -58,7 +59,6 @@ class ChatBotView(ft.Column):
         self.minutes_service = MinutesService(config_mgr)
         self.local_smart_ctrl = LocalSmartController(config_mgr)
         self.hw_info = self._get_hw_info()
-        self.local_smart_enabled = config_mgr.get_local_smart_enabled()
 
         # UI State
         self.search_debouncer = Debouncer(delay=0.5)
@@ -91,6 +91,7 @@ class ChatBotView(ft.Column):
             width=220,
             options=[ft.dropdown.Option("取得中...", disabled=True)],
             value=None,
+            on_change=self._on_llm_change,
         )
 
         self.local_smart_btn = ft.IconButton(
@@ -161,8 +162,18 @@ class ChatBotView(ft.Column):
             ),
         ]
 
-        # Fetch models in background thread to avoid blocking UI
-        threading.Thread(target=self._initial_load, daemon=True).start()
+        # Initialize Shared Helper
+        self.smart_helper = LocalSmartUIHelper(
+            config_mgr,
+            self.local_smart_ctrl,
+            None, # No provider dropdown in this view
+            self.dd_llm,
+            self.status_text,
+            local_smart_btn=self.local_smart_btn
+        )
+
+        # Initial data load
+        threading.Thread(target=self._initial_load_task, daemon=True).start()
 
     def _get_hw_info(self):
         import psutil
@@ -177,22 +188,16 @@ class ChatBotView(ft.Column):
     def _safe_update(self):
         """Updates the component safely, ensuring it is attached to a page."""
         try:
-            # Flet controls have a private __uid attribute.
-            # If it's None, the control isn't rendered yet.
             if self.page and getattr(self, "_Control__uid", None) is not None:
                 self.update()
         except Exception as e:
-            logger.debug(f"ChatBotView: Skipping update as control is not yet ready: {e}")
+            logger.debug(f"ChatBotView: Skipping update: {e}")
 
-    def _initial_load(self):
+    def _initial_load_task(self):
         # Update project list
         self._update_project_options()
-
-        if self.local_smart_enabled:
-            self._apply_local_smart()
-        else:
-            provider = "ollama_local"  # Fixed to local
-            self._update_model_options(provider)
+        # Handle smart optimization
+        self.smart_helper.initial_load(self._update_model_options)
         self._safe_update()
 
     def _update_project_options(self):
@@ -204,44 +209,19 @@ class ChatBotView(ft.Column):
         self.dd_project.options = opts
         self._safe_update()
 
-    def _on_provider_change(self, e):
-        provider = self.dd_provider.value
-        self.config_mgr.set_active_provider(provider)
-        threading.Thread(target=self._update_model_options, args=(provider,), daemon=True).start()
-
     def _update_model_options(self, provider: str):
-        actual_provider = "gemini" if provider == "google" else provider
-        self.dd_llm.options = [ft.dropdown.Option("取得中...", disabled=True)]
-        self.dd_llm.value = None
+        sync_llm_models(self._page_ref, self.config_mgr, provider, self.dd_llm, self.status_text, on_empty_results=self._handle_empty_models)
+
+    def _handle_empty_models(self, provider: str):
+        logger.warning(f"ChatBotView: No models found for {provider}")
+        self.dd_llm.options = [ft.dropdown.Option("モデルなし", disabled=True)]
         self._safe_update()
 
-        models = self.config_mgr.get_llm_models(actual_provider)
-        config = self.config_mgr.get_provider_config(provider)
-        last_model = config.get("model")
-
-        if models:
-            self.dd_llm.options = [ft.dropdown.Option(m) for m in models]
-            self.dd_llm.value = last_model if last_model in models else models[0]
-        else:
-            self.dd_llm.options = [ft.dropdown.Option("モデルなし", disabled=True)]
-            self.dd_llm.value = None
-        self._safe_update()
+    def _on_llm_change(self, e):
+        self.config_mgr.set_last_model(self.dd_llm.value)
 
     def _toggle_local_smart(self, e):
-        self.local_smart_enabled = not self.local_smart_enabled
-        self.local_smart_btn.selected = self.local_smart_enabled
-        self.config_mgr.set_local_smart_enabled(self.local_smart_enabled)
-
-        if self.local_smart_enabled:
-            # Note: Provider dropdown is removed, passing dummy to controller if needed
-            self.local_smart_ctrl.apply_optimization(None, self.dd_llm, self.status_text)
-        else:
-            self.local_smart_ctrl.restore_manual_mode(None, self.dd_llm, self.status_text, update_callback=self._update_model_options)
-        self._safe_update()
-
-    def _apply_local_smart(self):
-        self.local_smart_ctrl.apply_optimization(None, self.dd_llm, self.status_text)
-        self._safe_update()
+        self.smart_helper.toggle_smart(update_callback=self._update_model_options)
 
     def _on_send_click(self, e):
         query = self.input_field.value.strip()
@@ -258,17 +238,14 @@ class ChatBotView(ft.Column):
 
     def _run_rag_worker(self, query: str):
         try:
-            # 1. Intent Analysis using 1B Model + Robust Parser
+            # 1. Intent Analysis
             all_projs = self.history_mgr.get_projects()
             all_cats = self.history_mgr.get_categories()
 
             analyzer = QueryAnalyzer(all_projs, all_cats, config_mgr=self.config_mgr)
             intent = analyzer.analyze(query)
 
-            logger.info(f"RAG Intent Extracted: {intent}")
-
             # 2. Metadata-Filtered Search
-            # Prioritize manual project filter if selected
             manual_filter = self.dd_project.value
             filter_projs = intent["projects"]
             if manual_filter and manual_filter != "すべてのプロジェクト":
@@ -279,7 +256,7 @@ class ChatBotView(ft.Column):
                 project_names=filter_projs, categories=intent["categories"], search_query=search_text, limit=5
             )
 
-            # 3. Format Context with Metadata
+            # 3. Format Context
             context_blocks = []
             for r in results:
                 title = r.get("title", "名称未設定のアイテム")
@@ -289,65 +266,31 @@ class ChatBotView(ft.Column):
                 s_type = r.get("source_type", "meeting")
                 label = "Meeting" if s_type == "meeting" else "Document"
 
-                content_source = "Summary" if r.get("minutes") else "Content"
-                content = r.get("minutes") if r.get("minutes") else r.get("transcript", "")
-
+                content = r.get("minutes") or r.get("transcript", "")
                 context_blocks.append(
-                    f"### {label}: {title} ({timestamp})\n"
-                    f"- Project: {project}\n"
-                    f"- Tags: {category}\n"
-                    f"- Source: {content_source}\n"
-                    f"Content: {content[:1000]}..."  # Optimized context length
+                    f"### {label}: {title} ({timestamp})\n- Project: {project}\n- Tags: {category}\nContent: {content[:1000]}..."
                 )
 
-            context = "\n\n---\n\n".join(context_blocks)
+            context = "\n\n---\n\n".join(context_blocks) or "過去のデータに関連情報はありませんでした。"
 
-            if not context:
-                logger.info("RAG: No relevant context found.")
-                context = "過去の会議データに関連する情報は特に見つかりませんでした。"
-
-            # 3. Enhance Prompt with the retrieved knowledge
+            # 3. Enhanced Prompt
             system_prompt = (
-                "あなたは、過去の高度な会議履歴（文字起こし、要約、プロジェクト情報、AIタグ）にアクセスできる専門アシスタントです。\n"
-                "以下のコンテキスト情報を参考にして、ユーザーの質問に日本語で詳しく回答してください。\n"
-                "回答時には、必ず関連する『プロジェクト名』や『日付』に言及し、どの会議に基づいた情報かを明確にしてください。\n"
-                "複数のプロジェクトを跨いだ質問の場合、それぞれの文脈を区別して整理して答えてください。\n"
-                "もし情報が不十分な場合は、推測せず、その旨を伝えてください。\n\n"
+                "あなたは、過去の会議履歴にアクセスできる専門アシスタントです。\n"
+                "以下のコンテキスト情報を参考にして、日本語で詳しく回答してください。\n"
                 f"[Context Info]\n{context}\n"
             )
 
-            # 4. Actual LLM Call with Context
-            # Fixed to local provider
+            # 4. LLM Call
             provider = "ollama_local"
             llm_model = self.dd_llm.value
-
-            # Build standardized message list
             messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": query}]
-
-            self.config_mgr.get_provider_config(provider)
             client = self.config_mgr.get_llm_client(provider)
-
-            # Call using standardized 'messages'
             response = client.chat(model_name=llm_model, messages=messages)
 
-            # 5. Automatically append source information (Title / Project / Timestamp)
+            # 5. Append sources
             if results:
-                # Deduplicate sources based on title+timestamp
-                seen_sources = set()
-                source_bullets = []
-                for r in results:
-                    icon = "📄" if r.get("source_type") == "document" else "🎙️"
-                    s_label = f"{icon} {r.get('title', '無題')} ({r.get('timestamp', '不明')})"
-                    if s_label not in seen_sources:
-                        source_bullets.append(f"- {s_label}")
-                        seen_sources.add(s_label)
-
-                if source_bullets:
-                    # Professional styling for citations
-                    source_footer = "\n\n---\n**🔍 引用元（ナレッジソース）:**\n" + "\n".join(source_bullets)
-                    # Add encouragement about privacy
-                    source_footer += "\n\n*※ この回答は完全にローカルで生成されており、データは外部へ送信されていません。*"
-                    response += source_footer
+                source_bullets = [f"- {r.get('title')} ({r.get('timestamp')})" for r in results]
+                response += "\n\n---\n**🔍 引用元:**\n" + "\n".join(source_bullets)
 
             self.chat_history.controls.append(ChatMessage(response, is_user=False))
             self.status_text.value = "回答完了"
@@ -365,46 +308,35 @@ class ChatBotView(ft.Column):
             self.context_preview.controls.clear()
             self._safe_update()
             return
-
         self.search_debouncer.run(self._update_context_preview)
 
     def _update_context_preview(self):
         query = self.input_field.value.strip()
-        if not query:
-            return
-
+        if not query: return
         try:
-            # Fast Intent Extraction (Local LLM or Keyword)
             all_projs = self.history_mgr.get_projects()
             all_cats = self.history_mgr.get_categories()
             analyzer = QueryAnalyzer(all_projs, all_cats, config_mgr=self.config_mgr)
             intent = analyzer.analyze(query)
-
-            # Fast FTS5 Search
             search_text = " ".join(intent["keywords"]) if intent["keywords"] else query
             results = self.history_mgr.get_meetings_filtered(
                 project_names=intent["projects"], categories=intent["categories"], search_query=search_text, limit=3
             )
-
-            # Update UI
             self.context_preview.controls.clear()
             if results:
                 self.context_preview.controls.append(ft.Text("🔍 関連:", size=10, color=ft.Colors.GREY_500))
                 for r in results:
-                    title = r.get("title", "無題")
                     self.context_preview.controls.append(
                         ft.Container(
-                            content=ft.Text(title, size=10, color=ft.Colors.BLUE_200),
+                            content=ft.Text(r.get("title", "無題"), size=10, color=ft.Colors.BLUE_200),
                             bgcolor=ft.Colors.BLUE_900 if r.get("minutes") else ft.Colors.BLUE_GREY_900,
                             padding=ft.padding.symmetric(horizontal=8, vertical=2),
                             border_radius=10,
-                            tooltip=f"日付: {r.get('timestamp', '不明')}\nプロジェクト: {r.get('project_name') or 'なし'}",
                         )
                     )
                 self.context_preview.visible = True
             else:
                 self.context_preview.visible = False
-
             self._safe_update()
         except Exception as e:
             logger.debug(f"Context preview update failed: {e}")

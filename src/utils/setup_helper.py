@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import socket
 import subprocess
@@ -14,7 +15,7 @@ class SetupHelper:
     """
 
     OLLAMA_PORT = 11434
-    DEFAULT_MODEL = "gemma3:1b"
+    DEFAULT_MODEL = "gemma3:2b"
 
     @staticmethod
     def is_ollama_running() -> bool:
@@ -38,8 +39,10 @@ class SetupHelper:
         if not SetupHelper.is_ollama_running():
             return False
         try:
-            # Using --json or simple list check
-            result = subprocess.run(["ollama", "list"], capture_output=True, text=True, check=True)
+            # Force local host for CLI check
+            env = os.environ.copy()
+            env["OLLAMA_HOST"] = "127.0.0.1:11434"
+            result = subprocess.run(["ollama", "list"], capture_output=True, text=True, check=True, env=env)
             return model_name in result.stdout
         except Exception as e:
             logger.debug(f"SetupHelper: has_model check failed (Ollama command error): {e}")
@@ -74,7 +77,9 @@ class SetupHelper:
         def _target():
             try:
                 logger.info(f"Starting background pull for {model_name}...")
-                subprocess.run(["ollama", "pull", model_name], check=True)
+                env = os.environ.copy()
+                env["OLLAMA_HOST"] = "127.0.0.1:11434"
+                subprocess.run(["ollama", "pull", model_name], check=True, env=env)
                 logger.info(f"Successfully pulled {model_name}")
             except Exception as e:
                 logger.error(f"Failed to pull {model_name}: {e}")
@@ -82,3 +87,38 @@ class SetupHelper:
         import threading
 
         threading.Thread(target=_target, daemon=True).start()
+
+    @staticmethod
+    def pull_model_streaming(model_name: str, progress_callback: callable):
+        """
+        Pulls a model using the Ollama SDK and reports progress via callback.
+        callback(status_text, progress_float)
+        """
+        import ollama
+        try:
+            logger.info(f"Streaming pull for {model_name} started.")
+            # Ensure environment is set for the current process as well for the SDK
+            os.environ["OLLAMA_HOST"] = "127.0.0.1:11434"
+            for part in ollama.pull(model_name, stream=True):
+                status = part.get("status", "")
+                completed = part.get("completed", 0)
+                total = part.get("total", 0)
+                
+                progress = 0.0
+                if total > 0:
+                    progress = completed / total
+                
+                # Human readable status
+                if total > 0:
+                    status_text = f"Downloading {model_name}: {status} ({completed/(1024**2):.1f}/{total/(1024**2):.1f} MB)"
+                else:
+                    status_text = f"Ollama: {status}"
+                
+                progress_callback(status_text, progress)
+            
+            logger.info(f"Streaming pull for {model_name} completed.")
+            return True
+        except Exception as e:
+            logger.error(f"Streaming pull failed: {e}")
+            progress_callback(f"Pull failed: {e}", 0.0)
+            return False

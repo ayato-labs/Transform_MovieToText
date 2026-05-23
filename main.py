@@ -2,6 +2,10 @@ import logging
 import os
 import sys
 
+# SECURITY: Enforce 100% Local AI communication.
+# Setting OLLAMA_HOST ensures both the CLI and SDK default to loopback.
+os.environ["OLLAMA_HOST"] = "127.0.0.1:11434"
+
 import flet as ft
 
 # Ensure src is in path

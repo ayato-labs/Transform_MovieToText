@@ -149,14 +149,21 @@ class WhisperTranscriber:
         """Forcefully clears Python and CUDA memory, unloading the current model."""
         if hasattr(self, "model") and self.model is not None:
             logger.info(f"WhisperTranscriber: Unloading model '{self.current_model_name}' to free memory...")
-            del self.model
+            # We assign to None instead of using `del` to allow natural garbage collection.
+            # This helps prevent STATUS_STACK_BUFFER_OVERRUN (-1073740791) crashes on Windows 
+            # with CTranslate2 when models are destroyed in background threads.
             self.model = None
             self.current_model_name = None
 
+        # Give the C++ backend a tiny moment to release handles before forcing GC
+        time.sleep(0.1)
         gc.collect()
-        if torch is not None and torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            logger.info("WhisperTranscriber: Memory and CUDA cache cleared.")
+        
+        # NOTE: We DO NOT call torch.cuda.empty_cache() here.
+        # faster-whisper uses CTranslate2, which has its own CUDA allocator.
+        # Calling PyTorch's empty_cache() while CTranslate2 is freeing memory
+        # in a background thread is a known cause of hard crashes on Windows.
+        logger.info("WhisperTranscriber: Memory cleared.")
 
     def transcribe(self, audio_path: str, model_name: str, force_gpu: bool = False, language: str | None = None, progress_callback=None) -> dict:
         """

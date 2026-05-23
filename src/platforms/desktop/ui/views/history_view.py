@@ -300,12 +300,13 @@ class HistoryView(ft.Column):
             label="プロバイダー",
             width=150,
             options=[ft.dropdown.Option(k) for k in DEFAULT_PROVIDERS],
-            value=self.config_mgr.get_active_provider(),
+            value="ollama_local",
             on_change=on_provider_change,
             text_size=12,
+            visible=False,
         )
 
-        initial_provider = dd_provider.value or "gemini"
+        initial_provider = dd_provider.value or "ollama_local"
 
         dd_model = ft.Dropdown(
             label="モデル",
@@ -317,7 +318,7 @@ class HistoryView(ft.Column):
         # Initial sync for the first load
         sync_llm_models(self._page, self.config_mgr, initial_provider, dd_model)
 
-        initial_provider = dd_provider.value or "gemini"
+        initial_provider = dd_provider.value or "ollama_local"
 
         # Initial model list (synchronous for the very first load to avoid empty UI)
         try:
@@ -371,9 +372,8 @@ class HistoryView(ft.Column):
         def close_details(e):
             if self.audio_player:
                 self.audio_player.pause()
-            if self._page.dialog:
-                self._page.dialog.open = False
-            self._page.update()
+            if self._page:
+                self._page.close(dlg)
 
         # Build Interactive Transcript if available
         interactive_content = None

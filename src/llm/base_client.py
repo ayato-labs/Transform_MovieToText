@@ -50,6 +50,14 @@ class BaseLLMClient(ABC):
         """
         pass
 
+    def get_models_info(self) -> list[dict]:
+        """Returns detailed information about available models (name, size, etc.)."""
+        return [{"name": m} for m in self.get_available_models()]
+
+    def delete_model(self, model_name: str) -> bool:
+        """Deletes a model from the provider's storage. Returns True if successful."""
+        return False
+
     def transform(self, transcript: str, model_name: str, system_instruction: str, visual_contexts: list = None) -> str:
         """
         Unified transformation method. Higher-level than generate_minutes.

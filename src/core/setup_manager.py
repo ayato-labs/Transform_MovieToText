@@ -4,13 +4,13 @@ import subprocess
 import sys
 import threading
 
+from src.core.resource_advisor import ResourceAdvisor
 from src.utils.setup_helper import SetupHelper
 
 logger = logging.getLogger(__name__)
 
 # List of heavy dependencies that should be handled in the background
 HEAVY_DEPS = ["faster-whisper", "torch", "torchvision", "torchaudio", "opencv-python"]
-PRIMARY_MODEL = "gemma3:1b"
 
 
 class SetupManager:
@@ -20,6 +20,13 @@ class SetupManager:
         self._on_status_change = None
         self._on_complete = None
         self._is_running = False
+        self._target_model = None
+
+    def _get_target_model(self):
+        if not self._target_model:
+            rec = ResourceAdvisor.get_best_match()
+            self._target_model = rec["ollama"]
+        return self._target_model
 
     def check_env(self):
         """Check for missing heavy dependencies."""
@@ -31,7 +38,8 @@ class SetupManager:
             except ImportError:
                 self._missing_deps.append(dep)
 
-        self._is_ready = (len(self._missing_deps) == 0) and SetupHelper.is_ollama_installed() and SetupHelper.has_model(PRIMARY_MODEL)
+        target_model = self._get_target_model()
+        self._is_ready = (len(self._missing_deps) == 0) and SetupHelper.is_ollama_installed() and SetupHelper.has_model(target_model)
         return self._is_ready, self._missing_deps
 
     def start_background_setup(self, on_status_change=None, on_complete=None):
@@ -108,16 +116,23 @@ class SetupManager:
                 setup_info(">>> PYTHON INSTALLATION SUCCESSFUL! <<<")
 
                 # 3. Handle Primary Model Pull (Final Step)
-                if not SetupHelper.has_model(PRIMARY_MODEL):
-                    if self._on_status_change:
-                        self._on_status_change(f"Constructing AI Brain: Pulling {PRIMARY_MODEL}...")
-
-                    # We do this synchronously in the thread to ensure it's ready before complete
-                    try:
-                        subprocess.run(["ollama", "pull", PRIMARY_MODEL], check=True)
-                        setup_info(f"Successfully pulled {PRIMARY_MODEL}")
-                    except Exception as e:
-                        setup_error(f"Failed to pull {PRIMARY_MODEL}: {e}")
+                target_model = self._get_target_model()
+                if not SetupHelper.has_model(target_model):
+                    from src.core.event_bus import EVENT_TRANSCRIPTION_PROGRESS, event_bus
+                    
+                    def _on_pull_progress(status_text, progress):
+                        if self._on_status_change:
+                            self._on_status_change(status_text)
+                        # Also publish to event bus for global listeners (like progress bars)
+                        event_bus.publish(EVENT_TRANSCRIPTION_PROGRESS, progress)
+                    
+                    setup_info(f"Constructing AI Brain: Streaming pull for {target_model}...")
+                    success = SetupHelper.pull_model_streaming(target_model, _on_pull_progress)
+                    
+                    if success:
+                        setup_info(f"Successfully pulled {target_model}")
+                    else:
+                        setup_error(f"Failed to pull {target_model}")
 
                 self._is_ready = True
                 if self._on_complete:

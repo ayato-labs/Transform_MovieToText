@@ -80,8 +80,16 @@ class MainWindow(ft.Row):
         # Setup status indicator
         self.setup_icon = ft.Icon(ft.Icons.DOWNLOAD_FOR_OFFLINE_ROUNDED, size=20, color=ThemeManager.ACCENT)
         self.setup_status_text = ft.Text("...", size=10, color=ThemeManager.TEXT_SECONDARY)
+        self.setup_progress_bar = ft.ProgressBar(width=60, height=4, color=ThemeManager.ACCENT, bgcolor=ft.Colors.BLACK12, visible=False)
         self.setup_container = ft.Container(
-            content=ft.Row([self.setup_icon, self.setup_status_text], alignment=ft.MainAxisAlignment.CENTER, spacing=5),
+            content=ft.Column(
+                [
+                    ft.Row([self.setup_icon, self.setup_status_text], alignment=ft.MainAxisAlignment.CENTER, spacing=5),
+                    ft.Container(self.setup_progress_bar, alignment=ft.alignment.center),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=2,
+            ),
             padding=ft.padding.only(bottom=20),
             visible=False,
         )
@@ -113,6 +121,16 @@ class MainWindow(ft.Row):
         else:
             self.setup_container.visible = False
 
+        self.update()
+
+    def update_setup_progress(self, progress: float):
+        """Update the setup progress bar."""
+        if progress > 0 and progress < 1.0:
+            self.setup_progress_bar.visible = True
+            self.setup_progress_bar.value = progress
+        else:
+            self.setup_progress_bar.visible = False
+        
         self.update()
 
     def switch_tab(self, index: int):

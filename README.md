@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/privacy-100%25_local-green.svg" alt="Privacy">
   <img src="https://img.shields.io/badge/cost-free-brightgreen.svg" alt="Cost">
-  <img src="https://img.shields.io/badge/license-AGPL--3.0-orange.svg" alt="License">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   <img src="https://img.shields.io/badge/code%20style-ruff-purple.svg" alt="Ruff">
 </p>
 
@@ -234,10 +234,10 @@ tests/
 
 ## ライセンス
 
-**GNU Affero General Public License v3.0 (AGPL-3.0)**
+**MIT License**
 Copyright (c) 2026 Ayato-AI
 
-「データは個人の資産である」という信念のもと、オープンソースかつプライバシー重視で開発されています。
+本ソフトウェアは MIT ライセンスのもとで公開されています。詳細については [LICENSE](LICENSE) ファイルを参照してください。
 
 ---
 

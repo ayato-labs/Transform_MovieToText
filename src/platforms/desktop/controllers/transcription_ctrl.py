@@ -12,6 +12,7 @@ from src.core.event_bus import (
 )
 from src.core.history_mgr import history_mgr
 from src.core.intent_router import IntentRouter, TransformationStrategy
+from src.core.minutes_service import MinutesService
 from src.core.state import state
 from src.core.transcription_service import TranscriptionService
 from src.core.whisper_transcriber import WhisperTranscriber
@@ -26,9 +27,12 @@ class TranscriptionController:
     Handles Flet's state updates.
     """
 
-    def __init__(self, config_mgr: ConfigManager, transcriber: WhisperTranscriber):
+    def __init__(self, config_mgr: ConfigManager, transcriber: WhisperTranscriber, history_mgr=None):
         self.config_mgr = config_mgr
-        self.service = TranscriptionService(config_mgr, transcriber)
+        # Note: TranscriptionService uses history_mgr singleton if not passed.
+        # We try to align them if a specific one is provided (mostly for tests).
+        self.service = TranscriptionService(config_mgr, transcriber, history_mgr=history_mgr)
+        self.minutes_service = MinutesService(config_mgr, history_mgr=history_mgr)
         self.router = IntentRouter(config_mgr)
         self._setup_event_handlers()
 
@@ -142,8 +146,8 @@ class TranscriptionController:
                 event_bus.publish(EVENT_STATUS_UPDATE, f"🧠 AI思考中: {strategy.name}として変換を実行中... ({reason})")
 
                 # 2. Execute Transformation
-                # For now, generate_minutes fits most strategies, but we can specialize later
-                result = self.service.generate_minutes_for_meeting(meeting_id=meeting_id, transcript=transcript, provider=provider, model=model)
+                # Use MinutesService instead of transcription_service to leverage Map-Reduce
+                result = self.minutes_service.generate_minutes_sync(transcript=transcript, provider=provider, model=model, meeting_id=meeting_id)
 
                 # 3. Update UI
                 event_bus.publish(EVENT_STATUS_UPDATE, f"✨ 完了: {strategy.name}形式で整理しました。")

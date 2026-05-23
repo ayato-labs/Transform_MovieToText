@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 
 import flet as ft
 
@@ -10,12 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class SettingsView(ft.Column):
-    def __init__(self, config_mgr: ConfigManager, hw_info: dict, model_requirements: dict, history_ctrl=None):
+    def __init__(self, config_mgr: ConfigManager, hw_info: dict, model_requirements: dict, history_ctrl=None, minutes_ctrl=None):
         super().__init__(expand=True, scroll="auto")
         self.config_mgr = config_mgr
         self.hw_info = hw_info
         self.model_requirements = model_requirements
         self.history_ctrl = history_ctrl
+        self.minutes_ctrl = minutes_ctrl
 
         # Folder picker for Knowledge Library
         self.knowledge_folder_picker = ft.FilePicker(on_result=self._on_knowledge_folder_result)
@@ -65,9 +67,21 @@ class SettingsView(ft.Column):
         self.comp_items = ft.Column(spacing=0)
         self._build_compatibility_list()
 
+        # Model Management Column
+        self.model_list_column = ft.Column(spacing=5)
+
         # Build Layout
         self.controls = [
             ft.Text("設定", size=24, weight="bold"),
+            ft.Divider(),
+            ft.Text("ローカルAIモデル管理", size=18, weight="w500"),
+            ft.Text("PC内に保存されているAIモデルです。不要なモデルを削除してディスク容量を確保できます。", size=13, color="grey500"),
+            ft.Container(
+                content=self.model_list_column,
+                padding=10,
+                border=ft.border.all(1, ft.Colors.GREY_800),
+                border_radius=10,
+            ),
             ft.Divider(),
             ft.Text("ナレッジエンジン (Local RAG)", size=18, weight="w500"),
             ft.Text("指定したフォルダ内のドキュメントを検索対象に含めます。外部送信は一切行われません。", size=13, color="grey500"),
@@ -129,6 +143,78 @@ class SettingsView(ft.Column):
                 )
             )
 
+    def _refresh_model_list(self):
+        if not self.minutes_ctrl:
+            return
+            
+        self.model_list_column.controls = [ft.Text("モデル情報を取得中...", italic=True, color="grey500")]
+        self._safe_update()
+
+        def fetch_worker():
+            try:
+                provider = self.config_mgr.get_active_provider()
+                models = self.minutes_ctrl.service.get_models_info(provider)
+                
+                new_controls = []
+                if not models:
+                    new_controls.append(ft.Text("インストール済みのモデルはありません。", color="grey500"))
+                else:
+                    for m in models:
+                        new_controls.append(
+                            ft.Row([
+                                ft.Icon(ft.Icons.SETTINGS_INPUT_COMPONENT, size=16),
+                                ft.Text(m["name"], weight="bold", expand=True),
+                                ft.Text(f"{m['size_gb']} GB", color="grey500"),
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE,
+                                    tooltip="このモデルを削除",
+                                    icon_color=ft.Colors.RED_300,
+                                    on_click=lambda _, name=m["name"]: self._show_model_delete_confirmation(name)
+                                )
+                            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                        )
+                
+                self.model_list_column.controls = new_controls
+                self._safe_update()
+            except Exception as e:
+                logger.error(f"Failed to refresh model list: {e}")
+                self.model_list_column.controls = [ft.Text(f"エラー: {e}", color="red")]
+                self._safe_update()
+
+        threading.Thread(target=fetch_worker, daemon=True).start()
+
+    def _show_model_delete_confirmation(self, model_name):
+        def confirm_delete(e_close):
+            if self.page:
+                self.page.close(confirm_dialog)
+            self._execute_model_deletion(model_name)
+
+        def cancel_delete(e_close):
+            if self.page:
+                self.page.close(confirm_dialog)
+
+        confirm_dialog = ft.AlertDialog(
+            title=ft.Text("AIモデルの削除"),
+            content=ft.Text(f"モデル「{model_name}」をPCから完全に削除しますか？\n再度使用するには再ダウンロードが必要です。"),
+            actions=[
+                ft.TextButton("キャンセル", on_click=cancel_delete),
+                ft.TextButton(content=ft.Text("削除する", weight="bold", color=ft.Colors.RED), on_click=confirm_delete),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        if self.page:
+            self.page.open(confirm_dialog)
+
+    def _execute_model_deletion(self, model_name):
+        provider = self.config_mgr.get_active_provider()
+        success = self.minutes_ctrl.service.delete_model(provider, model_name)
+        if success:
+            self._show_info(f"モデル「{model_name}」を削除しました。")
+            self._refresh_model_list()
+        else:
+            self._show_info(f"モデル「{model_name}」の削除に失敗しました。", bgcolor=ft.Colors.RED_700)
+
     def _on_knowledge_folder_result(self, e: ft.FilePickerResultEvent):
         if e.path:
             self.knowledge_dir_field.value = e.path
@@ -172,29 +258,25 @@ class SettingsView(ft.Column):
 
         def confirm_delete(e_close):
             if self.page:
-                confirm_dialog.open = False
-                self.page.update()
+                self.page.close(confirm_dialog)
             self._execute_project_deletion(project_name)
 
         def cancel_delete(e_close):
             if self.page:
-                confirm_dialog.open = False
-                self.page.update()
+                self.page.close(confirm_dialog)
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("プロジェクトの削除"),
             content=ft.Text(f"プロジェクト「{project_name}」を削除しますか？\n所属していたデータは「その他」に移動されます。"),
             actions=[
                 ft.TextButton("キャンセル", on_click=cancel_delete),
-                ft.TextButton("削除する", on_click=confirm_delete, font_weight="bold", color=ft.Colors.RED),
+                ft.TextButton(content=ft.Text("削除する", weight="bold", color=ft.Colors.RED), on_click=confirm_delete),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
 
         if self.page:
-            self.page.dialog = confirm_dialog
-            confirm_dialog.open = True
-            self.page.update()
+            self.page.open(confirm_dialog)
 
     def _execute_project_deletion(self, project_name):
         if not self.history_ctrl:
@@ -234,6 +316,7 @@ class SettingsView(ft.Column):
         self.knowledge_dir_field.value = self.config_mgr.get_knowledge_dir()
 
         self._update_project_options()
+        self._refresh_model_list()
         self._safe_update()
 
     def _safe_update(self):
