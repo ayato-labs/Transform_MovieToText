@@ -15,7 +15,7 @@ def test_query_analyzer_reconciliation_exact_match(sample_metadata):
 
     analyzer = QueryAnalyzer(projects=sample_metadata["projects"], categories=sample_metadata["categories"], client=fake_client, model="fake-model")
 
-    result = analyzer.analyze("Ayato-AIの進捗はどうですか？")
+    result = analyzer.analyze("Ayato-AIの進捗はどうですか?")
 
     assert "Ayato-AI" in result["projects"]
     assert any("進捗" in k for k in result["keywords"])
@@ -27,7 +27,7 @@ def test_query_analyzer_synonym_match(sample_metadata):
 
     analyzer = QueryAnalyzer(projects=sample_metadata["projects"], categories=sample_metadata["categories"], client=fake_client, model="fake-model")
 
-    result = analyzer.analyze("昨日の会議の要約は？")
+    result = analyzer.analyze("昨日の会議の要約は?")
 
     assert "Minutes" in result["categories"]
 

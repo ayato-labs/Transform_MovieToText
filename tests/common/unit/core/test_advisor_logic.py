@@ -17,19 +17,19 @@ class TestResourceAdvisorLogic(unittest.TestCase):
         mock_specs.return_value = (4.0, 0.0)
         res = ResourceAdvisor.get_best_match()
         self.assertEqual(res["tier"], "Entry")
-        self.assertEqual(res["ollama"], "gemma3:1b")
+        self.assertEqual(res["ollama"], "gemma3:2b")
 
-        # Case 2: Mid-range with some VRAM
-        mock_specs.return_value = (16.0, 4.0)
+        # Case 2: Standard GPU
+        mock_specs.return_value = (16.0, 8.0)
         res = ResourceAdvisor.get_best_match()
-        self.assertEqual(res["tier"], "SmallGPU")
+        self.assertEqual(res["tier"], "Standard")
         self.assertEqual(res["ollama"], "gemma3:4b")
 
-        # Case 3: High-end
-        mock_specs.return_value = (32.0, 12.0)
+        # Case 3: Monster
+        mock_specs.return_value = (128.0, 48.0)
         res = ResourceAdvisor.get_best_match()
-        self.assertEqual(res["tier"], "Pro")
-        self.assertEqual(res["ollama"], "gemma3:12b")
+        self.assertEqual(res["tier"], "Monster")
+        self.assertEqual(res["ollama"], "gemma3:4b")
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ DEFAULT_PROVIDERS = {
 }
 DEFAULT_ACTIVE_PROVIDER = "ollama_local"
 DEFAULT_LLM_MODELS = {
-    "ollama_local": ["gemma3:1b", "gemma3:4b", "gemma3:12b", "llama3.2", "mistral-nemo", "phi4"],
+    "ollama_local": ["gemma3:2b", "gemma3:4b"],
 }
 
 DEFAULT_WHISPER_MODEL = "base"
@@ -53,12 +53,12 @@ EDITION_RESTRICTIONS = {
         "db_type": "sqlite",
     },
     AppEdition.PRO: {
-        "allowed_providers": ["ollama_local", "gemini", "ollama_cloud"],
+        "allowed_providers": ["ollama_local"],
         "max_transcript_chars": 200000,
         "db_type": "sqlite",
     },
     AppEdition.ENTERPRISE: {
-        "allowed_providers": ["ollama_local", "gemini", "ollama_cloud", "azure_openai"],
+        "allowed_providers": ["ollama_local"],
         "max_transcript_chars": 1000000,
         "db_type": "mysql",
     },

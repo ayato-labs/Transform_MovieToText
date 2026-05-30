@@ -129,7 +129,7 @@ class FileTranscriptionView(ft.Column):
         )
 
         self.sw_visual = ft.Switch(
-            label="映像情報を使用", value=False, tooltip="動画ファイルから10秒ごとに画像を抽出してAIに送信します（分析精度が向上します）"
+            label="映像情報を使用", value=False, tooltip="動画ファイルから10秒ごとに画像を抽出してAIに送信します(分析精度が向上します)"
         )
 
         self.btn_pick = ft.ElevatedButton(

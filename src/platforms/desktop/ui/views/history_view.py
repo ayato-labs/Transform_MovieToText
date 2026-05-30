@@ -254,7 +254,7 @@ class HistoryView(ft.Column):
         )
 
         minutes_control = ft.TextField(
-            value=m["minutes"] or "（未生成）",
+            value=m["minutes"] or "(未生成)",
             multiline=True,
             read_only=True,
             min_lines=15,
@@ -602,7 +602,7 @@ class HistoryView(ft.Column):
 
         confirm_dlg = ft.AlertDialog(
             title=ft.Text("履歴の削除"),
-            content=ft.Text(f"「{title}」を削除してもよろしいですか？\nこの操作は取り消せません。"),
+            content=ft.Text(f"「{title}」を削除してもよろしいですか?\nこの操作は取り消せません。"),
             actions=[
                 ft.TextButton("キャンセル", on_click=close_dlg),
                 ft.TextButton("削除する", icon=ft.Icons.DELETE, icon_color=ft.Colors.RED_400, on_click=do_delete),

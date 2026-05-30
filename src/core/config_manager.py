@@ -75,7 +75,7 @@ class ConfigManager:
 
     def get_last_model(self, provider_name=None):
         provider_name = "ollama_local"
-        return self.config.get("last_models", {}).get(provider_name, "")
+        return self.config.get("last_models", {}).get(provider_name, "gemma3:2b")
 
     def set_last_model(self, model_name, provider_name=None):
         provider_name = "ollama_local"
@@ -86,21 +86,24 @@ class ConfigManager:
 
     def get_llm_models(self, provider_name=None):
         provider_name = "ollama_local"
+        
         try:
             from src.llm.factory import LLMFactory
 
             conf = self.get_provider_config(provider_name)
             client = LLMFactory.create_client(provider_name=provider_name, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
-            models = client.get_available_models()
+            installed_models = client.get_available_models()
 
-            if models:
-                return models
+            if installed_models:
+                # Filter to only show Gemma models
+                valid_models = [m for m in installed_models if "gemma" in m.lower()]
+                if valid_models:
+                    return valid_models
         except Exception as e:
             logger.warning(f"Failed to fetch live models for {provider_name}: {e}")
 
-        # Fallback to constants if live fetch fails
+        # Fallback to constants if live fetch fails or no Gemma models are installed yet
         from .constants import DEFAULT_LLM_MODELS
-
         return DEFAULT_LLM_MODELS.get(provider_name, [])
 
     def get_whisper_model(self):
@@ -139,7 +142,7 @@ class ConfigManager:
 
     def get_llm_model(self):
         """Returns the current LLM model name (e.g. for summary)."""
-        return self.config.get("llm_model", "gemma3:1b")  # Local default
+        return self.config.get("llm_model", "gemma3:2b")  # Local default
 
     def set_llm_model(self, model_name):
         """Sets the LLM model name."""

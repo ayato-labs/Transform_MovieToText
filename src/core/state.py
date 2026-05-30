@@ -28,7 +28,7 @@ class AppState:
             "category": "",
             "audio_source": "system",
             "whisper_model": "base",
-            "llm_provider": "gemini",
+            "llm_provider": "ollama_local",
             "llm_model": None,
             "force_gpu": False,
             "transcription_language": None,

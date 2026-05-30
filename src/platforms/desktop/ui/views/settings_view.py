@@ -195,7 +195,7 @@ class SettingsView(ft.Column):
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("AIモデルの削除"),
-            content=ft.Text(f"モデル「{model_name}」をPCから完全に削除しますか？\n再度使用するには再ダウンロードが必要です。"),
+            content=ft.Text(f"モデル「{model_name}」をPCから完全に削除しますか?\n再度使用するには再ダウンロードが必要です。"),
             actions=[
                 ft.TextButton("キャンセル", on_click=cancel_delete),
                 ft.TextButton(content=ft.Text("削除する", weight="bold", color=ft.Colors.RED), on_click=confirm_delete),
@@ -267,7 +267,7 @@ class SettingsView(ft.Column):
 
         confirm_dialog = ft.AlertDialog(
             title=ft.Text("プロジェクトの削除"),
-            content=ft.Text(f"プロジェクト「{project_name}」を削除しますか？\n所属していたデータは「その他」に移動されます。"),
+            content=ft.Text(f"プロジェクト「{project_name}」を削除しますか?\n所属していたデータは「その他」に移動されます。"),
             actions=[
                 ft.TextButton("キャンセル", on_click=cancel_delete),
                 ft.TextButton(content=ft.Text("削除する", weight="bold", color=ft.Colors.RED), on_click=confirm_delete),

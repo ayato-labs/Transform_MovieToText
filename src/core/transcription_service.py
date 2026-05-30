@@ -329,7 +329,7 @@ class TranscriptionService:
     def generate_minutes_for_meeting(self, meeting_id: int, transcript: str, provider: str | None = None, model: str | None = None) -> str:
         """Generates minutes for an existing meeting and updates the record."""
         if not transcript or len(transcript.strip()) < 50:
-            raise ValueError("文字起こしデータが不足しています（50文字以上必要です）。")
+            raise ValueError("文字起こしデータが不足しています(50文字以上必要です)。")
 
         active_provider = provider or self.config_mgr.get_active_provider()
         conf = self.config_mgr.get_provider_config(active_provider)

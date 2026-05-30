@@ -171,7 +171,7 @@ class QueryAnalyzer:
 
         # If still no keywords, split original query by punctuation as last resort
         if not keywords:
-            parts = re.split(r"[、。！？\s]", original_query)
+            parts = re.split(r"[、。!?\s]", original_query)
             for p in parts:
                 if 2 <= len(p) <= 15:
                     keywords.append(p)

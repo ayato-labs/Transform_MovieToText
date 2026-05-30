@@ -34,6 +34,7 @@ class LiveTranscriptionView(ft.Column):
         self.vm = LiveTranscriptionViewModel(config_mgr, ctrl)
         self._setup_vm_callbacks()
 
+        # IMPORTANT: UI must be built before helper initialization so references exist
         self._build_ui()
         
         # Initialize Shared Helper
@@ -46,6 +47,9 @@ class LiveTranscriptionView(ft.Column):
             dd_whisper=self.dd_whisper,
             local_smart_btn=self.local_smart_btn
         )
+
+        # Initial data load (Start AFTER helper is ready)
+        threading.Thread(target=lambda: self.smart_helper.initial_load(self._update_model_options), daemon=True).start()
 
         self.refresh_dependency_state(initial=True)
 
@@ -289,9 +293,6 @@ class LiveTranscriptionView(ft.Column):
                 border_radius=15,
             ),
         ]
-
-        # Initial data load
-        threading.Thread(target=lambda: self.smart_helper.initial_load(self._update_model_options), daemon=True).start()
 
     def _toggle_local_smart(self, e):
         self.smart_helper.toggle_smart(update_callback=self._update_model_options)

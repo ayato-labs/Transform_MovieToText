@@ -81,7 +81,7 @@ def verify_intent_extraction(query: str):
 
 
 if __name__ == "__main__":
-    queries = ["Ayato-AIとMarketingの議事録が欲しい", "採用のバグ報告はある？"]
+    queries = ["Ayato-AIとMarketingの議事録が欲しい", "採用のバグ報告はある?"]
     for q in queries:
         verify_intent_extraction(q)
         print("-" * 40)

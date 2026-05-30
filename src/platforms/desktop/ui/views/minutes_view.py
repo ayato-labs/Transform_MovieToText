@@ -20,12 +20,12 @@ class MinutesView(ft.Column):
         self.llm_provider_dropdown = ft.Dropdown(
             label="AIプロバイダー",
             options=[
-                ft.dropdown.Option("gemini", "Gemini (Google)"),
-                ft.dropdown.Option("ollama_local", "Ollama Local (ローカル資源/Pattern 1)"),
-                ft.dropdown.Option("ollama_cloud", "Ollama Cloud (API直接/Pattern 2)"),
+                ft.dropdown.Option("ollama_local", "Ollama Local (ローカル資源)"),
             ],
             width=200,
+            value="ollama_local",
             on_change=self._on_provider_change,
+            visible=False,
         )
 
         self.llm_model_dropdown = ft.Dropdown(

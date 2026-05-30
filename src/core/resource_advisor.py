@@ -19,11 +19,11 @@ class ResourceAdvisor:
 
     # Static Golden Rules for 2026 hardware (Prioritizing Gemma 3 for Local Vision)
     TIER_MAPPING = {
-        "Entry": {"min_ram": 8, "min_vram": 0, "whisper": "base", "ollama": "gemma3:1b"},
+        "Entry": {"min_ram": 8, "min_vram": 0, "whisper": "base", "ollama": "gemma3:2b"},
         "SmallGPU": {"min_ram": 8, "min_vram": 4, "whisper": "small", "ollama": "gemma3:4b"},  # Multimodal enabled
         "Standard": {"min_ram": 16, "min_vram": 8, "whisper": "medium", "ollama": "gemma3:4b"},
-        "Pro": {"min_ram": 32, "min_vram": 10, "whisper": "large-v3", "ollama": "gemma3:12b"},
-        "Monster": {"min_ram": 64, "min_vram": 22, "whisper": "large-v3", "ollama": "gemma3:27b"},
+        "Pro": {"min_ram": 32, "min_vram": 10, "whisper": "large-v3", "ollama": "gemma3:4b"},
+        "Monster": {"min_ram": 64, "min_vram": 22, "whisper": "large-v3", "ollama": "gemma3:4b"},
     }
 
     @classmethod

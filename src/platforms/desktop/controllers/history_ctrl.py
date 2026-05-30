@@ -119,7 +119,7 @@ class HistoryController:
             f"# {title}",
             "",
             "## 議事録 / 要約",
-            minutes if minutes else "（未生成）",
+            minutes if minutes else "(未生成)",
             "",
             "---",
             "",

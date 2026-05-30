@@ -123,9 +123,9 @@ class TranscriptionController:
             state.set("transcript_text", full_text)
             if category:
                 state.set("category", category)
-                state.set("status_text", f"ライブ文字起こし完了（分類: {category}）")
+                state.set("status_text", f"ライブ文字起こし完了(分類: {category})")
             else:
-                state.set("status_text", "ライブ文字起こし終了（短時間のため保存されませんでした）")
+                state.set("status_text", "ライブ文字起こし終了(短時間のため保存されませんでした)")
 
         self.service.stop_live_recording(finalize_callback=_finalize_callback)
 

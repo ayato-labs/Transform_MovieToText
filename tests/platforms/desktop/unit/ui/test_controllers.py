@@ -35,7 +35,7 @@ def test_transcription_auto_save_heuristic_discard(mock_deps):
         # Simulate "Short text" result from service
         callback("Short text", None)
 
-        assert state.get("status_text") == "ライブ文字起こし終了（短時間のため保存されませんでした）"
+        assert state.get("status_text") == "ライブ文字起こし終了(短時間のため保存されませんでした)"
 
 
 def test_transcription_auto_save_heuristic_persist(mock_deps):
@@ -56,7 +56,7 @@ def test_transcription_auto_save_heuristic_persist(mock_deps):
         # Simulate "Long text" with "Business" category result from service
         callback("Long text of a meeting...", "Business")
 
-        assert state.get("status_text") == "ライブ文字起こし完了（分類: Business）"
+        assert state.get("status_text") == "ライブ文字起こし完了(分類: Business)"
         assert state.get("transcript_text") == "Long text of a meeting..."
 
 
