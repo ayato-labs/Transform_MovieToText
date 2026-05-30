@@ -1,4 +1,4 @@
-name: Release and Distribution
+name: Unified Pipeline (Test, Release, Build)
 
 on:
   push:
@@ -9,8 +9,45 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint-and-test:
+    name: Lint and Pytest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system -e .[dev,pc]
+
+      - name: Ruff Check
+        run: |
+          ruff check src tests
+
+      - name: Run Tests
+        run: |
+          mkdir -p reports
+          pytest tests/common tests/pc -v --junitxml=reports/junit.xml
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: reports/*
+
   semantic-release:
-    name: Determine Version and Create Tag
+    name: Semantic Release
+    needs: lint-and-test
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
@@ -48,8 +85,9 @@ jobs:
 
   build-windows-exe-cpu:
     name: Windows EXE (CPU)
-    needs: semantic-release
-    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
+    needs: [lint-and-test, semantic-release]
+    # Build if release was successful OR if we are pushing a tag/manual dispatch
+    if: always() && (needs.lint-and-test.result == 'success') && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -81,8 +119,8 @@ jobs:
 
   build-windows-exe-gpu:
     name: Windows EXE (GPU)
-    needs: semantic-release
-    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
+    needs: [lint-and-test, semantic-release]
+    if: always() && (needs.lint-and-test.result == 'success') && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -112,61 +150,10 @@ jobs:
           name: windows-exe-gpu
           path: TransformMovieToText-Windows-GPU.zip
 
-  build-windows-flet:
-    name: Windows App (Flet Thin)
-    needs: semantic-release
-    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: |
-          pip install uv
-
-      - name: Export requirements.txt
-        run: |
-          uv export --format requirements-txt -o requirements.txt
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Add Flutter to path
-        shell: bash
-        run: |
-          echo "$FLUTTER_HOME/bin" >> $GITHUB_PATH
-
-      - name: Install Flet SDK and Core Deps
-        run: |
-          pip install -r requirements_thin.txt
-
-      - name: Build Windows App (Thin)
-        run: |
-          uv run flet build windows --no-rich-output src/app.py
-
-      - name: Zip Windows App
-        shell: pwsh
-        run: |
-          Compress-Archive -Path "build/windows/*" -DestinationPath "TransformMovieToText-Windows.zip"
-
-      - name: Upload Windows Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-binary
-          path: TransformMovieToText-Windows.zip
-
   distribute:
     name: Attach Artifacts to Release
-    needs: [semantic-release, build-windows-exe-cpu, build-windows-exe-gpu, build-windows-flet]
-    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
+    needs: [semantic-release, build-windows-exe-cpu, build-windows-exe-gpu]
+    if: always() && (needs.build-windows-exe-cpu.result == 'success' && needs.build-windows-exe-gpu.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -182,7 +169,6 @@ jobs:
         with:
           tag_name: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
           files: |
-            windows-binary/TransformMovieToText-Windows.zip
             windows-exe-cpu/TransformMovieToText-Windows-CPU.zip
             windows-exe-gpu/TransformMovieToText-Windows-GPU.zip
         env:
