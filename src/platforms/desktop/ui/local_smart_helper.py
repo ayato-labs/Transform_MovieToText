@@ -1,5 +1,7 @@
 import logging
+
 import flet as ft
+
 from src.core.config_manager import ConfigManager
 from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 from src.platforms.desktop.ui.ui_utils import safe_update_control

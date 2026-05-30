@@ -291,11 +291,20 @@ class OllamaLocalClient(BaseLLMClient):
             import ollama
             if isinstance(e, ollama.ResponseError):
                 if e.status_code == 404:
-                    msg = f"モデル '{model_name}' がPCにインストールされていません。設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    msg = (
+                        f"モデル '{model_name}' がPCにインストールされていません。"
+                        "設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    )
                     logger.error(f"Ollama local chat failed (404): {msg}")
                     raise RuntimeError(msg) from e
-                elif e.status_code == 500 and "more system memory" in err_str:
-                    msg = f"メモリ不足によりモデル '{model_name}' を起動できませんでした。PCのメモリが不足しているか、モデルが大きすぎます。設定画面からより軽量なモデルを選択してください。\n詳細: {err_str}"
+
+                if e.status_code == 500 and "more system memory" in err_str:
+                    msg = (
+                        f"メモリ不足によりモデル '{model_name}' を起動できませんでした。"
+                        "PCのメモリが不足しているか、モデルが大きすぎます。"
+                        "設定画面からより軽量なモデルを選択してください。\n"
+                        f"詳細: {err_str}"
+                    )
                     logger.error(f"Ollama local RAM exhaustion (500): {err_str}")
                     raise RuntimeError(msg) from e
             
@@ -361,11 +370,20 @@ class OllamaLocalClient(BaseLLMClient):
             import ollama
             if isinstance(e, ollama.ResponseError):
                 if e.status_code == 404:
-                    msg = f"モデル '{model_name}' がPCにインストールされていません。設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    msg = (
+                        f"モデル '{model_name}' がPCにインストールされていません。"
+                        "設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
+                    )
                     logger.error(f"Ollama local chat failed (404): {msg}")
                     raise RuntimeError(msg) from e
-                elif e.status_code == 500 and "more system memory" in err_str:
-                    msg = f"メモリ不足によりモデル '{model_name}' を起動できませんでした。PCのメモリが不足しているか、モデルが大きすぎます。設定画面からより軽量なモデルを選択してください。\n詳細: {err_str}"
+
+                if e.status_code == 500 and "more system memory" in err_str:
+                    msg = (
+                        f"メモリ不足によりモデル '{model_name}' を起動できませんでした。"
+                        "PCのメモリが不足しているか、モデルが大きすぎます。"
+                        "設定画面からより軽量なモデルを選択してください。\n"
+                        f"詳細: {err_str}"
+                    )
                     logger.error(f"Ollama local RAM exhaustion (500): {err_str}")
                     raise RuntimeError(msg) from e
             

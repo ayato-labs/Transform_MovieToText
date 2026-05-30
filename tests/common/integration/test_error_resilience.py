@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 import flet as ft
-from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
+
 from src.core.minutes_service import MinutesService
+from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 
 class TestErrorResilience(unittest.TestCase):
     """

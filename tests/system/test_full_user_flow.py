@@ -1,14 +1,14 @@
+import time
 import unittest
 from unittest.mock import MagicMock, patch
-import time
+
 import flet as ft
 
 # System-level test simulating full user flow
 from src.core.config_manager import ConfigManager
-from src.core.state import state
+from src.core.history_mgr import history_mgr
 from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 from src.platforms.desktop.ui.views.live_transcription_view import LiveTranscriptionView
-from src.core.history_mgr import history_mgr
 
 class TestFullUserFlow(unittest.TestCase):
     """

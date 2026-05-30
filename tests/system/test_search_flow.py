@@ -54,23 +54,23 @@ def test_chat_preview_as_you_type_flow(mock_deps):
     config.get_provider_config.return_value = {"model": "llama3"}
     config.get_edition.return_value = "pro"
 
-    with patch("src.platforms.common.ui.views.chat_bot_view.history_mgr") as mock_hm:
-        with patch("src.platforms.common.ui.views.chat_bot_view.QueryAnalyzer") as mock_qa:
-            # Setup dependencies
-            mock_hm.get_meetings_filtered.return_value = [{"title": "Meeting X"}]
-            mock_analyzer = MagicMock()
-            mock_analyzer.analyze.return_value = {"projects": [], "categories": [], "keywords": ["Meet"]}
-            mock_qa.return_value = mock_analyzer
+    with patch("src.platforms.common.ui.views.chat_bot_view.history_mgr") as mock_hm, \
+         patch("src.platforms.common.ui.views.chat_bot_view.QueryAnalyzer") as mock_qa:
+        # Setup dependencies
+        mock_hm.get_meetings_filtered.return_value = [{"title": "Meeting X"}]
+        mock_analyzer = MagicMock()
+        mock_analyzer.analyze.return_value = {"projects": [], "categories": [], "keywords": ["Meet"]}
+        mock_qa.return_value = mock_analyzer
 
-            view = ChatBotView(page=page, config_mgr=config)
+        view = ChatBotView(page=page, config_mgr=config)
 
-            # Simulate typing (minimum 3 chars required in our implementation)
-            view.input_field.value = "Meet"
-            view._on_input_change(None)
+        # Simulate typing (minimum 3 chars required in our implementation)
+        view.input_field.value = "Meet"
+        view._on_input_change(None)
 
-            # Wait for debounce (0.5s in ChatBotView)
-            time.sleep(0.7)
+        # Wait for debounce (0.5s in ChatBotView)
+        time.sleep(0.7)
 
-            # Check if preview became visible and contains the result
-            assert view.context_preview.visible is True
-            assert any("Meeting X" in str(c.content.value) for c in view.context_preview.controls if hasattr(c, "content"))
+        # Check if preview became visible and contains the result
+        assert view.context_preview.visible is True
+        assert any("Meeting X" in str(c.content.value) for c in view.context_preview.controls if hasattr(c, "content"))

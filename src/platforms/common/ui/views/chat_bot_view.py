@@ -312,7 +312,8 @@ class ChatBotView(ft.Column):
 
     def _update_context_preview(self):
         query = self.input_field.value.strip()
-        if not query: return
+        if not query:
+            return
         try:
             all_projs = self.history_mgr.get_projects()
             all_cats = self.history_mgr.get_categories()

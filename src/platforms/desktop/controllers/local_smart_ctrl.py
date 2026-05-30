@@ -75,8 +75,8 @@ class LocalSmartController:
             logger.info(f"LocalSmart: Pulling missing model '{model_name}'...")
             # Use Ollama CLI or SDK to pull
             logger.info(f"LocalSmart: Pulling model '{model_name}' - this may take some time...")
-            import os
             import ollama
+            import os
 
             # Ensure OLLAMA_HOST is set for this thread/SDK call
             os.environ["OLLAMA_HOST"] = "127.0.0.1:11434"

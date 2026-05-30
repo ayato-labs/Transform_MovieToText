@@ -103,7 +103,8 @@ class MeetingRepository:
 
         with self.db.get_connection() as conn:
             cursor = conn.execute(
-                "INSERT INTO meetings (title, transcript, transcript_segments, audio_path, model_info, project_name, category, minutes_model, source_type, file_path, file_mtime) "
+                "INSERT INTO meetings (title, transcript, transcript_segments, audio_path, model_info, "
+                "project_name, category, minutes_model, source_type, file_path, file_mtime) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (title, transcript, segments_json, audio_path, model_info, project_name, category, "", source_type, file_path, file_mtime),
             )
@@ -111,7 +112,8 @@ class MeetingRepository:
 
             # Sync FTS
             conn.execute(
-                "INSERT INTO meetings_fts(rowid, title, transcript, minutes, project_name, category, minutes_model, source_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO meetings_fts(rowid, title, transcript, minutes, project_name, category, "
+                "minutes_model, source_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (meeting_id, title, transcript, "", project_name, category, "", source_type),
             )
             conn.commit()
@@ -136,7 +138,8 @@ class MeetingRepository:
             if row:
                 conn.execute("DELETE FROM meetings_fts WHERE rowid = ?", (meeting_id,))
                 conn.execute(
-                    "INSERT INTO meetings_fts(rowid, title, transcript, minutes, project_name, category, minutes_model, source_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO meetings_fts(rowid, title, transcript, minutes, project_name, category, "
+                    "minutes_model, source_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         meeting_id,
                         row["title"],

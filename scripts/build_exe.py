@@ -65,21 +65,36 @@ def main():
             "https://download.pytorch.org/whl/cu121"
         )
     else:
-        print("Installing CPU version of PyTorch...")
-        run_cmd("uv pip install torch torchvision torchaudio")
+        print("Installing CPU-only PyTorch...")
+        run_cmd(
+            "uv pip install torch==2.5.1+cpu torchvision==0.20.1+cpu "
+            "torchaudio==2.5.1+cpu --extra-index-url "
+            "https://download.pytorch.org/whl/cpu"
+        )
 
     # 3. Build Executable
     print("Starting PyInstaller build...")
     # Use unique name based on build type
     exe_name = f"TransformMovieToText_{build_type.upper()}"
-    run_cmd(
+    
+    # Base PyInstaller command
+    pyinstaller_cmd = (
         "uv run pyinstaller --noconfirm --onedir --windowed "
         f'--name "{exe_name}" '
         '--icon "assets/icon.ico" '
         '--add-data "assets;assets" '
-        "--collect-all whisper --collect-all tiktoken --collect-all flet --collect-data torch "
+        "--collect-all whisper --collect-all tiktoken --collect-all flet "
+        "--exclude-module matplotlib --exclude-module notebook --exclude-module jedi "
+        "--exclude-module IPython --exclude-module PIL.ImageQt "
         "main.py"
     )
+    
+    # Optimization: Only collect necessary torch data
+    # For CPU, we exclude CUDA entirely
+    if build_type == "cpu":
+        pyinstaller_cmd += " --exclude-module torch.cuda --exclude-module triton"
+    
+    run_cmd(pyinstaller_cmd)
 
     print(f"\nBuild completed successfully!")
     print(f"Executable directory: dist/{exe_name}")
