@@ -58,6 +58,7 @@ dist_gpu/
 static/
 temp_chunks/
 recordings/
+*.db
 
 # Root-level temporary and log files
 /*.log
