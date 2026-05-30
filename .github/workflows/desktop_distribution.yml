@@ -6,6 +6,66 @@ on:
   workflow_dispatch:
 
 jobs:
+  build-windows-exe-cpu:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Build Windows EXE (CPU)
+        run: |
+          uv run python scripts/build_exe.py --ci --type cpu
+
+      - name: Zip Windows EXE (CPU)
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/TransformMovieToText/*" -DestinationPath "TransformMovieToText-Windows-CPU.zip"
+
+      - name: Upload Windows EXE Artifact (CPU)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe-cpu
+          path: TransformMovieToText-Windows-CPU.zip
+
+  build-windows-exe-gpu:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: |
+          pip install uv
+
+      - name: Build Windows EXE (GPU)
+        run: |
+          uv run python scripts/build_exe.py --ci --type gpu
+
+      - name: Zip Windows EXE (GPU)
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "dist/TransformMovieToText/*" -DestinationPath "TransformMovieToText-Windows-GPU.zip"
+
+      - name: Upload Windows EXE Artifact (GPU)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe-gpu
+          path: TransformMovieToText-Windows-GPU.zip
+
   build-windows:
     runs-on: windows-latest
     steps:
@@ -101,7 +161,7 @@ jobs:
           path: TransformMovieToText-macOS.zip
 
   release:
-    needs: [build-windows, build-macos]
+    needs: [build-windows, build-macos, build-windows-exe-cpu, build-windows-exe-gpu]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -110,6 +170,16 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: windows-binary
+
+      - name: Download Windows EXE Binary (CPU)
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe-cpu
+
+      - name: Download Windows EXE Binary (GPU)
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe-gpu
 
       - name: Download macOS Binary
         uses: actions/download-artifact@v4
@@ -122,6 +192,8 @@ jobs:
         with:
           files: |
             TransformMovieToText-Windows.zip
+            TransformMovieToText-Windows-CPU.zip
+            TransformMovieToText-Windows-GPU.zip
             TransformMovieToText-macOS.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
