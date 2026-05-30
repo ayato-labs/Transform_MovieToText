@@ -1,3 +1,11 @@
+# [2.20.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.19.0...v2.20.0) (2026-05-30)
+
+
+### Features
+
+* add GitHub Actions workflow for cross-platform desktop distribution and release automation ([de6259f](https://github.com/ayato-labs/Transform_MovieToText/commit/de6259f15763c64d6544355417987f5ecc46b1bb))
+* implement secure local Ollama client with cloud-blocking, resource-based model advising, and comprehensive core services. ([cd49c58](https://github.com/ayato-labs/Transform_MovieToText/commit/cd49c581a33f659c0c97db2218f557d6b7da19c1))
+
 # [2.19.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.18.0...v2.19.0) (2026-05-23)
 
 
