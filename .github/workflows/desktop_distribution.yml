@@ -30,8 +30,9 @@ jobs:
           uv pip install --system -e .[dev,pc]
 
       - name: Ruff Check
+        continue-on-error: true
         run: |
-          ruff check src tests || echo "Linting issues found, but continuing build..."
+          ruff check src tests
 
       - name: Run Tests
         run: |
