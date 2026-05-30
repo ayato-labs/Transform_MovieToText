@@ -1,0 +1,30 @@
+# ADR-0001: Windows EXE 配布の自動化
+
+- **Date**: 2026-05-30
+- **Status**: Accepted
+- **Deciders**: Gemini Agent
+
+## Context
+現在、GitHub Actionsを用いてデスクトップアプリの配布を行っているが、Windows向けにはFletを用いたパッケージングのみを行っており、より広範な互換性と実行速度を確保するために、既存のPyInstallerを用いた `.exe` パッケージングをCI/CDパイプラインに統合する必要がある。
+
+## Decision
+既存の `scripts/build_exe.py` を活用し、`.github/workflows/desktop_distribution.yml` に新たなビルドジョブを追加してWindows `.exe` を自動生成し、GitHub Releasesに含める。
+パフォーマンスニーズに合わせて、**CPU版**と**GPU版**の両方をビルドし、ユーザーが用途に応じて選択できるようにする。
+本アプリのコードベース自体はGPU/CPUを動的に判定する単一のアーキテクチャを採用しているが、**パッケージング（物理的な配布レイヤー）**において以下の理由でバイナリを分離する。
+
+1. **パッケージサイズの最適化**: GPU版はCUDA関連ライブラリを含み非常に巨大になるため、CPUユーザーが不要な肥大化を避ける。
+2. **実行時安定性の確保**: GPU専用のDLLとCPU環境の競合による実行時エラーを物理的に回避する。
+
+## Consequences
+### Positive
+- Windowsユーザーは、自身の環境（GPUの有無・性能）に合わせた最適なサイズの実行ファイルを選択可能になる。
+- GPU版の提供により、推論速度の劇的な向上が見込める。
+- アプリケーションコード自体は共通のままであり、保守性は損なわれない。
+
+### Negative / Risks
+- GitHub Actionsのビルド時間が並列実行により増加する。
+- リリースページにおいてユーザーへのガイダンス（どちらをダウンロードすべきか）が必要となる。
+
+## References
+- Issue: N/A
+- PR: N/A

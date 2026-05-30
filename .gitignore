@@ -52,6 +52,8 @@ tests/diagnostic/*.txt
 
 # Data and Models [IMPORTANT: DO NOT PUSH MODELS]
 data/
+dist/
+static/
 temp_chunks/
 recordings/
 
@@ -70,4 +72,4 @@ recordings/
 /config.json
 
 # Documentation
-docs/
+!docs/
