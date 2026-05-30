@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
 
     steps:
@@ -46,13 +46,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p reports
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            # Windows: Run common and pc tests
-            pytest tests/common tests/pc -v --junitxml=reports/junit-${{ matrix.os }}-${{ matrix.python-version }}.xml --cov=src --cov-report=xml:reports/coverage-${{ matrix.os }}-${{ matrix.python-version }}.xml
-          else
-            # Linux/macOS: Run only common tests (to avoid soundcard/flet-desktop issues)
-            pytest tests/common -v --junitxml=reports/junit-${{ matrix.os }}-${{ matrix.python-version }}.xml --cov=src --cov-report=xml:reports/coverage-${{ matrix.os }}-${{ matrix.python-version }}.xml
-          fi
+          # Windows: Run common and pc tests
+          pytest tests/common tests/pc -v --junitxml=reports/junit-${{ matrix.os }}-${{ matrix.python-version }}.xml --cov=src --cov-report=xml:reports/coverage-${{ matrix.os }}-${{ matrix.python-version }}.xml
+
 
       - name: Upload Test and Coverage Results
         if: always()

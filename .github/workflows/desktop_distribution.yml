@@ -163,58 +163,9 @@ jobs:
           name: windows-binary
           path: TransformMovieToText-Windows.zip
 
-  build-macos:
-    name: macOS App (Flet Thin)
-    needs: semantic-release
-    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: |
-          pip install uv
-
-      - name: Export requirements.txt
-        run: |
-          uv export --format requirements-txt -o requirements.txt
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-
-      - name: Add Flutter to path
-        run: |
-          echo "$FLUTTER_HOME/bin" >> $GITHUB_PATH
-
-      - name: Install Flet SDK and Core Deps
-        run: |
-          pip install -r requirements_thin.txt
-
-      - name: Build macOS App (Thin)
-        run: |
-          uv run flet build macos --no-rich-output src/app.py
-
-      - name: Zip macOS App
-        run: |
-          zip -r TransformMovieToText-macOS.zip build/macos/*
-
-      - name: Upload macOS Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-binary
-          path: TransformMovieToText-macOS.zip
-
   distribute:
     name: Attach Artifacts to Release
-    needs: [semantic-release, build-windows-exe-cpu, build-windows-exe-gpu, build-windows-flet, build-macos]
+    needs: [semantic-release, build-windows-exe-cpu, build-windows-exe-gpu, build-windows-flet]
     if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
     permissions:
@@ -234,6 +185,5 @@ jobs:
             windows-binary/TransformMovieToText-Windows.zip
             windows-exe-cpu/TransformMovieToText-Windows-CPU.zip
             windows-exe-gpu/TransformMovieToText-Windows-GPU.zip
-            macos-binary/TransformMovieToText-macOS.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
