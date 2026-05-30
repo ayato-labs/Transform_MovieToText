@@ -59,6 +59,7 @@ static/
 temp_chunks/
 recordings/
 *.db
+*.duckdb
 
 # Root-level temporary and log files
 /*.log
