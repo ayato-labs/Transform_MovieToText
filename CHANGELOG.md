@@ -1,3 +1,10 @@
+# [2.22.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.21.0...v2.22.0) (2026-05-30)
+
+
+### Features
+
+* consolidate release and distribution into a single pipeline and fix exe paths ([8f83ff3](https://github.com/ayato-labs/Transform_MovieToText/commit/8f83ff38fb44c07f640f2494e1d42aa661a98afd))
+
 # [2.21.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.20.0...v2.21.0) (2026-05-30)
 
 
