@@ -2,12 +2,6 @@ name: Android Full Sync Pipeline
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - 'src/platforms/android/**'
-      - 'src/core/**'
-      - '.github/workflows/android_full_sync.yml'
 
 jobs:
   build-native:
