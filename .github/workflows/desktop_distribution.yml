@@ -1,12 +1,55 @@
-name: Desktop Distribution Build
+name: Release and Distribution
 
 on:
   push:
-    tags: [ "v*" ]
+    branches:
+      - main
+    tags:
+      - "v*"
   workflow_dispatch:
 
 jobs:
+  semantic-release:
+    name: Determine Version and Create Tag
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      new_release_published: ${{ steps.release.outputs.new_release_published }}
+      new_release_version: ${{ steps.release.outputs.new_release_version }}
+      new_release_git_tag: ${{ steps.release.outputs.new_release_git_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install semantic-release \
+                      @semantic-release/commit-analyzer \
+                      @semantic-release/release-notes-generator \
+                      @semantic-release/changelog \
+                      @semantic-release/git \
+                      @semantic-release/exec \
+                      @semantic-release/github
+          npx semantic-release
+
   build-windows-exe-cpu:
+    name: Windows EXE (CPU)
+    needs: semantic-release
+    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -28,7 +71,7 @@ jobs:
       - name: Zip Windows EXE (CPU)
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/TransformMovieToText/*" -DestinationPath "TransformMovieToText-Windows-CPU.zip"
+          Compress-Archive -Path "dist/TransformMovieToText_CPU/*" -DestinationPath "TransformMovieToText-Windows-CPU.zip"
 
       - name: Upload Windows EXE Artifact (CPU)
         uses: actions/upload-artifact@v4
@@ -37,6 +80,9 @@ jobs:
           path: TransformMovieToText-Windows-CPU.zip
 
   build-windows-exe-gpu:
+    name: Windows EXE (GPU)
+    needs: semantic-release
+    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -58,7 +104,7 @@ jobs:
       - name: Zip Windows EXE (GPU)
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/TransformMovieToText/*" -DestinationPath "TransformMovieToText-Windows-GPU.zip"
+          Compress-Archive -Path "dist/TransformMovieToText_GPU/*" -DestinationPath "TransformMovieToText-Windows-GPU.zip"
 
       - name: Upload Windows EXE Artifact (GPU)
         uses: actions/upload-artifact@v4
@@ -66,7 +112,10 @@ jobs:
           name: windows-exe-gpu
           path: TransformMovieToText-Windows-GPU.zip
 
-  build-windows:
+  build-windows-flet:
+    name: Windows App (Flet Thin)
+    needs: semantic-release
+    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -115,6 +164,9 @@ jobs:
           path: TransformMovieToText-Windows.zip
 
   build-macos:
+    name: macOS App (Flet Thin)
+    needs: semantic-release
+    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: macos-latest
     steps:
       - name: Checkout repository
@@ -160,40 +212,28 @@ jobs:
           name: macos-binary
           path: TransformMovieToText-macOS.zip
 
-  release:
-    needs: [build-windows, build-macos, build-windows-exe-cpu, build-windows-exe-gpu]
+  distribute:
+    name: Attach Artifacts to Release
+    needs: [semantic-release, build-windows-exe-cpu, build-windows-exe-gpu, build-windows-flet, build-macos]
+    if: always() && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download Windows Binary
+      - name: Download Artifacts
         uses: actions/download-artifact@v4
-        with:
-          name: windows-binary
 
-      - name: Download Windows EXE Binary (CPU)
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-exe-cpu
+      - name: List Artifacts
+        run: ls -R
 
-      - name: Download Windows EXE Binary (GPU)
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-exe-gpu
-
-      - name: Download macOS Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-binary
-
-      - name: Create Release
+      - name: Create or Update Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
+          tag_name: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
           files: |
-            TransformMovieToText-Windows.zip
-            TransformMovieToText-Windows-CPU.zip
-            TransformMovieToText-Windows-GPU.zip
-            TransformMovieToText-macOS.zip
+            windows-binary/TransformMovieToText-Windows.zip
+            windows-exe-cpu/TransformMovieToText-Windows-CPU.zip
+            windows-exe-gpu/TransformMovieToText-Windows-GPU.zip
+            macos-binary/TransformMovieToText-macOS.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
