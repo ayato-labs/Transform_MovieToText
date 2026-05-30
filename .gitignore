@@ -53,6 +53,8 @@ tests/diagnostic/*.txt
 # Data and Models [IMPORTANT: DO NOT PUSH MODELS]
 data/
 dist/
+dist_cpu/
+dist_gpu/
 static/
 temp_chunks/
 recordings/
