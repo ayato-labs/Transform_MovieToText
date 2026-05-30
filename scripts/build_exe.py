@@ -54,36 +54,35 @@ def main():
 
     # 2. Install Dependencies
     print("Installing base dependencies...")
-    run_cmd("uv pip install -e . --system")
-    run_cmd("uv pip install pyinstaller --system")
+    run_cmd("uv pip install -e .")
+    run_cmd("uv pip install pyinstaller")
 
     if build_type == "gpu":
         print("Installing GPU-enabled PyTorch (CUDA 12.1)...")
         run_cmd(
             "uv pip install torch==2.5.1+cu121 torchvision==0.20.1+cu121 "
             "torchaudio==2.5.1+cu121 --extra-index-url "
-            "https://download.pytorch.org/whl/cu121 --system"
+            "https://download.pytorch.org/whl/cu121"
         )
     else:
         print("Installing CPU version of PyTorch...")
-        run_cmd("uv pip install torch torchvision torchaudio --system")
+        run_cmd("uv pip install torch torchvision torchaudio")
 
     # 3. Build Executable
     print("Starting PyInstaller build...")
-    # --onedir is used for efficiency with large models
-    # --windowed hides the console
-    # --collect-all ensures Whisper and other dynamic imports are packaged
+    # Use unique name based on build type
+    exe_name = f"TransformMovieToText_{build_type.upper()}"
     run_cmd(
         "uv run pyinstaller --noconfirm --onedir --windowed "
-        '--name "TransformMovieToText" '
+        f'--name "{exe_name}" '
         '--icon "assets/icon.ico" '
         '--add-data "assets;assets" '
         "--collect-all whisper --collect-all tiktoken --collect-all flet --collect-data torch "
         "main.py"
     )
 
-    print("\nBuild completed successfully!")
-    print("Executable directory: dist/TransformMovieToText")
+    print(f"\nBuild completed successfully!")
+    print(f"Executable directory: dist/{exe_name}")
 
 
 if __name__ == "__main__":

@@ -15,6 +15,11 @@ class HistoryController:
     def __init__(self):
         pass
 
+    @property
+    def mgr(self):
+        """Exposes the internal HistoryManager instance."""
+        return history_mgr
+
     def get_roi_metrics(self):
         """Fetches calculated ROI results from HistoryManager."""
         return history_mgr.get_roi_metrics()
