@@ -1,3 +1,10 @@
+# [2.23.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.22.0...v2.23.0) (2026-05-30)
+
+
+### Features
+
+* focus CI/CD on Windows and remove macOS/Linux jobs ([59b0d4e](https://github.com/ayato-labs/Transform_MovieToText/commit/59b0d4e1301bf9a5984ccdfeddb1fc44abaeb7eb))
+
 # [2.22.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.21.0...v2.22.0) (2026-05-30)
 
 
