@@ -1,3 +1,12 @@
+# [2.21.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.20.0...v2.21.0) (2026-05-30)
+
+
+### Features
+
+* add PyInstaller spec file for GPU-enabled executable build ([210e307](https://github.com/ayato-labs/Transform_MovieToText/commit/210e3075fafda4e42a17217a3acb9509010c87a4))
+* automate windows exe build pipeline (cpu/gpu) ([5c0d04e](https://github.com/ayato-labs/Transform_MovieToText/commit/5c0d04e33d4cce61cd07f9e11c667605854daa4e))
+* implement automated multi-target build system and add meeting history controller for metadata management ([1cd014d](https://github.com/ayato-labs/Transform_MovieToText/commit/1cd014d291bdfda2990358cb0c7cefed65b037a8))
+
 # [2.20.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.19.0...v2.20.0) (2026-05-30)
 
 
