@@ -1,3 +1,10 @@
+## [2.27.3](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.2...v2.27.3) (2026-05-31)
+
+
+### Bug Fixes
+
+* **ci:** use cycjimmy/semantic-release-action to properly export release tag for artifact attachment ([ea35dd3](https://github.com/ayato-labs/Transform_MovieToText/commit/ea35dd3070d58c6b19f4edf07f5ec6f106c361ad))
+
 ## [2.27.2](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.1...v2.27.2) (2026-05-31)
 
 
