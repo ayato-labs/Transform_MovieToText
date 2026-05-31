@@ -1,3 +1,10 @@
+# [2.33.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.32.0...v2.33.0) (2026-05-31)
+
+
+### Features
+
+* implement VRAM model manager and WASAPI loopback audio recorder ([26b69f3](https://github.com/ayato-labs/Transform_MovieToText/commit/26b69f3d5e7d51adfed85efcb0dd382994f45225))
+
 # [2.32.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.31.0...v2.32.0) (2026-05-31)
 
 
