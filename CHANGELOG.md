@@ -1,3 +1,10 @@
+# [2.25.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.24.0...v2.25.0) (2026-05-31)
+
+
+### Features
+
+* optimize build size and formalize pytorch decoupling plan ([85408f7](https://github.com/ayato-labs/Transform_MovieToText/commit/85408f7fe46f7a97d6254b6f181547cf691e0d89))
+
 # [2.24.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.23.0...v2.24.0) (2026-05-31)
 
 
