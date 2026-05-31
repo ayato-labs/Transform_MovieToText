@@ -66,24 +66,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "lts/*"
-
-      - name: Release
+      - name: Semantic Release
         id: release
+        uses: cycjimmy/semantic-release-action@v4
+        with:
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
+            @semantic-release/exec
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm install semantic-release \
-                      @semantic-release/commit-analyzer \
-                      @semantic-release/release-notes-generator \
-                      @semantic-release/changelog \
-                      @semantic-release/git \
-                      @semantic-release/exec \
-                      @semantic-release/github
-          npx semantic-release
 
   build-windows-exe-cpu:
     name: Windows EXE (CPU)
