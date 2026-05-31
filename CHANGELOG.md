@@ -1,3 +1,15 @@
+# [2.28.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.3...v2.28.0) (2026-05-31)
+
+
+### Bug Fixes
+
+* add timeouts to all nvidia-smi calls to prevent test/build hanging ([f33d5d4](https://github.com/ayato-labs/Transform_MovieToText/commit/f33d5d4479fc6d64b4a1b929570c906623e4f56a))
+
+
+### Features
+
+* completely decouple pytorch and replace with scipy to dramatically reduce footprint ([e36e596](https://github.com/ayato-labs/Transform_MovieToText/commit/e36e5964dfc9277f8ef57e8e7c5933179de0da2e))
+
 ## [2.27.3](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.2...v2.27.3) (2026-05-31)
 
 
