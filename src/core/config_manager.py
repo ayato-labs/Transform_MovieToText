@@ -16,7 +16,7 @@ class ConfigManager:
     DEFAULT_CONFIG = {
         "active_provider": "ollama_local",
         "whisper_model": "base",
-        "llm_model": "gemma3:2b",
+        "llm_model": "gemma4:e2b",
         "visual_capture_enabled": False,
         "local_smart_enabled": False,
         "force_gpu": False,
@@ -33,7 +33,7 @@ class ConfigManager:
             }
         },
         "last_models": {
-            "ollama_local": "gemma3:2b",
+            "ollama_local": "gemma4:e2b",
             "gemini_api": "gemini-2.0-flash"
         }
     }
@@ -187,6 +187,11 @@ class ConfigManager:
     def set_knowledge_dir(self, directory_path):
         self.config["knowledge_dir"] = directory_path
         self.save_config()
+
+    def get_edition(self):
+        """Returns the current application edition. Defaulting to PRO for local use."""
+        from .constants import AppEdition
+        return AppEdition.PRO
 
     def get_llm_client(self):
         """Factory helper for the active provider."""

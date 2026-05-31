@@ -8,6 +8,8 @@ from contextlib import suppress
 
 from loguru import logger
 
+from src.core.platform_utils import get_log_path
+
 # Global buffer for UI log viewing
 LOG_BUFFER = deque(maxlen=200)
 
@@ -15,6 +17,21 @@ LOG_BUFFER = deque(maxlen=200)
 # Standard logging INFO is 20, WARNING is 30.
 # We'll map "SETUP" to 25.
 LOG_LEVEL_SETUP = 25
+
+# Ensure SETUP level exists immediately upon import
+with suppress(ValueError):
+    logger.level("SETUP", no=LOG_LEVEL_SETUP, color="<bold><cyan>")
+
+def setup_info(message: str):
+    """Logs an informational message related to setup."""
+    try:
+        logger.log("SETUP", message)
+    except ValueError:
+        logger.info(f"[SETUP] {message}")
+
+def setup_error(message: str):
+    """Logs an error message related to setup."""
+    logger.error(f"[SETUP_ERROR] {message}")
 
 class InterceptHandler(logging.Handler):
     """
@@ -69,7 +86,6 @@ def setup_logger():
     - Interception of standard logging
     - UI buffer for Flet components
     """
-    from src.core.platform_utils import get_log_path
     log_file_default = get_log_path()
     log_dir = os.path.dirname(log_file_default)
     if not os.path.exists(log_dir):

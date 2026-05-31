@@ -15,7 +15,7 @@ class SetupHelper:
     """
 
     OLLAMA_PORT = 11434
-    DEFAULT_MODEL = "gemma3:2b"
+    DEFAULT_MODEL = "gemma4:e2b"
 
     @staticmethod
     def is_ollama_running() -> bool:
@@ -106,16 +106,20 @@ class SetupHelper:
             os.environ["OLLAMA_HOST"] = "127.0.0.1:11434"
             for part in ollama.pull(model_name, stream=True):
                 status = part.get("status", "")
-                completed = part.get("completed", 0)
-                total = part.get("total", 0)
+                completed = part.get("completed")
+                total = part.get("total")
+                
+                # Use 0 if None to avoid comparison errors
+                completed_val = completed if completed is not None else 0
+                total_val = total if total is not None else 0
                 
                 progress = 0.0
-                if total > 0:
-                    progress = completed / total
+                if total_val > 0:
+                    progress = completed_val / total_val
                 
                 # Human readable status
-                if total > 0:
-                    status_text = f"Downloading {model_name}: {status} ({completed/(1024**2):.1f}/{total/(1024**2):.1f} MB)"
+                if total_val > 0:
+                    status_text = f"Downloading {model_name}: {status} ({completed_val/(1024**2):.1f}/{total_val/(1024**2):.1f} MB)"
                 else:
                     status_text = f"Ollama: {status}"
                 
