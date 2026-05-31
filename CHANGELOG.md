@@ -1,3 +1,10 @@
+# [2.35.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.34.0...v2.35.0) (2026-05-31)
+
+
+### Features
+
+* add CI pipeline for automated testing, semantic versioning, and Windows executable distribution ([dc77421](https://github.com/ayato-labs/Transform_MovieToText/commit/dc77421e3ae8d3a893d45efd600cff90ce423bfa))
+
 # [2.34.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.33.0...v2.34.0) (2026-05-31)
 
 
