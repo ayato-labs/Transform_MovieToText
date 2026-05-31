@@ -11,11 +11,11 @@ from src.core.history_mgr import history_mgr
 logger = logging.getLogger(__name__)
 
 try:
-    import pyautogui
+    from PIL import ImageGrab
 except Exception as e:
-    # Handle headless environments (Linux CI without DISPLAY)
-    logger.warning(f"pyautogui could not be imported. Screen capture disabled: {e}")
-    pyautogui = None
+    # Handle headless environments
+    logger.warning(f"PIL.ImageGrab could not be imported. Screen capture disabled: {e}")
+    ImageGrab = None
 
 
 class VisualRecorder:
@@ -63,8 +63,8 @@ class VisualRecorder:
 
     def _capture_loop(self):
         """Background loop for capturing and comparing frames."""
-        if pyautogui is None:
-            logger.warning("VisualRecorder: pyautogui is not available (headless environment). Recording disabled.")
+        if ImageGrab is None:
+            logger.warning("VisualRecorder: ImageGrab is not available (headless environment). Recording disabled.")
             self.is_recording = False
             return
 
@@ -73,7 +73,7 @@ class VisualRecorder:
                 loop_start = time.time()
 
                 # 1. Capture screen
-                screenshot = pyautogui.screenshot()
+                screenshot = ImageGrab.grab(all_screens=True)
                 frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
 
                 # 2. Check for changes

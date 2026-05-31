@@ -54,7 +54,6 @@ dependencies = [
     "psutil",
     "ollama",
     "openai",
-    "pyautogui",
     "opencv-python",
 ]
 
