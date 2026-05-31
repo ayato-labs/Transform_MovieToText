@@ -70,6 +70,17 @@ class SettingsView(ft.Column):
         self.model_list_column = ft.Column(spacing=5)
         self.force_gpu_checkbox = ft.Checkbox(label="GPUを強制使用する", on_change=self._on_force_gpu_change)
 
+        # AI Performance Settings
+        self.temp_slider = ft.Slider(
+            min=0.0,
+            max=1.0,
+            divisions=10,
+            label="{value}",
+            value=self.config_mgr.get_llm_temperature(),
+            on_change=self._on_temp_change
+        )
+        self.temp_text = ft.Text(f"{self.config_mgr.get_llm_temperature():.1f}", weight="bold")
+
         # Build Layout
         self.controls = [
             ft.Text("設定", size=24, weight="bold"),
@@ -81,6 +92,15 @@ class SettingsView(ft.Column):
             ft.Container(height=10),
             self.ollama_container,
             self.gemini_container,
+            
+            # Common LLM Settings
+            ft.Text("LLM生成設定", size=14, weight="bold"),
+            ft.Row([
+                ft.Text("Temperature (創造性):", size=14),
+                self.temp_slider,
+                self.temp_text,
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            ft.Text("※ 0.0に近いほど正確（議事録推奨）、1.0に近いほど創造的になります。", size=12, color="grey500"),
             ft.Divider(),
 
             # Model Management
@@ -141,6 +161,12 @@ class SettingsView(ft.Column):
 
     def _on_force_gpu_change(self, e):
         self.config_mgr.set_force_gpu(e.control.value)
+
+    def _on_temp_change(self, e):
+        val = e.control.value
+        self.config_mgr.set_llm_temperature(val)
+        self.temp_text.value = f"{val:.1f}"
+        self._safe_update()
 
     def _refresh_model_list(self):
         if not self.minutes_ctrl:

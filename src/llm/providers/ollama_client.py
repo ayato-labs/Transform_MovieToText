@@ -65,7 +65,7 @@ class OllamaLocalClient(BaseLLMClient):
     3. _guard_local_only() is called before every inference call as a final check
     """
 
-    def __init__(self, base_url="http://localhost:11434", **kwargs):
+    def __init__(self, base_url="http://localhost:11434", temperature=0.7, **kwargs):
         # Layer 0: Enforce loopback-only binding
         # Removed '0.0.0.0' as it can represent all interfaces on some systems
         is_loopback = any(loopback in base_url for loopback in ["localhost", "127.0.0.1"])
@@ -77,6 +77,7 @@ class OllamaLocalClient(BaseLLMClient):
             base_url = "http://127.0.0.1:11434"
 
         self.host = base_url
+        self.temperature = float(temperature)
         # The ollama-python Client accepts a 'host' parameter which it uses for all requests.
         self.client = Client(host=self.host)
         self._last_model_name = None
@@ -289,7 +290,11 @@ class OllamaLocalClient(BaseLLMClient):
                 msg["images"] = images
             
             logger.debug(f"generate_minutes: Sending request to Ollama ({self.host})...")
-            response = self.client.chat(model=model_name, messages=[msg])
+            response = self.client.chat(
+                model=model_name, 
+                messages=[msg],
+                options={"temperature": self.temperature}
+            )
             content = response["message"]["content"]
             logger.info(f"generate_minutes: Successfully generated minutes. Length: {len(content)}")
             return content
@@ -331,7 +336,11 @@ class OllamaLocalClient(BaseLLMClient):
             f"--- テキスト ---\n{transcript}"
         )
         try:
-            response = self.client.chat(model=model_name, messages=[{"role": "user", "content": prompt}])
+            response = self.client.chat(
+                model=model_name, 
+                messages=[{"role": "user", "content": prompt}],
+                options={"temperature": self.temperature}
+            )
             return response["message"]["content"].strip().replace("\n", "")
         except Exception as e:
             logger.error(f"Ollama category extraction error: {e}")
@@ -349,7 +358,11 @@ class OllamaLocalClient(BaseLLMClient):
             f"--- テキスト ---\n{transcript}"
         )
         try:
-            response = self.client.chat(model=model_name, messages=[{"role": "user", "content": prompt}])
+            response = self.client.chat(
+                model=model_name, 
+                messages=[{"role": "user", "content": prompt}],
+                options={"temperature": self.temperature}
+            )
             return response["message"]["content"].strip().replace("\n", "").replace("#", "")
         except Exception as e:
             logger.error(f"Ollama title generation error: {e}")
@@ -370,7 +383,11 @@ class OllamaLocalClient(BaseLLMClient):
         self._last_model_name = model_name
 
         try:
-            response = self.client.chat(model=model_name, messages=messages)
+            response = self.client.chat(
+                model=model_name, 
+                messages=messages,
+                options={"temperature": self.temperature}
+            )
             return response["message"]["content"]
         except Exception as e:
             err_str = str(e)

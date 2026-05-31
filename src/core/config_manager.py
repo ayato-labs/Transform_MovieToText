@@ -17,6 +17,7 @@ class ConfigManager:
         "active_provider": "ollama_local",
         "whisper_model": "base",
         "llm_model": "gemma4:e2b",
+        "llm_temperature": 0.3,
         "visual_capture_enabled": False,
         "local_smart_enabled": False,
         "force_gpu": False,
@@ -113,6 +114,13 @@ class ConfigManager:
         self.config["llm_model"] = model_name
         self.save_config()
 
+    def get_llm_temperature(self) -> float:
+        return self.config.get("llm_temperature", 0.7)
+
+    def set_llm_temperature(self, value: float):
+        self.config["llm_temperature"] = float(value)
+        self.save_config()
+
     def get_last_model(self, provider_name=None):
         if not provider_name:
             provider_name = self.get_active_provider()
@@ -201,5 +209,6 @@ class ConfigManager:
         return LLMFactory.create_client(
             provider_name=provider,
             api_key=conf.get("api_key"),
-            base_url=conf.get("base_url")
+            base_url=conf.get("base_url"),
+            temperature=self.get_llm_temperature()
         )

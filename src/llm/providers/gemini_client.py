@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 class GeminiClient(BaseLLMClient):
     """Client for Google Gemini API via google-genai SDK."""
     
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, temperature: float = 0.7):
         if not api_key:
             raise ValueError("Gemini API Key is required.")
         self.client = genai.Client(api_key=api_key)
         self._model_name = "gemini-2.0-flash" # Default model
+        self.temperature = float(temperature)
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
         """Generates structured minutes using Gemini API."""
@@ -42,7 +43,8 @@ class GeminiClient(BaseLLMClient):
 
             response = self.client.models.generate_content(
                 model=model_name or self._model_name,
-                contents=contents
+                contents=contents,
+                config=types.GenerateContentConfig(temperature=self.temperature)
             )
             
             return response.text
