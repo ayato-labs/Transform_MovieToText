@@ -1,3 +1,10 @@
+# [2.42.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.41.0...v2.42.0) (2026-05-31)
+
+
+### Features
+
+* add system audio capture via WASAPI and implement core transcription services ([8dfbfdc](https://github.com/ayato-labs/Transform_MovieToText/commit/8dfbfdc1f5ad8747b2553555b553840e57db07ba))
+
 # [2.41.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.40.0...v2.41.0) (2026-05-31)
 
 
