@@ -1,3 +1,10 @@
+# [2.39.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.38.0...v2.39.0) (2026-05-31)
+
+
+### Features
+
+* add Gemini API support, implement UI settings management, and introduce dynamic configuration handling ([624e87a](https://github.com/ayato-labs/Transform_MovieToText/commit/624e87af46b407d9121bf3d84880a2fca33909a6))
+
 # [2.38.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.37.0...v2.38.0) (2026-05-31)
 
 
