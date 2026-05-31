@@ -1,3 +1,10 @@
+## [2.27.2](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.1...v2.27.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* **license:** replace pyautogui with PIL.ImageGrab to purge GPLv3 dependencies ([917f410](https://github.com/ayato-labs/Transform_MovieToText/commit/917f4108e29332c108fb6bdbe6bc8715ffc6bbd7))
+
 ## [2.27.1](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.0...v2.27.1) (2026-05-31)
 
 
