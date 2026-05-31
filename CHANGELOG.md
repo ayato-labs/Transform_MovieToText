@@ -1,3 +1,11 @@
+# [2.43.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.42.0...v2.43.0) (2026-05-31)
+
+
+### Features
+
+* implement robust WhisperTranscriber with cross-platform GPU/CPU fallback and managed memory unloading ([cd3df1d](https://github.com/ayato-labs/Transform_MovieToText/commit/cd3df1dcb690f6f1374e03771d691644b2240c46))
+* implement WhisperTranscriber with automated CUDA-to-CPU fallback and memory management ([b0cd537](https://github.com/ayato-labs/Transform_MovieToText/commit/b0cd5373e7d42bc7d9e018f4f8e8095e5bd43f91))
+
 # [2.42.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.41.0...v2.42.0) (2026-05-31)
 
 
