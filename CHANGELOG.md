@@ -1,3 +1,10 @@
+# [2.31.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.30.0...v2.31.0) (2026-05-31)
+
+
+### Features
+
+* implement transcription service and logger utility with updated project dependencies ([de71f5d](https://github.com/ayato-labs/Transform_MovieToText/commit/de71f5df47f40619907e92d7d4090612835a15f5))
+
 # [2.30.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.29.0...v2.30.0) (2026-05-31)
 
 
