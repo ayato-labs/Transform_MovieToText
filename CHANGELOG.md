@@ -1,3 +1,11 @@
+# [2.38.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.37.0...v2.38.0) (2026-05-31)
+
+
+### Features
+
+* implement automated environment setup manager and dependency helper with background installation support ([a26c42a](https://github.com/ayato-labs/Transform_MovieToText/commit/a26c42a5bd7bd2d111813b87bc8c5c04a38b9bf8))
+* implement structured logging system with Loguru, system diagnostics, and UI buffer support ([5bc6575](https://github.com/ayato-labs/Transform_MovieToText/commit/5bc6575612e285185ee3fd15e52a1929206f6b3b))
+
 # [2.37.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.36.0...v2.37.0) (2026-05-31)
 
 
