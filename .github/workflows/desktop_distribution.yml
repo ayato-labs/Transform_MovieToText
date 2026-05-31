@@ -36,7 +36,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          mkdir -p reports
+          if (!(Test-Path reports)) { New-Item -ItemType Directory -Path reports }
           pytest tests/common tests/pc -v --junitxml=reports/junit.xml || echo "Tests failed, but continuing for debugging..."
 
       - name: Upload Test Results
