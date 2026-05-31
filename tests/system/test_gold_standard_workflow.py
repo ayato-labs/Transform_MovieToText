@@ -1,11 +1,11 @@
-import unittest
 import os
+import unittest
 from unittest.mock import MagicMock, patch
 
 from src.core.config_manager import ConfigManager
 from src.core.history_mgr import HistoryManager
-from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 from src.platforms.desktop.controllers.minutes_ctrl import MinutesController
+from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 
 class TestGoldStandardWorkflow(unittest.TestCase):
     """
