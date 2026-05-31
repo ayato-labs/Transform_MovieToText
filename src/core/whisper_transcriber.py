@@ -6,6 +6,7 @@ import time
 
 from faster_whisper import WhisperModel
 
+from src.core.constants import WHISPER_MODELS_DIR
 from src.core.model_manager import model_manager
 from src.core.platform_utils import is_android
 
@@ -47,7 +48,7 @@ class WhisperTranscriber:
     def __init__(self, cache_dir: str | None = None):
         self.model = None
         self.current_model_name = None
-        self.cache_dir = cache_dir or os.path.join(os.getcwd(), "data", "models", "whisper")
+        self.cache_dir = cache_dir or WHISPER_MODELS_DIR
         os.makedirs(self.cache_dir, exist_ok=True)
         # Register with ModelManager
         model_manager.register(WHISPER_CLIENT_NAME, self)

@@ -2,19 +2,26 @@ import os
 from enum import Enum
 from pathlib import Path
 
-from .platform_utils import get_app_data_path
+from .platform_utils import get_local_app_data_path, get_roaming_app_data_path
 
-# Root App Data
-APP_DATA_DIR = get_app_data_path()
+# Standard Windows AppData Roots
+APP_DATA_DIR = get_roaming_app_data_path()
+LOCAL_DATA_DIR = get_local_app_data_path()
 
-# Paths
+# Specific Paths
 DEFAULT_DB_PATH = os.path.join(APP_DATA_DIR, "history.db")
 DEFAULT_CONFIG_PATH = os.path.join(APP_DATA_DIR, "config.json")
-DEFAULT_RECORDS_DIR = os.path.join(APP_DATA_DIR, "history")
+DEFAULT_RECORDS_DIR = os.path.join(APP_DATA_DIR, "records")
+LOGS_DIR = os.path.join(APP_DATA_DIR, "logs")
 
-TEMP_DIR = os.path.join(APP_DATA_DIR, "temp")
-TEMP_CHUNKS_DIR = os.path.join(APP_DATA_DIR, "temp", "chunks")
-TEMP_VIDEO_DIR = os.path.join(APP_DATA_DIR, "temp", "frames")
+# Heavy Assets (Models) in Local AppData
+MODELS_DIR = os.path.join(LOCAL_DATA_DIR, "models")
+WHISPER_MODELS_DIR = os.path.join(MODELS_DIR, "whisper")
+
+# Temp Directories
+TEMP_DIR = os.path.join(LOCAL_DATA_DIR, "temp")
+TEMP_CHUNKS_DIR = os.path.join(TEMP_DIR, "chunks")
+TEMP_VIDEO_DIR = os.path.join(TEMP_DIR, "frames")
 DEFAULT_KNOWLEDGE_DIR = str(Path.home() / "Documents" / "AyatoKnowledge")
 
 # Recording Defaults

@@ -12,6 +12,7 @@ import flet as ft
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.app import main as app_main  # noqa: E402
+from src.core.migrator import migrate_legacy_data  # noqa: E402
 from src.utils.logger import setup_logger  # noqa: E402
 
 
@@ -29,6 +30,9 @@ def main(page: ft.Page):
 if __name__ == "__main__":
     # Initialize professional logging
     setup_logger()
+
+    # Perform one-time migration to AppData if needed
+    migrate_legacy_data()
 
     # Launch Flet app as a desktop window
     ft.app(target=main)

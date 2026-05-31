@@ -120,7 +120,13 @@ class SettingsView(ft.Column):
             ft.Divider(),
             ft.Text("デバッグ・ログ設定", size=18, weight="w500"),
             ft.Text(f"Log Path: {get_log_path()}", size=11, color="grey"),
-            ft.ElevatedButton("デバッグログをクリップボードにコピー", icon=ft.Icons.COPY_ALL, on_click=self._on_export_logs_click),
+            ft.Row(
+                [
+                    ft.ElevatedButton("デバッグログをクリップボードにコピー", icon=ft.Icons.COPY_ALL, on_click=self._on_export_logs_click),
+                    ft.ElevatedButton("データフォルダを開く", icon=ft.Icons.FOLDER_SHARED, on_click=self._on_open_data_dir_click),
+                ],
+                alignment=ft.MainAxisAlignment.START,
+            ),
             ft.Divider(),
             ft.Text("Whisper設定", size=18, weight="w500"),
             self.force_gpu_checkbox,
@@ -341,6 +347,13 @@ class SettingsView(ft.Column):
         except Exception as ex:
             logger.error(f"Failed to export logs: {ex}")
             self._show_info(f"ログ出力失敗: {ex}", bgcolor=ft.Colors.RED_400)
+
+    def _on_open_data_dir_click(self, e):
+        from src.core.constants import APP_DATA_DIR
+        if os.path.exists(APP_DATA_DIR):
+            os.startfile(APP_DATA_DIR)
+        else:
+            self._show_info("データフォルダが見つかりません。")
 
     def _show_info(self, text: str, bgcolor: str = None):
         if self.page:
