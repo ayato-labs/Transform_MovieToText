@@ -1,3 +1,10 @@
+# [2.27.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.26.0...v2.27.0) (2026-05-31)
+
+
+### Features
+
+* provide direct .exe assets using pyinstaller --onefile ([c614f29](https://github.com/ayato-labs/Transform_MovieToText/commit/c614f29aee27efb494530d706c036d54f50318f0))
+
 # [2.26.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.25.0...v2.26.0) (2026-05-31)
 
 
