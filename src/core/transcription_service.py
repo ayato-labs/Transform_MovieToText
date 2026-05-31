@@ -385,8 +385,8 @@ class TranscriptionService:
             logger.debug(f"_get_best_llm_model: Automated model lookup failed for {provider}: {e}")
 
         # Hardcoded defaults as last resort
-        defaults = {"ollama_local": "gemma3:4b"}
-        return defaults.get(provider, "gemma3:4b")
+        defaults = {"ollama_local": "gemma4:e2b"}
+        return defaults.get(provider, "gemma4:e2b")
 
     def _extract_category_internal(self, text: str) -> str:
         provider = self.config_mgr.get_active_provider()

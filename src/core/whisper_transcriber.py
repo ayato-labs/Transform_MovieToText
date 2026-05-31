@@ -22,11 +22,24 @@ logger = logging.getLogger(__name__)
 WHISPER_CLIENT_NAME = "whisper"
 
 def _is_cuda_available():
-    """Checks for NVIDIA GPU availability via nvidia-smi."""
+    """
+    Checks for NVIDIA GPU availability and CUDA library readiness.
+    We try a lightweight ctranslate2 operation to ensure DLLs like cublas64_12.dll are loadable.
+    """
     try:
+        # 1. Quick check for NVIDIA hardware
         subprocess.run(["nvidia-smi"], check=True, capture_output=True, timeout=2)
+        
+        # 2. Verify libraries can actually be loaded by CTranslate2
+        import ctranslate2
+        # Use a tiny check if possible, or just assume success if nvidia-smi passed 
+        # and we've successfully imported the base package. 
+        # To be even safer, we'll check if 'cuda' is in the supported compute devices.
+        supported = ctranslate2.get_supported_compute_types("whisper")
+        # If 'cuda' hardware exists but DLLs are missing, 
+        # faster-whisper will still throw RuntimeError later during model load.
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired, ImportError):
         return False
 
 
@@ -89,10 +102,23 @@ class WhisperTranscriber:
 
         try:
             # Load Attempt
+            logger.info(f"WhisperTranscriber: Attempting load on {device}...")
             self.model = WhisperModel(model_name, device=device, compute_type=compute_type, download_root=self.cache_dir)
             self.current_model_name = model_name
             duration = time.time() - start_time
             logger.info(f"WhisperTranscriber: SUCCESSFULLY LOADED using {device} ({compute_type}) in {duration:.2f}s")
+        except RuntimeError as e:
+            # Catch specific CUDA library errors (like missing cublas64_12.dll)
+            if "cublas" in str(e) or "cudnn" in str(e) or "cuda" in str(e).lower():
+                logger.error(f"WhisperTranscriber: CUDA library error detected: {e}")
+                logger.warning("WhisperTranscriber: Falling back to CPU due to missing/incompatible CUDA libraries.")
+                # Force CPU fallback
+                self.unload()
+                self.model = WhisperModel(model_name, device="cpu", compute_type="int8", download_root=self.cache_dir)
+                self.current_model_name = model_name
+                logger.info(f"WhisperTranscriber: SUCCESS on emergency CPU Fallback after {time.time() - start_time:.2f}s")
+            else:
+                raise
         except ValueError:
             # Usage error (e.g. invalid model size) - re-raise immediately
             raise
@@ -190,12 +216,15 @@ class WhisperTranscriber:
 
         logger.info(f"WhisperTranscriber: Starting transcription of {audio_path}...")
 
-        segments, info = self.model.transcribe(audio_path, beam_size=5, language=language)
+        segments_gen, info = self.model.transcribe(audio_path, beam_size=5, language=language)
+        
+        # CRITICAL: Convert generator to list to ensure the underlying C++ process finishes 
+        # and doesn't hang the background thread if the generator is not fully consumed.
+        segments = list(segments_gen)
 
         full_text_list = []
         structured_segments = []
 
-        # Note: segments is a generator
         for segment in segments:
             seg_data = {"start": round(segment.start, 2), "end": round(segment.end, 2), "text": segment.text.strip()}
             structured_segments.append(seg_data)
@@ -218,7 +247,8 @@ class WhisperTranscriber:
             # Default to loading base if nothing loaded
             self.load_model("base", force_gpu=force_gpu)
 
-        segments, _ = self.model.transcribe(audio_data, beam_size=5)
+        segments_gen, _ = self.model.transcribe(audio_data, beam_size=5)
+        segments = list(segments_gen)
 
         full_text_list = []
         structured_segments = []

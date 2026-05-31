@@ -35,7 +35,7 @@ DEFAULT_PROVIDERS = {
 }
 DEFAULT_ACTIVE_PROVIDER = "ollama_local"
 DEFAULT_LLM_MODELS = {
-    "ollama_local": ["gemma3:2b", "gemma3:4b"],
+    "ollama_local": ["gemma4:e2b"],
 }
 
 DEFAULT_WHISPER_MODEL = "base"

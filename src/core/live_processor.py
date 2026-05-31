@@ -117,6 +117,7 @@ class LiveTranscriptionManager:
             # Strict silence suppression
             if peak < 0.01 or rms < 0.001:
                 logger.debug(f"Chunk is too quiet (Peak: {peak:.4f}, RMS: {rms:.4f}), skipping transcription.")
+                event_bus.publish(EVENT_STATUS_UPDATE, "🔴 録音中... (音声待機中: 入力レベル低)")
                 return
 
             logger.info(f"Transcribing live chunk (peak={peak:.4f})...")

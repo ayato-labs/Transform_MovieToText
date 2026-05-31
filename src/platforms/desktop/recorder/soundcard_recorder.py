@@ -101,7 +101,12 @@ class SoundCardRecorder(_BaseRecorder):
                     "64k",
                     self.mp3_path,
                 ]
-                self.ffmpeg_proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                try:
+                    self.ffmpeg_proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                    logger.info("SoundCardRecorder: FFmpeg MP3 encoder initialized.")
+                except (FileNotFoundError, OSError):
+                    logger.warning("SoundCardRecorder: FFmpeg not found. MP3 recording will be skipped, but transcription will continue.")
+                    self.ffmpeg_proc = None
 
             # 4. Open audio stream
             chunk_frames = int(self._native_sr * 0.1)  # 0.1s chunks

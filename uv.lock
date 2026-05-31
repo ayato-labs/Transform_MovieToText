@@ -2084,7 +2084,7 @@ wheels = [
 
 [[package]]
 name = "transform-movie-to-text"
-version = "2.39.1"
+version = "2.41.0"
 source = { editable = "." }
 dependencies = [
     { name = "colorlog" },
