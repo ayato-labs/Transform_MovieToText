@@ -16,7 +16,11 @@ As the application transitions to a standalone Windows executable (`.exe`) for e
    - **Ollama (Local)**: Set as the default provider to ensure maximum privacy and offline capability out-of-the-box.
    - **Gemini API (Cloud)**: Provide an optional toggle in the Settings GUI. Enabling Gemini will require the user to provide an API key via the UI.
    - **Model Selection**: The GUI MUST allow users to select from available Ollama models or Gemini models.
-3. **Deferred Features**:
+3. **Standalone EXE Setup Optimization**:
+   - The `SetupManager` MUST detect if it is running in a bundled environment (e.g., PyInstaller `sys.frozen`).
+   - In a bundled environment, the manager MUST skip attempts to install Python dependencies via `pip` or `uv`, as these are already provided in the immutable bundle.
+   - The setup process in production MUST focus exclusively on external prerequisites: ensuring Ollama is installed and the target AI model (`gemma4:e2b`) is pulled.
+4. **Deferred Features**:
    - **Automated Model Selection (Local Smart)**: Logic for automatic model optimization based on hardware (VRAM/RAM) is deferred to prioritize core configuration and provider switching infrastructure.
 
 ## Consequences
