@@ -1,3 +1,10 @@
+## [2.39.1](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.39.0...v2.39.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* robust tag resolution for release distribution ([f67e835](https://github.com/ayato-labs/Transform_MovieToText/commit/f67e835954cb43ed5dbe75b2bfe7f6997e6d6584))
+
 # [2.39.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.38.0...v2.39.0) (2026-05-31)
 
 
