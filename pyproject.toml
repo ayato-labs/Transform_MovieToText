@@ -49,7 +49,6 @@ dependencies = [
     "numpy",
     "faster-whisper",
     "torch",
-    "torchvision",
     "torchaudio",
     "PyAudioWPatch; sys_platform == 'win32'",
     "psutil",

@@ -1,4 +1,6 @@
 import argparse
+import os
+import shutil
 import subprocess
 import sys
 
@@ -13,6 +15,44 @@ def run_cmd(cmd):
     if process.returncode != 0:
         print(f"Command failed with exit code {process.returncode}")
         sys.exit(process.returncode)
+
+
+def cleanup_dist(dist_path, build_type):
+    """Removes unnecessary files from the build directory."""
+    print(f"Cleaning up {dist_path}...")
+    
+    # 1. Universal Cleanup (headers, libs, cmake, etc.)
+    extensions_to_remove = [".h", ".lib", ".cmake", ".cpp", ".hpp", ".a"]
+    folders_to_remove = ["__pycache__", "include", "cmake"]
+
+    for root, dirs, files in os.walk(dist_path):
+        # Remove folders
+        for d in dirs:
+            if d in folders_to_remove:
+                shutil.rmtree(os.path.join(root, d), ignore_errors=True)
+                print(f"Removed folder: {d}")
+
+        # Remove files by extension
+        for f in files:
+            if any(f.endswith(ext) for ext in extensions_to_remove):
+                try:
+                    os.remove(os.path.join(root, f))
+                except OSError:
+                    pass
+
+    # 2. CPU-specific Cleanup (Surgery for CUDA remnants)
+    if build_type == "cpu":
+        # PyTorch often includes CUDA DLLs even in CPU builds if not carefully handled.
+        cuda_keywords = ["cuda", "cublas", "cudnn", "nvrtc", "nvjitlink", "cufft", "curand", "cusparse", "cusolver"]
+        # Search everywhere in the dist folder for these, though they usually live in torch/lib
+        for root, dirs, files in os.walk(dist_path):
+            for f in files:
+                if any(kw in f.lower() for kw in cuda_keywords) and f.endswith(".dll"):
+                    try:
+                        os.remove(os.path.join(root, f))
+                        print(f"Removed CUDA remnant from CPU build: {f}")
+                    except OSError:
+                        pass
 
 
 def check_gpu():
@@ -60,14 +100,14 @@ def main():
     if build_type == "gpu":
         print("Installing GPU-enabled PyTorch (CUDA 12.1)...")
         run_cmd(
-            "uv pip install torch==2.5.1+cu121 torchvision==0.20.1+cu121 "
+            "uv pip install torch==2.5.1+cu121 "
             "torchaudio==2.5.1+cu121 --extra-index-url "
             "https://download.pytorch.org/whl/cu121"
         )
     else:
         print("Installing CPU-only PyTorch...")
         run_cmd(
-            "uv pip install torch==2.5.1+cpu torchvision==0.20.1+cpu "
+            "uv pip install torch==2.5.1+cpu "
             "torchaudio==2.5.1+cpu --extra-index-url "
             "https://download.pytorch.org/whl/cpu"
         )
@@ -86,6 +126,7 @@ def main():
         "--collect-all whisper --collect-all tiktoken --collect-all flet "
         "--exclude-module matplotlib --exclude-module notebook --exclude-module jedi "
         "--exclude-module IPython --exclude-module PIL.ImageQt "
+        "--exclude-module torch.testing --exclude-module torch.distributed "
         "main.py"
     )
     
@@ -96,8 +137,13 @@ def main():
     
     run_cmd(pyinstaller_cmd)
 
+    # 4. Post-build Cleanup
+    dist_dir = os.path.join("dist", exe_name)
+    if os.path.exists(dist_dir):
+        cleanup_dist(dist_dir, build_type)
+
     print(f"\nBuild completed successfully!")
-    print(f"Executable directory: dist/{exe_name}")
+    print(f"Executable directory: {dist_dir}")
 
 
 if __name__ == "__main__":

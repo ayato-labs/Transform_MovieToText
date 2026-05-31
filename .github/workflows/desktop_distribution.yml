@@ -106,7 +106,26 @@ jobs:
 
       - name: Build Windows EXE (CPU)
         run: |
+          if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }
+          uv venv
           uv run python scripts/build_exe.py --ci --type cpu
+
+      - name: Smoke Test (CPU)
+        shell: pwsh
+        run: |
+          $exe_path = "dist/TransformMovieToText_CPU/TransformMovieToText_CPU.exe"
+          echo "Starting smoke test for $exe_path"
+          $proc = Start-Process -FilePath $exe_path -PassThru
+          Start-Sleep -Seconds 5
+          if ($proc.HasExited) {
+             if ($proc.ExitCode -ne 0) {
+               echo "Smoke test failed with exit code $($proc.ExitCode)"
+               exit 1
+             }
+          } else {
+             Stop-Process -Id $proc.Id -Force
+             echo "Smoke test passed."
+          }
 
       - name: Zip Windows EXE (CPU)
         shell: pwsh
@@ -139,7 +158,26 @@ jobs:
 
       - name: Build Windows EXE (GPU)
         run: |
+          if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }
+          uv venv
           uv run python scripts/build_exe.py --ci --type gpu
+
+      - name: Smoke Test (GPU)
+        shell: pwsh
+        run: |
+          $exe_path = "dist/TransformMovieToText_GPU/TransformMovieToText_GPU.exe"
+          echo "Starting smoke test for $exe_path"
+          $proc = Start-Process -FilePath $exe_path -PassThru
+          Start-Sleep -Seconds 5
+          if ($proc.HasExited) {
+             if ($proc.ExitCode -ne 0) {
+               echo "Smoke test failed with exit code $($proc.ExitCode)"
+               exit 1
+             }
+          } else {
+             Stop-Process -Id $proc.Id -Force
+             echo "Smoke test passed."
+          }
 
       - name: Zip Windows EXE (GPU)
         shell: pwsh
