@@ -73,6 +73,7 @@ def main():
         help="Force build type (gpu, cpu) or use 'auto' for detection.",
     )
     parser.add_argument("--ci", action="store_true", help="Non-interactive mode for CI.")
+    parser.add_argument("--onefile", action="store_true", help="Produce a single EXE file.")
     args = parser.parse_args()
 
     # 1. Determine Build Type
@@ -118,8 +119,10 @@ def main():
     exe_name = f"TransformMovieToText_{build_type.upper()}"
     
     # Base PyInstaller command
+    mode_flag = "--onefile" if args.onefile else "--onedir"
+    
     pyinstaller_cmd = (
-        "uv run pyinstaller --noconfirm --onedir --windowed "
+        f"uv run pyinstaller --noconfirm {mode_flag} --windowed "
         f'--name "{exe_name}" '
         '--icon "assets/icon.ico" '
         '--add-data "assets;assets" '
@@ -137,13 +140,17 @@ def main():
     
     run_cmd(pyinstaller_cmd)
 
-    # 4. Post-build Cleanup
-    dist_dir = os.path.join("dist", exe_name)
-    if os.path.exists(dist_dir):
-        cleanup_dist(dist_dir, build_type)
+    # 4. Post-build Cleanup (Only for --onedir)
+    if not args.onefile:
+        dist_dir = os.path.join("dist", exe_name)
+        if os.path.exists(dist_dir):
+            cleanup_dist(dist_dir, build_type)
 
     print(f"\nBuild completed successfully!")
-    print(f"Executable directory: {dist_dir}")
+    if args.onefile:
+        print(f"Executable file: dist/{exe_name}.exe")
+    else:
+        print(f"Executable directory: dist/{exe_name}")
 
 
 if __name__ == "__main__":
