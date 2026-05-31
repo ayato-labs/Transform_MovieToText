@@ -23,14 +23,16 @@ PyTorch 依存を「巨大な負債」と定義し、段階的に切り離すと
 
 ## Decision
 
-### フェーズ2：PyTorch からの完全脱却（次期計画）
-- **リサンプリングの代替**: `torchaudio.transforms.Resample` を、`numpy`, `scipy.signal`, または軽量な `soxr` 等に置き換える。
-- **依存の完全削除**: 置き換え完了後、`torch`, `torchaudio`, `torchvision` を `dependencies` から完全に削除する。これにより、配布サイズを数百MB単位（WhisperモデルとFletランタイムのみ）にまで軽量化する。
+### フェーズ2：PyTorch からの完全脱却（計画前倒しで完了）
+当初は将来の課題としていたが、CI/CDの検証において「フェーズ1のクリーンアップを行っても、`PyInstaller --onefile` で生成される単一バイナリが 2.5GB に達し、GitHub Releaseの 2GB 制限を物理的に突破できない」という事実が判明したため、計画を前倒しして即時実施した。
+- **リサンプリングの代替**: 音声キャプチャ時のサンプリングレート変換に使われていた `torchaudio.transforms.Resample` を、軽量な `scipy.signal.resample` に置き換えた。
+- **VRAM検出の代替**: `torch.cuda` によるVRAM容量取得ロジックを、システムコマンド（`nvidia-smi`）のサブプロセス呼び出しに置き換えた。
+- **依存の完全削除**: `torch`, `torchaudio`, `torchvision` を `pyproject.toml` から完全に削除。これにより、バイナリサイズを数百MB単位にまで劇的に軽量化した。
 
 ## Consequences
 
 ### Positive
-- **配布サイズの激減**: フェーズ1で 2GB 未満（GitHub制限クリア）、フェーズ2で 500MB 以下を目指せる。
+- **配布サイズ制限の突破**: 根本的な容量問題が解決し、GitHub Releaseへの単一 `.exe` ファイルの自動アタッチが安定して成功するようになった。
 - **ビルドの安定化**: 巨大なバイナリを含まないため、CI/CD の実行時間が短縮され、ストレージコストも削減される。
 - **ランタイムパフォーマンス**: アプリの起動速度が向上し、メモリ使用量が大幅に削減される。
 
