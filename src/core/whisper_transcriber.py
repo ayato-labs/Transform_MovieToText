@@ -208,19 +208,26 @@ class WhisperTranscriber:
             self.load_model(model_name, force_gpu=force_gpu)
 
         if is_android() and hasattr(self.model, "transcribe"):
-            # For Android, we need to convert file to PCM float array first
-            # Simplified for now assuming Engine handles internal loading or pre-processed data
             logger.info(f"WhisperTranscriber: Native Android transcription requested for {audio_path}")
-            # Note: Full implementation would involve librosa/ffmpeg to get raw floats
             return {"text": "[エッジ推論実行中...]", "segments": []}
 
         logger.info(f"WhisperTranscriber: Starting transcription of {audio_path}...")
 
-        segments_gen, info = self.model.transcribe(audio_path, beam_size=5, language=language)
-        
-        # CRITICAL: Convert generator to list to ensure the underlying C++ process finishes 
-        # and doesn't hang the background thread if the generator is not fully consumed.
-        segments = list(segments_gen)
+        try:
+            segments_gen, info = self.model.transcribe(audio_path, beam_size=5, language=language)
+            # CRITICAL: Convert generator to list to ensure the underlying C++ process finishes 
+            segments = list(segments_gen)
+        except RuntimeError as e:
+            if "cublas" in str(e).lower() or "cuda" in str(e).lower():
+                logger.error(f"WhisperTranscriber: CUDA execution error during transcription: {e}")
+                logger.warning("WhisperTranscriber: Force-falling back to CPU mode and retrying...")
+                self.unload()
+                self.model = WhisperModel(model_name, device="cpu", compute_type="int8", download_root=self.cache_dir)
+                self.current_model_name = model_name
+                segments_gen, info = self.model.transcribe(audio_path, beam_size=5, language=language)
+                segments = list(segments_gen)
+            else:
+                raise
 
         full_text_list = []
         structured_segments = []
@@ -231,7 +238,6 @@ class WhisperTranscriber:
             full_text_list.append(segment.text)
 
             if progress_callback:
-                # Approximate progress
                 progress_callback(segment.end / info.duration if info.duration > 0 else 0)
 
         return {"text": "".join(full_text_list).strip(), "segments": structured_segments}
@@ -244,11 +250,22 @@ class WhisperTranscriber:
             self.load_model(model_name, force_gpu=force_gpu)
 
         if self.model is None:
-            # Default to loading base if nothing loaded
             self.load_model("base", force_gpu=force_gpu)
 
-        segments_gen, _ = self.model.transcribe(audio_data, beam_size=5)
-        segments = list(segments_gen)
+        try:
+            segments_gen, _ = self.model.transcribe(audio_data, beam_size=5)
+            segments = list(segments_gen)
+        except RuntimeError as e:
+            if "cublas" in str(e).lower() or "cuda" in str(e).lower():
+                logger.error(f"WhisperTranscriber: CUDA execution error during numpy transcription: {e}")
+                logger.warning("WhisperTranscriber: Force-falling back to CPU mode and retrying...")
+                self.unload()
+                self.model = WhisperModel(model_name or "base", device="cpu", compute_type="int8", download_root=self.cache_dir)
+                self.current_model_name = model_name or "base"
+                segments_gen, _ = self.model.transcribe(audio_data, beam_size=5)
+                segments = list(segments_gen)
+            else:
+                raise
 
         full_text_list = []
         structured_segments = []
