@@ -260,34 +260,44 @@ class OllamaLocalClient(BaseLLMClient):
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
         """Generates minutes using Ollama."""
-        self._guard_local_only(model_name)  # Layer 3
-        model_manager.request_vram(LLM_CLIENT_NAME)
-        self._last_model_name = model_name
-
-        prompt = (
-            "以下の文字起こしテキストを元に、構造化された議事録をMarkdown形式で作成してください。\n"
-            "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なヘッダーやリスト(# や -)を使用してください。\n\n"
-        )
-        images = []
-        if visual_contexts:
-            import base64
-            import os
-
-            for ctx in visual_contexts:
-                img_path = ctx.get("image_path")
-                if img_path and os.path.exists(img_path):
-                    with open(img_path, "rb") as f:
-                        images.append(base64.b64encode(f.read()).decode("utf-8"))
-
-        prompt += f"--- 文字起こしテキスト ---\n{transcript}"
+        logger.info(f"generate_minutes: Starting for model={model_name}, transcript_len={len(transcript)}")
         try:
+            self._guard_local_only(model_name)  # Layer 3
+            model_manager.request_vram(LLM_CLIENT_NAME)
+            self._last_model_name = model_name
+
+            prompt = (
+                "以下の文字起こしテキストを元に、構造化された議事録をMarkdown形式で作成してください。\n"
+                "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なヘッダーやリスト(# や -)を使用してください。\n\n"
+            )
+            images = []
+            if visual_contexts:
+                import base64
+                import os
+
+                logger.debug(f"generate_minutes: Processing {len(visual_contexts)} visual contexts.")
+                for ctx in visual_contexts:
+                    img_path = ctx.get("image_path")
+                    if img_path and os.path.exists(img_path):
+                        with open(img_path, "rb") as f:
+                            images.append(base64.b64encode(f.read()).decode("utf-8"))
+
+            prompt += f"--- 文字起こしテキスト ---\n{transcript}"
+            
             msg = {"role": "user", "content": prompt}
             if images:
                 msg["images"] = images
+            
+            logger.debug(f"generate_minutes: Sending request to Ollama ({self.host})...")
             response = self.client.chat(model=model_name, messages=[msg])
-            return response["message"]["content"]
+            content = response["message"]["content"]
+            logger.info(f"generate_minutes: Successfully generated minutes. Length: {len(content)}")
+            return content
+            
         except Exception as e:
             err_str = str(e)
+            logger.exception(f"Ollama local generation failed for model {model_name}")
+            
             import ollama
             if isinstance(e, ollama.ResponseError):
                 if e.status_code == 404:
@@ -295,7 +305,6 @@ class OllamaLocalClient(BaseLLMClient):
                         f"モデル '{model_name}' がPCにインストールされていません。"
                         "設定画面の「Local Smart」機能を再度オンにするか、手動でダウンロードしてください。"
                     )
-                    logger.error(f"Ollama local chat failed (404): {msg}")
                     raise RuntimeError(msg) from e
 
                 if e.status_code == 500 and "more system memory" in err_str:
@@ -305,10 +314,8 @@ class OllamaLocalClient(BaseLLMClient):
                         "設定画面からより軽量なモデルを選択してください。\n"
                         f"詳細: {err_str}"
                     )
-                    logger.error(f"Ollama local RAM exhaustion (500): {err_str}")
                     raise RuntimeError(msg) from e
             
-            logger.error(f"Ollama local generation failed: {e}")
             raise RuntimeError(f"Chat/Generation failed: {str(e)}") from e
 
     def extract_category(self, transcript: str, model_name: str) -> str:

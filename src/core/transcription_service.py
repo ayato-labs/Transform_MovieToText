@@ -57,113 +57,132 @@ class TranscriptionService:
     ) -> dict:
         """Synchronously transcribes a file and saves it to history."""
         logger.info(f"transcribe_file_sync: Starting for {file_path} (model={model_name}, project={project_name}, visual={use_visual})")
-        if not file_path or not os.path.exists(file_path):
-            logger.error(f"transcribe_file_sync: File not found: {file_path}")
-            raise FileNotFoundError(f"File not found: {file_path}")
-
-        force_gpu = self.config_mgr.get_force_gpu()
-        event_bus.publish(EVENT_STATUS_UPDATE, f"モデル読み込み中 (GPU={force_gpu})...")
-        logger.info(f"transcribe_file_sync: Loading Whisper model: {model_name}")
-        self.transcriber.load_model(model_name, force_gpu=force_gpu)
-
-        event_bus.publish(EVENT_STATUS_UPDATE, "文字起こし実行中...")
-        logger.info("transcribe_file_sync: Starting transcription core progress...")
-
-        def _internal_progress(progress):
-            event_bus.publish(EVENT_TRANSCRIPTION_PROGRESS, progress)
-            if progress_callback:
-                progress_callback(progress)
-
-        result_data = self.transcriber.transcribe(
-            file_path, model_name=model_name, force_gpu=force_gpu, language=language, progress_callback=_internal_progress
-        )
-        full_text = result_data["text"]
-        segments = result_data["segments"]
-
-        logger.info("transcribe_file_sync: Transcription core finished.")
-
-        visual_contexts = []
-        if use_visual and file_path.lower().endswith((".mp4", ".mov", ".avi", ".mkv")):
-            event_bus.publish(EVENT_STATUS_UPDATE, "映像コンテキスト抽出中...")
-            try:
-                visual_contexts = self.extract_visual_frames(file_path)
-            except Exception as e:
-                logger.warning(f"Failed to extract visual frames: {e}")
-
-        # Auto-save to history
-        safe_project = sanitize_filename(project_name or "その他")
-        records_dir = Path.cwd().joinpath(*DEFAULT_RECORDS_DIR.split("/")).joinpath(safe_project)
-        records_dir.mkdir(parents=True, exist_ok=True)
-
-        base_name = os.path.basename(file_path)
-        final_file_path = str(records_dir / base_name)
-
-        if os.path.abspath(file_path) != os.path.abspath(final_file_path):
-            logger.info(f"transcribe_file_sync: Copying {file_path} to {final_file_path}")
-            shutil.copy2(file_path, final_file_path)
-
-        # 1. Generate AI Title & Category
-        event_bus.publish(EVENT_STATUS_UPDATE, "タイトル自動生成中...")
-        ai_title = ""
+        
         try:
-            ai_title = self._generate_title_internal(full_text)
-            if not category:
-                category = self._extract_category_internal(full_text)
-        except Exception as e:
-            logger.warning(f"AI Title/Category generation failed for file: {e}")
+            if not file_path or not os.path.exists(file_path):
+                logger.error(f"transcribe_file_sync: File not found: {file_path}")
+                raise FileNotFoundError(f"File not found: {file_path}")
 
-        final_title = f"{ai_title} ({base_name})" if ai_title else f"ファイル文字起こし: {base_name}"
+            force_gpu = self.config_mgr.get_force_gpu()
+            event_bus.publish(EVENT_STATUS_UPDATE, f"モデル読み込み中 (GPU={force_gpu})...")
+            logger.info(f"transcribe_file_sync: Loading Whisper model: {model_name}")
+            self.transcriber.load_model(model_name, force_gpu=force_gpu)
 
-        meeting_id = self.history_mgr.add_meeting(
-            title=final_title,
-            transcript=full_text,
-            transcript_segments=segments,
-            audio_path=final_file_path,
-            model_info=model_name,
-            project_name=safe_project,
-            category=category,
-        )
+            event_bus.publish(EVENT_STATUS_UPDATE, "文字起こし実行中...")
+            logger.debug("transcribe_file_sync: Starting transcription core process.")
 
-        # Save visual contexts
-        for ctx in visual_contexts:
-            self.history_mgr.add_visual_context(meeting_id=meeting_id, timestamp_sec=ctx["timestamp_sec"], image_path=ctx["image_path"])
+            def _internal_progress(progress):
+                event_bus.publish(EVENT_TRANSCRIPTION_PROGRESS, progress)
+                if progress_callback:
+                    progress_callback(progress)
 
-        event_bus.publish(EVENT_TRANSCRIPTION_FINISHED, {"meeting_id": meeting_id, "text": full_text})
-        return {"transcript": full_text, "segments": segments, "visual_contexts": visual_contexts, "meeting_id": meeting_id}
+            result_data = self.transcriber.transcribe(
+                file_path, model_name=model_name, force_gpu=force_gpu, language=language, progress_callback=_internal_progress
+            )
+            full_text = result_data["text"]
+            segments = result_data["segments"]
+
+            logger.info(f"transcribe_file_sync: Transcription finished. Text length: {len(full_text)}")
+
+            visual_contexts = []
+            if use_visual and file_path.lower().endswith((".mp4", ".mov", ".avi", ".mkv")):
+                event_bus.publish(EVENT_STATUS_UPDATE, "映像コンテキスト抽出中...")
+                try:
+                    logger.debug(f"transcribe_file_sync: Extracting visual frames from {file_path}")
+                    visual_contexts = self.extract_visual_frames(file_path)
+                except Exception:
+                    logger.exception(f"Failed to extract visual frames from {file_path}")
+
+            # Auto-save to history
+            safe_project = sanitize_filename(project_name or "その他")
+            records_dir = Path.cwd().joinpath(*DEFAULT_RECORDS_DIR.split("/")).joinpath(safe_project)
+            records_dir.mkdir(parents=True, exist_ok=True)
+
+            base_name = os.path.basename(file_path)
+            final_file_path = str(records_dir / base_name)
+
+            if os.path.abspath(file_path) != os.path.abspath(final_file_path):
+                logger.info(f"transcribe_file_sync: Copying {file_path} to {final_file_path}")
+                shutil.copy2(file_path, final_file_path)
+
+            # 1. Generate AI Title & Category
+            event_bus.publish(EVENT_STATUS_UPDATE, "タイトル自動生成中...")
+            ai_title = ""
+            try:
+                logger.debug("transcribe_file_sync: Generating AI title and category.")
+                ai_title = self._generate_title_internal(full_text)
+                if not category:
+                    category = self._extract_category_internal(full_text)
+            except Exception:
+                logger.exception("AI Title/Category generation failed during file transcription.")
+
+            final_title = f"{ai_title} ({base_name})" if ai_title else f"ファイル文字起こし: {base_name}"
+
+            logger.info(f"transcribe_file_sync: Saving to history. Title: {final_title}")
+            meeting_id = self.history_mgr.add_meeting(
+                title=final_title,
+                transcript=full_text,
+                transcript_segments=segments,
+                audio_path=final_file_path,
+                model_info=model_name,
+                project_name=safe_project,
+                category=category,
+            )
+
+            # Save visual contexts
+            for ctx in visual_contexts:
+                self.history_mgr.add_visual_context(meeting_id=meeting_id, timestamp_sec=ctx["timestamp_sec"], image_path=ctx["image_path"])
+
+            event_bus.publish(EVENT_TRANSCRIPTION_FINISHED, {"meeting_id": meeting_id, "text": full_text})
+            return {"transcript": full_text, "segments": segments, "visual_contexts": visual_contexts, "meeting_id": meeting_id}
+        
+        except Exception:
+            logger.exception(f"transcribe_file_sync: Unexpected error during transcription of {file_path}")
+            event_bus.publish(EVENT_STATUS_UPDATE, "❌ 文字起こし失敗")
+            raise
 
     def extract_visual_frames(self, video_path: str, interval_sec: float = 10.0) -> list[dict]:
         """Extracts significant frames from a video file as visual context."""
         from pathlib import Path
-
         import cv2
 
-        cap = cv2.VideoCapture(video_path)
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        duration = total_frames / fps if fps > 0 else 0
+        logger.info(f"extract_visual_frames: Processing {video_path}")
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                logger.error(f"extract_visual_frames: Could not open video file {video_path}")
+                return []
 
-        from src.core.constants import TEMP_VIDEO_DIR
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            duration = total_frames / fps if fps > 0 else 0
+            logger.debug(f"extract_visual_frames: Video duration: {duration:.1f}s, FPS: {fps}")
 
-        temp_dir = Path(TEMP_VIDEO_DIR)
-        temp_dir.mkdir(parents=True, exist_ok=True)
+            from src.core.constants import TEMP_VIDEO_DIR
 
-        contexts = []
-        curr_sec = 0.0
-        while curr_sec < duration:
-            cap.set(cv2.CAP_PROP_POS_MSEC, curr_sec * 1000)
-            ret, frame = cap.read()
-            if not ret:
-                break
+            temp_dir = Path(TEMP_VIDEO_DIR)
+            temp_dir.mkdir(parents=True, exist_ok=True)
 
-            frame_path = temp_dir / f"frame_{curr_sec:.1f}s.jpg"
-            cv2.imwrite(str(frame_path), frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+            contexts = []
+            curr_sec = 0.0
+            while curr_sec < duration:
+                cap.set(cv2.CAP_PROP_POS_MSEC, curr_sec * 1000)
+                ret, frame = cap.read()
+                if not ret:
+                    break
 
-            contexts.append({"image_path": str(frame_path), "timestamp_sec": curr_sec})
-            curr_sec += interval_sec
+                frame_path = temp_dir / f"frame_{curr_sec:.1f}s.jpg"
+                cv2.imwrite(str(frame_path), frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
 
-        cap.release()
-        logger.info(f"extract_visual_frames: Extracted {len(contexts)} frames.")
-        return contexts
+                contexts.append({"image_path": str(frame_path), "timestamp_sec": curr_sec})
+                curr_sec += interval_sec
+
+            cap.release()
+            logger.info(f"extract_visual_frames: Extracted {len(contexts)} frames.")
+            return contexts
+        except Exception:
+            logger.exception(f"Error extracting visual frames from {video_path}")
+            return []
 
     def start_live_recording(
         self,

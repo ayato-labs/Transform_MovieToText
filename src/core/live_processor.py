@@ -103,28 +103,32 @@ class LiveTranscriptionManager:
         try:
             # audio_data is a numpy float32 array
             duration = len(audio_data) / 16000
-            logger.info(f"Processing in-memory numpy chunk (Source: {self.recorder.source}, Samples: {len(audio_data)}, Duration: {duration:.1f}s)")
+            logger.debug(f"_handle_audio_data: Processing numpy chunk. Samples: {len(audio_data)}, Duration: {duration:.2f}s")
 
             if duration < 0.1:
-                logger.warning("Chunk too short, skipping.")
+                logger.warning(f"_handle_audio_data: Chunk too short ({duration:.3f}s), skipping.")
                 return
 
             # Pass numpy array directly to transcriber
             peak = np.abs(audio_data).max()
             rms = np.sqrt(np.mean(audio_data**2))
-            logger.info(f"Chunk Stats - Peak: {peak:.6f}, RMS: {rms:.6f}, Duration: {duration:.1f}s")
+            logger.debug(f"Chunk Stats - Peak: {peak:.6f}, RMS: {rms:.6f}, Duration: {duration:.1f}s")
 
             # Strict silence suppression
             if peak < 0.01 or rms < 0.001:
                 logger.debug(f"Chunk is too quiet (Peak: {peak:.4f}, RMS: {rms:.4f}), skipping transcription.")
                 return
 
+            logger.info(f"Transcribing live chunk (peak={peak:.4f})...")
+            start_time = time.time()
             result = self.transcriber.transcribe(audio_data, model_name=self.model_name, force_gpu=self.force_gpu, language=self.language)
+            elapsed = time.time() - start_time
+            
             text = result["text"]
             segments = result["segments"]
 
             if text:
-                logger.info(f"Transcribed chunk: {text[:50]}...")
+                logger.info(f"Transcribed chunk in {elapsed:.2f}s: {text[:50]}...")
 
                 # Session-relative offset
                 offset = time.time() - self.start_time - duration
@@ -144,10 +148,10 @@ class LiveTranscriptionManager:
                 if self.on_text_added:
                     self.on_text_added(text)
             else:
-                logger.info("Transcription result: [EMPTY/SILENCE]")
+                logger.info(f"Transcription result: [EMPTY/SILENCE] (took {elapsed:.2f}s)")
 
             self.chunks_processed += 1
 
-        except Exception as e:
+        except Exception:
             self.total_errors += 1
-            logger.error(f"Error processing live audio chunk: {e}\n{traceback.format_exc()}")
+            logger.exception("Error processing live audio chunk")
