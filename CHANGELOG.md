@@ -1,3 +1,10 @@
+# [2.36.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.35.2...v2.36.0) (2026-05-31)
+
+
+### Features
+
+* implement ModelManager for VRAM orchestration and replace soundcard recorder with PyAudio WASAPI loopback implementation ([86539e9](https://github.com/ayato-labs/Transform_MovieToText/commit/86539e9fd976af71de48886c00bc29459c034b9f))
+
 ## [2.35.2](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.35.1...v2.35.2) (2026-05-31)
 
 
