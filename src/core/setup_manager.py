@@ -10,7 +10,7 @@ from src.utils.setup_helper import SetupHelper
 logger = logging.getLogger(__name__)
 
 # List of heavy dependencies that should be handled in the background
-HEAVY_DEPS = ["faster-whisper", "torch", "torchvision", "torchaudio", "opencv-python"]
+HEAVY_DEPS = ["faster-whisper", "opencv-python", "scipy"]
 
 
 class SetupManager:

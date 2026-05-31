@@ -138,21 +138,6 @@ def main():
     run_cmd("uv pip install -e .")
     run_cmd("uv pip install pyinstaller")
 
-    if build_type == "gpu":
-        print("Installing GPU-enabled PyTorch (CUDA 12.1)...")
-        run_cmd(
-            "uv pip install torch==2.5.1+cu121 "
-            "torchaudio==2.5.1+cu121 --extra-index-url "
-            "https://download.pytorch.org/whl/cu121"
-        )
-    else:
-        print("Installing CPU-only PyTorch...")
-        run_cmd(
-            "uv pip install torch==2.5.1+cpu "
-            "torchaudio==2.5.1+cpu --extra-index-url "
-            "https://download.pytorch.org/whl/cpu"
-        )
-
     # 3. Build Executable
     print("Starting PyInstaller build...")
     pre_build_cleanup_venv(build_type)
@@ -171,14 +156,8 @@ def main():
         "--collect-all whisper --collect-all tiktoken --collect-all flet "
         "--exclude-module matplotlib --exclude-module notebook --exclude-module jedi "
         "--exclude-module IPython --exclude-module PIL.ImageQt "
-        "--exclude-module torch.testing --exclude-module torch.distributed "
         "main.py"
     )
-    
-    # Optimization: Only collect necessary torch data
-    # For CPU, we exclude CUDA entirely
-    if build_type == "cpu":
-        pyinstaller_cmd += " --exclude-module torch.cuda --exclude-module triton"
     
     run_cmd(pyinstaller_cmd)
 
