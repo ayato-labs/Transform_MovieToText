@@ -132,18 +132,24 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: dist
 
       - name: List Artifacts
-        run: ls -R
+        run: ls -R dist
 
       - name: Create or Update Release
         if: needs.semantic-release.outputs.new_release_git_tag != '' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
-          files: |
-            windows-exe/dist/TransformMovieToText.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
+        run: |
+          # Ensure release exists and upload asset using official GitHub CLI
+          gh release create "$TAG" --generate-notes --if-not-exists
+          gh release upload "$TAG" dist/TransformMovieToText.exe --clobber
