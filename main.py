@@ -28,6 +28,10 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
+    # Initialize essential directories (AppData)
+    from src.core.platform_utils import initialize_app_dirs
+    initialize_app_dirs()
+
     # Initialize professional logging
     setup_logger()
 

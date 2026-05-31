@@ -23,7 +23,8 @@ def get_roaming_app_data_path(app_name="TransformMovieToText"):
     """Returns path for settings/DBs (syncable across devices in domain)."""
     base = os.environ.get("APPDATA") or os.path.expanduser("~")
     path = os.path.join(base, app_name)
-    os.makedirs(path, exist_ok=True)
+    if not os.path.exists(path):
+        os.makedirs(path, exist_ok=True)
     return path
 
 
@@ -31,8 +32,27 @@ def get_local_app_data_path(app_name="TransformMovieToText"):
     """Returns path for heavy binary data (not synced, local to machine)."""
     base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or os.path.expanduser("~")
     path = os.path.join(base, app_name)
-    os.makedirs(path, exist_ok=True)
+    if not os.path.exists(path):
+        os.makedirs(path, exist_ok=True)
     return path
+
+
+def initialize_app_dirs():
+    """Forces creation of all required application directories."""
+    roaming = get_roaming_app_data_path()
+    local = get_local_app_data_path()
+    
+    dirs = [
+        os.path.join(roaming, "logs"),
+        os.path.join(roaming, "records"),
+        os.path.join(local, "models"),
+        os.path.join(local, "temp"),
+    ]
+    
+    for d in dirs:
+        if not os.path.exists(d):
+            os.makedirs(d, exist_ok=True)
+            logger.info(f"PlatformUtils: Created directory {d}")
 
 
 def get_app_data_path(app_name="TransformMovieToText"):

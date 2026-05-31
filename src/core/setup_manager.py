@@ -32,7 +32,13 @@ class SetupManager:
         """Check for missing heavy dependencies."""
         from src.utils.logger import setup_info
         setup_info("SetupManager: Checking environment dependencies...")
+        
         self._missing_deps = []
+        
+        # CRITICAL: In a standalone EXE, we cannot (and should not) install Python dependencies via pip.
+        # They are already bundled. We only check for them to report status.
+        is_bundled = getattr(sys, 'frozen', False)
+        
         for dep in HEAVY_DEPS:
             import_name = dep.replace("-", "_")
             try:
@@ -40,14 +46,17 @@ class SetupManager:
                 setup_info(f"SetupManager: Found dependency {dep}")
             except ImportError:
                 setup_info(f"SetupManager: Missing dependency {dep}")
-                self._missing_deps.append(dep)
+                # Only mark as missing if NOT bundled. If bundled and missing, it's a build error, not a setup task.
+                if not is_bundled:
+                    self._missing_deps.append(dep)
 
         target_model = self._get_target_model()
         ollama_installed = SetupHelper.is_ollama_installed()
         has_target_model = SetupHelper.has_model(target_model)
         
-        setup_info(f"SetupManager: Dependencies missing={self._missing_deps}, Ollama installed={ollama_installed}, Has model({target_model})={has_target_model}")
+        setup_info(f"SetupManager: Bundled={is_bundled}, Missing={self._missing_deps}, Ollama={ollama_installed}, Model({target_model})={has_target_model}")
         
+        # Ready if no missing installable deps, ollama is there, and model is pulled
         self._is_ready = (len(self._missing_deps) == 0) and ollama_installed and has_target_model
         return self._is_ready, self._missing_deps
 
