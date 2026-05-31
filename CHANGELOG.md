@@ -1,3 +1,10 @@
+# [2.40.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.39.1...v2.40.0) (2026-05-31)
+
+
+### Features
+
+* add system resource advisor, Ollama setup utilities, and improve launch.bat process automation ([bfa24a6](https://github.com/ayato-labs/Transform_MovieToText/commit/bfa24a678960935ab50f4f8b2706e819401f2d63))
+
 ## [2.39.1](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.39.0...v2.39.1) (2026-05-31)
 
 
