@@ -4,6 +4,8 @@ import os
 import platform
 import sys
 from collections import deque
+from contextlib import suppress
+
 from loguru import logger
 
 # Global buffer for UI log viewing
@@ -45,7 +47,7 @@ def get_system_info():
         import psutil
         ram_total = psutil.virtual_memory().total
         info["ram_gb"] = round(ram_total / (1024**3), 1)
-    except Exception as e:
+    except Exception:
         info["ram_gb"] = "Unknown"
 
     try:
@@ -75,11 +77,8 @@ def setup_logger():
     logger.remove()
 
     # 2. Add SETUP level to Loguru
-    try:
+    with suppress(ValueError):
         logger.level("SETUP", no=LOG_LEVEL_SETUP, color="<bold><cyan>")
-    except ValueError:
-        # Level might already exist if setup_logger is called multiple times
-        pass
 
     # 3. Console Handler (for humans, colored, not JSON)
     console_format = (
@@ -147,7 +146,3 @@ if __name__ == "__main__":
     logger.info("Info message")
     logger.log("SETUP", "Setup message")
     logger.error("Error message")
-    try:
-        1 / 0
-    except ZeroDivisionError:
-        logger.exception("Exception caught!")

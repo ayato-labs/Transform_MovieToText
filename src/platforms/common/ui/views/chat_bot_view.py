@@ -176,8 +176,9 @@ class ChatBotView(ft.Column):
         threading.Thread(target=self._initial_load_task, daemon=True).start()
 
     def _get_hw_info(self):
-        import psutil
         import subprocess
+
+        import psutil
 
         ram = round(psutil.virtual_memory().total / (1024**3), 1)
         vram = 0.0

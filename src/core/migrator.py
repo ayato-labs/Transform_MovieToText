@@ -1,9 +1,8 @@
 import logging
-import os
 import shutil
 from pathlib import Path
 
-from .constants import APP_DATA_DIR, LOCAL_DATA_DIR, LOGS_DIR, MODELS_DIR
+from .constants import APP_DATA_DIR, LOGS_DIR, MODELS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +16,8 @@ class ConfigMigrator:
         Updates old config structures to the latest version.
         Returns True if the config was modified.
         """
-        modified = False
         # Add migration logic here when schema changes
-        return modified
+        return False
 
 
 def migrate_legacy_data():

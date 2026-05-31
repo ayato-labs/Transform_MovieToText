@@ -123,12 +123,11 @@ class MinutesService:
         status = "🧠 AI解析中 (Reduce): 中間要約を統合して最終議事録を作成中..."
         logger.info(status)
         event_bus.publish(EVENT_STATUS_UPDATE, status)
-        
         combined_summaries = "\n\n".join(summaries)
-        
-        reduce_prompt = (
-            "以下は会議の各セクションの要約です。これらを統合し、全体として一貫性のある公式な議事録を作成してください。"
-            "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なMarkdown形式(# や -)を使用してください。"
+
+        prompt = (
+            "以下は会議の各セクションの要約です。これらを統合し、全体として一貫性のある公式な議事録を作成し てください。"
+            "項目は「会議の概要」「決定事項」「ネクストアクション」を含めて、適切なMarkdown形式(# や -)を使 用してください。"
             "画像によるコンテキストがある場合は、それも考慮に入れてください。\n\n"
             f"--- セクション要約群 ---\n{combined_summaries}"
         )

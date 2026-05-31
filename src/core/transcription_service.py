@@ -144,6 +144,7 @@ class TranscriptionService:
     def extract_visual_frames(self, video_path: str, interval_sec: float = 10.0) -> list[dict]:
         """Extracts significant frames from a video file as visual context."""
         from pathlib import Path
+
         import cv2
 
         logger.info(f"extract_visual_frames: Processing {video_path}")
