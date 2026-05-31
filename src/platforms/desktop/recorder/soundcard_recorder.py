@@ -142,8 +142,8 @@ class SoundCardRecorder(_BaseRecorder):
                         logger.warning(f"SoundCardRecorder: FFmpeg MP3 pipe broke ({e}). MP3 saving is aborted, but transcription continues.")
                         try:
                             self.ffmpeg_proc.stdin.close()
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug(f"SoundCardRecorder: FFmpeg stdin close error (ignored): {e}")
                         self.ffmpeg_proc = None
 
                 # Convert to mono float32

@@ -87,5 +87,5 @@ def _remove_if_empty(path: Path):
     try:
         if path.exists() and not any(path.iterdir()):
             path.rmdir()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Migrator: Failed to remove empty dir {path}: {e}")

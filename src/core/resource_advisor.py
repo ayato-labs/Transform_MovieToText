@@ -39,8 +39,8 @@ class ResourceAdvisor:
             # Take the first GPU's memory
             vram_mb = int(result.stdout.strip().split('\n')[0])
             total_vram = round(vram_mb / 1024.0, 1)
-        except (subprocess.CalledProcessError, FileNotFoundError, ValueError, IndexError):
-            pass
+        except (subprocess.CalledProcessError, FileNotFoundError, ValueError, IndexError) as e:
+            logger.warning(f"ResourceAdvisor: Failed to detect VRAM, defaulting to 0: {e}")
 
         return total_ram, total_vram
 

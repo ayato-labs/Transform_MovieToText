@@ -175,7 +175,7 @@ class SettingsView(ft.Column):
 
     def _on_sync_click(self, e):
         # Implementation in history_ctrl
-        pass
+        logger.warning("SettingsView: Sync functionality not implemented yet.")
 
     def _on_knowledge_folder_result(self, e):
         if e.path:
@@ -185,11 +185,11 @@ class SettingsView(ft.Column):
 
     def _on_export_logs_click(self, e):
         # Existing logic
-        pass
+        logger.warning("SettingsView: Export logs functionality not implemented yet.")
 
     def _on_open_data_dir_click(self, e):
         # Existing logic
-        pass
+        logger.warning("SettingsView: Open data directory functionality not implemented yet.")
 
     def init_view(self):
         if self.page and self.knowledge_folder_picker not in self.page.overlay:
