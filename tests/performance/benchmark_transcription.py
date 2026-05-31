@@ -4,7 +4,6 @@ import time
 # Ensure project root is in sys.path
 import numpy as np
 import psutil
-import torch
 
 from src.core.whisper_transcriber import WhisperTranscriber
 
@@ -22,11 +21,8 @@ def benchmark_whisper_performance():
 
     # 1. Baseline Resource Usage
     ram_baseline = psutil.virtual_memory().used / (1024**2)
-    vram_baseline = 0.0
-    if torch.cuda.is_available():
-        vram_baseline = torch.cuda.memory_allocated(0) / (1024**2)
 
-    logger.info(f"Baseline - RAM: {ram_baseline:.2f}MB, VRAM: {vram_baseline:.2f}MB")
+    logger.info(f"Baseline - RAM: {ram_baseline:.2f}MB")
 
     # 2. Loading Model (Base)
     start_load = time.time()
@@ -34,14 +30,10 @@ def benchmark_whisper_performance():
     load_duration = time.time() - start_load
 
     ram_after_load = psutil.virtual_memory().used / (1024**2)
-    vram_after_load = 0.0
-    if torch.cuda.is_available():
-        vram_after_load = torch.cuda.memory_allocated(0) / (1024**2)
 
     logger.info(f"Model Load (base) - Duration: {load_duration:.2f}s")
     logger.info(
-        f"Post-Load - RAM: {ram_after_load:.2f}MB (+{ram_after_load - ram_baseline:.2f}MB), "
-        f"VRAM: {vram_after_load:.2f}MB (+{vram_after_load - vram_baseline:.2f}MB)"
+        f"Post-Load - RAM: {ram_after_load:.2f}MB (+{ram_after_load - ram_baseline:.2f}MB)"
     )
 
     # 3. Transcription Benchmark

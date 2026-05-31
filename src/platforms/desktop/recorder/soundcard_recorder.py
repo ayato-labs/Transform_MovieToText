@@ -14,8 +14,7 @@ try:
         import pyaudio
 except ImportError:
     pyaudio = None
-import torch
-import torchaudio
+import scipy.signal
 
 from .base import _BaseRecorder
 
@@ -81,12 +80,8 @@ class SoundCardRecorder(_BaseRecorder):
             self._native_sr = int(default_speakers["defaultSampleRate"])
             self._channels = default_speakers["maxInputChannels"]
 
-            # 2. Create resampler (native rate -> 16000Hz for Whisper)
             if self._native_sr != self.sample_rate:
-                self._resampler = torchaudio.transforms.Resample(orig_freq=self._native_sr, new_freq=self.sample_rate)
-                logger.info(f"SoundCardRecorder: Resampling {self._native_sr}Hz -> {self.sample_rate}Hz")
-            else:
-                self._resampler = None
+                logger.info(f"SoundCardRecorder: Resampling {self._native_sr}Hz -> {self.sample_rate}Hz using scipy")
 
             # 3. Setup FFmpeg for MP3 encoding if needed
             if self.mp3_path:
@@ -150,10 +145,10 @@ class SoundCardRecorder(_BaseRecorder):
 
                 audio_float = (audio_mono / 32768.0).astype(np.float32)
 
-                # Resample to 16kHz for Whisper
-                if self._resampler:
-                    tensor = torch.from_numpy(audio_float).unsqueeze(0)
-                    audio_float = self._resampler(tensor).squeeze(0).numpy()
+                # Resample to 16kHz for Whisper using scipy
+                if self._native_sr != self.sample_rate:
+                    target_length = int(len(audio_float) * self.sample_rate / self._native_sr)
+                    audio_float = scipy.signal.resample(audio_float, target_length).astype(np.float32)
 
                 # Feed to buffer for transcription
                 with self.buffer_lock:
