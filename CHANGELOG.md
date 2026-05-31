@@ -1,3 +1,10 @@
+## [2.35.2](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.35.1...v2.35.2) (2026-05-31)
+
+
+### Bug Fixes
+
+* logger initialization for windowed exe ([dd3e029](https://github.com/ayato-labs/Transform_MovieToText/commit/dd3e02950c06864f039d3e02ddb350a0377d5807))
+
 ## [2.35.1](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.35.0...v2.35.1) (2026-05-31)
 
 
