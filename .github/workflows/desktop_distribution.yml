@@ -133,14 +133,6 @@ jobs:
           name: windows-exe-cpu
           path: dist/TransformMovieToText_CPU.exe
 
-      - name: Release Assets (CPU)
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/TransformMovieToText_CPU.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build-windows-exe-gpu:
     name: Windows EXE (GPU)
     needs: [lint-and-test, semantic-release]
@@ -188,14 +180,6 @@ jobs:
           name: windows-exe-gpu
           path: dist/TransformMovieToText_GPU.exe
 
-      - name: Release Assets (GPU)
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/TransformMovieToText_GPU.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   distribute:
     name: Attach Artifacts to Release
     needs: [semantic-release, build-windows-exe-cpu, build-windows-exe-gpu]
@@ -211,11 +195,12 @@ jobs:
         run: ls -R
 
       - name: Create or Update Release
+        if: needs.semantic-release.outputs.new_release_git_tag != '' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
           files: |
-            windows-exe-cpu/TransformMovieToText-Windows-CPU.zip
-            windows-exe-gpu/TransformMovieToText-Windows-GPU.zip
+            windows-exe-cpu/TransformMovieToText_CPU.exe
+            windows-exe-gpu/TransformMovieToText_GPU.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
