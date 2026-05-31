@@ -1,3 +1,10 @@
+# [2.37.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.36.0...v2.37.0) (2026-05-31)
+
+
+### Features
+
+* add automated CI/CD pipeline for linting, testing, building, and release distribution ([3a8a97d](https://github.com/ayato-labs/Transform_MovieToText/commit/3a8a97d0f5eae438f78b0c2ba049026fb0e76635))
+
 # [2.36.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.35.2...v2.36.0) (2026-05-31)
 
 
