@@ -17,7 +17,7 @@ def run_cmd(cmd):
         sys.exit(process.returncode)
 
 
-def cleanup_dist(dist_path, build_type):
+def cleanup_dist(dist_path):
     """Removes unnecessary files from the build directory."""
     print(f"Cleaning up {dist_path}...")
     
@@ -27,9 +27,10 @@ def cleanup_dist(dist_path, build_type):
 
     for root, dirs, files in os.walk(dist_path):
         # Remove folders
-        for d in dirs:
+        for d in list(dirs):
             if d in folders_to_remove:
                 shutil.rmtree(os.path.join(root, d), ignore_errors=True)
+                dirs.remove(d)
                 print(f"Removed folder: {d}")
 
         # Remove files by extension
@@ -40,22 +41,8 @@ def cleanup_dist(dist_path, build_type):
                 except OSError:
                     pass
 
-    # 2. CPU-specific Cleanup (Surgery for CUDA remnants)
-    if build_type == "cpu":
-        # PyTorch often includes CUDA DLLs even in CPU builds if not carefully handled.
-        cuda_keywords = ["cuda", "cublas", "cudnn", "nvrtc", "nvjitlink", "cufft", "curand", "cusparse", "cusolver"]
-        # Search everywhere in the dist folder for these, though they usually live in torch/lib
-        for root, dirs, files in os.walk(dist_path):
-            for f in files:
-                if any(kw in f.lower() for kw in cuda_keywords) and f.endswith(".dll"):
-                    try:
-                        os.remove(os.path.join(root, f))
-                        print(f"Removed CUDA remnant from CPU build: {f}")
-                    except OSError:
-                        pass
 
-
-def pre_build_cleanup_venv(build_type):
+def pre_build_cleanup_venv():
     """Cleans the virtual environment before PyInstaller runs to reduce size."""
     venv_path = os.path.join(os.getcwd(), ".venv")
     if not os.path.exists(venv_path):
@@ -63,9 +50,9 @@ def pre_build_cleanup_venv(build_type):
 
     print(f"Pre-cleaning virtual environment at {venv_path} to reduce payload size...")
     extensions_to_remove = [".h", ".lib", ".cmake", ".cpp", ".hpp", ".a"]
-    cuda_keywords = ["cuda", "cublas", "cudnn", "nvrtc", "nvjitlink", "cufft", "curand", "cusparse", "cusolver"]
     
     # We only clean Lib/site-packages to be safe
+    # Note: We NO LONGER delete CUDA DLLs here because we want a unified GPU-ready build.
     sp_path = os.path.join(venv_path, "Lib", "site-packages")
     if not os.path.exists(sp_path):
         return
@@ -85,65 +72,26 @@ def pre_build_cleanup_venv(build_type):
                     os.remove(file_path)
                 except OSError:
                     pass
-            
-            # Remove CUDA binaries if we are building CPU-only
-            if build_type == "cpu" and f.endswith(".dll"):
-                if any(kw in f.lower() for kw in cuda_keywords):
-                    try:
-                        os.remove(file_path)
-                        print(f"Purged GPU payload from CPU venv: {f}")
-                    except OSError:
-                        pass
-
-def check_gpu():
-    """Checks for NVIDIA GPU availability via nvidia-smi."""
-    try:
-        subprocess.run(["nvidia-smi"], check=True, capture_output=True, timeout=2)
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-        return False
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Smart builder for TransformMovieToText EXE")
-    parser.add_argument(
-        "--type",
-        choices=["gpu", "cpu", "auto"],
-        default="auto",
-        help="Force build type (gpu, cpu) or use 'auto' for detection.",
-    )
+    parser = argparse.ArgumentParser(description="Unified builder for TransformMovieToText EXE")
     parser.add_argument("--ci", action="store_true", help="Non-interactive mode for CI.")
     parser.add_argument("--onefile", action="store_true", help="Produce a single EXE file.")
     args = parser.parse_args()
 
-    # 1. Determine Build Type
-    build_type = args.type
-    if build_type == "auto":
-        print("Detecting GPU...")
-        if check_gpu():
-            print("NVIDIA GPU detected.")
-            if args.ci:
-                build_type = "gpu"
-            else:
-                ans = input("GPU version of Torch? (Y/n): ").strip().lower()
-                build_type = "gpu" if ans != "n" else "cpu"
-        else:
-            print("No NVIDIA GPU detected.")
-            build_type = "cpu"
+    print("Building Unified Smart Executable...")
 
-    print(f"Building for: {build_type.upper()}")
-
-    # 2. Install Dependencies
+    # 1. Install Dependencies
     print("Installing base dependencies...")
     run_cmd("uv pip install -e .")
     run_cmd("uv pip install pyinstaller")
 
-    # 3. Build Executable
+    # 2. Build Executable
     print("Starting PyInstaller build...")
-    pre_build_cleanup_venv(build_type)
+    pre_build_cleanup_venv()
     
-    # Use unique name based on build type
-    exe_name = f"TransformMovieToText_{build_type.upper()}"
+    exe_name = "TransformMovieToText"
     
     # Base PyInstaller command
     mode_flag = "--onefile" if args.onefile else "--onedir"
@@ -161,11 +109,11 @@ def main():
     
     run_cmd(pyinstaller_cmd)
 
-    # 4. Post-build Cleanup (Only for --onedir)
+    # 3. Post-build Cleanup (Only for --onedir)
     if not args.onefile:
         dist_dir = os.path.join("dist", exe_name)
         if os.path.exists(dist_dir):
-            cleanup_dist(dist_dir, build_type)
+            cleanup_dist(dist_dir)
 
     print(f"\nBuild completed successfully!")
     if args.onefile:

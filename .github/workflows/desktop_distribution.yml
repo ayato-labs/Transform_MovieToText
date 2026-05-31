@@ -77,56 +77,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-windows-exe-cpu:
-    name: Windows EXE (CPU)
-    needs: [lint-and-test, semantic-release]
-    # Build if release was successful OR if we are pushing a tag/manual dispatch
-    if: always() && (needs.lint-and-test.result == 'success') && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install uv
-        run: |
-          pip install uv
-
-      - name: Build Windows EXE (CPU)
-        run: |
-          if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }
-          uv venv
-          uv run python scripts/build_exe.py --ci --type cpu --onefile
-
-      - name: Smoke Test (CPU)
-        shell: pwsh
-        run: |
-          $exe_path = "dist/TransformMovieToText_CPU.exe"
-          echo "Starting smoke test for $exe_path"
-          $proc = Start-Process -FilePath $exe_path -PassThru
-          Start-Sleep -Seconds 10
-          if ($proc.HasExited) {
-             if ($proc.ExitCode -ne 0) {
-               echo "Smoke test failed with exit code $($proc.ExitCode)"
-               exit 1
-             }
-          } else {
-             Stop-Process -Id $proc.Id -Force
-             echo "Smoke test passed."
-          }
-
-      - name: Upload Windows EXE Artifact (CPU)
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-exe-cpu
-          path: dist/TransformMovieToText_CPU.exe
-
-  build-windows-exe-gpu:
-    name: Windows EXE (GPU)
+  build-windows-exe:
+    name: Windows EXE (Unified Smart)
     needs: [lint-and-test, semantic-release]
     if: always() && (needs.lint-and-test.result == 'success') && (needs.semantic-release.result == 'success' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/'))
     runs-on: windows-latest
@@ -143,16 +95,16 @@ jobs:
         run: |
           pip install uv
 
-      - name: Build Windows EXE (GPU)
+      - name: Build Unified EXE
         run: |
           if (Test-Path .venv) { Remove-Item -Recurse -Force .venv }
           uv venv
-          uv run python scripts/build_exe.py --ci --type gpu --onefile
+          uv run python scripts/build_exe.py --ci --onefile
 
-      - name: Smoke Test (GPU)
+      - name: Smoke Test
         shell: pwsh
         run: |
-          $exe_path = "dist/TransformMovieToText_GPU.exe"
+          $exe_path = "dist/TransformMovieToText.exe"
           echo "Starting smoke test for $exe_path"
           $proc = Start-Process -FilePath $exe_path -PassThru
           Start-Sleep -Seconds 15
@@ -166,16 +118,16 @@ jobs:
              echo "Smoke test passed."
           }
 
-      - name: Upload Windows EXE Artifact (GPU)
+      - name: Upload Windows EXE Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-exe-gpu
-          path: dist/TransformMovieToText_GPU.exe
+          name: windows-exe
+          path: dist/TransformMovieToText.exe
 
   distribute:
     name: Attach Artifacts to Release
-    needs: [semantic-release, build-windows-exe-cpu, build-windows-exe-gpu]
-    if: always() && (needs.build-windows-exe-cpu.result == 'success' && needs.build-windows-exe-gpu.result == 'success')
+    needs: [semantic-release, build-windows-exe]
+    if: always() && (needs.build-windows-exe.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -192,7 +144,6 @@ jobs:
         with:
           tag_name: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
           files: |
-            windows-exe-cpu/TransformMovieToText_CPU.exe
-            windows-exe-gpu/TransformMovieToText_GPU.exe
+            windows-exe/TransformMovieToText.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
