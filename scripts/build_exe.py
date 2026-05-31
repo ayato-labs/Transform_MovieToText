@@ -55,6 +55,46 @@ def cleanup_dist(dist_path, build_type):
                         pass
 
 
+def pre_build_cleanup_venv(build_type):
+    """Cleans the virtual environment before PyInstaller runs to reduce size."""
+    venv_path = os.path.join(os.getcwd(), ".venv")
+    if not os.path.exists(venv_path):
+        return
+
+    print(f"Pre-cleaning virtual environment at {venv_path} to reduce payload size...")
+    extensions_to_remove = [".h", ".lib", ".cmake", ".cpp", ".hpp", ".a"]
+    cuda_keywords = ["cuda", "cublas", "cudnn", "nvrtc", "nvjitlink", "cufft", "curand", "cusparse", "cusolver"]
+    
+    # We only clean Lib/site-packages to be safe
+    sp_path = os.path.join(venv_path, "Lib", "site-packages")
+    if not os.path.exists(sp_path):
+        return
+
+    for root, dirs, files in os.walk(sp_path):
+        # Remove folders like __pycache__ or include
+        for d in list(dirs):
+            if d in ["__pycache__", "include", "cmake"]:
+                shutil.rmtree(os.path.join(root, d), ignore_errors=True)
+                dirs.remove(d)
+
+        for f in files:
+            file_path = os.path.join(root, f)
+            # Remove development files universally
+            if any(f.endswith(ext) for ext in extensions_to_remove):
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
+            
+            # Remove CUDA binaries if we are building CPU-only
+            if build_type == "cpu" and f.endswith(".dll"):
+                if any(kw in f.lower() for kw in cuda_keywords):
+                    try:
+                        os.remove(file_path)
+                        print(f"Purged GPU payload from CPU venv: {f}")
+                    except OSError:
+                        pass
+
 def check_gpu():
     """Checks for NVIDIA GPU availability via nvidia-smi."""
     try:
@@ -115,6 +155,8 @@ def main():
 
     # 3. Build Executable
     print("Starting PyInstaller build...")
+    pre_build_cleanup_venv(build_type)
+    
     # Use unique name based on build type
     exe_name = f"TransformMovieToText_{build_type.upper()}"
     
