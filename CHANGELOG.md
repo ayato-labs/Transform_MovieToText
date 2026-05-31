@@ -1,3 +1,10 @@
+# [2.26.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.25.0...v2.26.0) (2026-05-31)
+
+
+### Features
+
+* use 7zip with volume splitting for release assets ([280f586](https://github.com/ayato-labs/Transform_MovieToText/commit/280f5864b701d0665752d1d5117dc01bd787bd72))
+
 # [2.25.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.24.0...v2.25.0) (2026-05-31)
 
 
