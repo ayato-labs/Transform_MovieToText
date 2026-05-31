@@ -1,3 +1,10 @@
+# [2.34.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.33.0...v2.34.0) (2026-05-31)
+
+
+### Features
+
+* implement automated CI/CD pipeline for Windows executable distribution and document strategy in ADR-0007 ([b14e83b](https://github.com/ayato-labs/Transform_MovieToText/commit/b14e83b9afcf4fb5209467a3b52cc73f14631f6a))
+
 # [2.33.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.32.0...v2.33.0) (2026-05-31)
 
 
