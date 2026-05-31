@@ -1,3 +1,10 @@
+# [2.32.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.31.0...v2.32.0) (2026-05-31)
+
+
+### Features
+
+* implement MinutesService with map-reduce support and add extensive core infrastructure and unit tests ([56c87e2](https://github.com/ayato-labs/Transform_MovieToText/commit/56c87e2dd488672b6070b70d4a78f782ddce6a21))
+
 # [2.31.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.30.0...v2.31.0) (2026-05-31)
 
 
