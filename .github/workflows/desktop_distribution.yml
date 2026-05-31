@@ -139,17 +139,48 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: windows-exe
-          path: dist
+          path: artifacts
 
-      - name: List Artifacts
-        run: ls -R dist
-
+      - name: Debug - List Downloaded Files
+        run: |
+          echo "Listing all files in artifacts directory:"
+          find artifacts -type f
+          
       - name: Create or Update Release
         if: needs.semantic-release.outputs.new_release_git_tag != '' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
         run: |
-          # Ensure release exists and upload asset using official GitHub CLI
+          # 1. Resolve the Target Tag
+          # Priority: New release tag > Current ref tag > Latest git tag
+          TAG="${{ needs.semantic-release.outputs.new_release_git_tag }}"
+          if [ -z "$TAG" ] && [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          if [ -z "$TAG" ]; then
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          fi
+          
+          if [ -z "$TAG" ]; then
+            echo "ERROR: No release tag found to upload to. Please create a tag or run a semantic-release first."
+            exit 1
+          fi
+          
+          echo "Targeting Release Tag: $TAG"
+          
+          # 2. Locate the Executable (Robust search)
+          EXE_PATH=$(find artifacts -name "*.exe" | head -n 1)
+          if [ -z "$EXE_PATH" ]; then
+            echo "ERROR: Executable file (.exe) not found in artifacts directory!"
+            find artifacts -ls || echo "Artifacts directory is empty or missing."
+            exit 1
+          fi
+          
+          echo "Found executable for upload: $EXE_PATH"
+          
+          # 3. Ensure Release Exists and Upload Asset
+          # --if-not-exists ensures we don't fail if semantic-release already created it
           gh release create "$TAG" --generate-notes --if-not-exists
-          gh release upload "$TAG" dist/TransformMovieToText.exe --clobber
+          
+          # --clobber overwrites any existing asset with the same name
+          gh release upload "$TAG" "$EXE_PATH" --clobber
