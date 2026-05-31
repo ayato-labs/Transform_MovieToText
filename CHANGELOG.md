@@ -1,3 +1,10 @@
+## [2.35.1](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.35.0...v2.35.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* correct gh cli compatibility ([86dc404](https://github.com/ayato-labs/Transform_MovieToText/commit/86dc404ba84be4ab3b84abcdc4330ee01406ba64))
+
 # [2.35.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.34.0...v2.35.0) (2026-05-31)
 
 
