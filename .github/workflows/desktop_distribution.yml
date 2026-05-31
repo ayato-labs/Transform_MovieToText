@@ -179,8 +179,13 @@ jobs:
           echo "Found executable for upload: $EXE_PATH"
           
           # 3. Ensure Release Exists and Upload Asset
-          # --if-not-exists ensures we don't fail if semantic-release already created it
-          gh release create "$TAG" --generate-notes --if-not-exists
+          # Manual check because --if-not-exists might not be available in all gh versions
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG does not exist. Creating it..."
+            gh release create "$TAG" --generate-notes
+          else
+            echo "Release $TAG already exists. Proceeding to upload."
+          fi
           
           # --clobber overwrites any existing asset with the same name
           gh release upload "$TAG" "$EXE_PATH" --clobber
