@@ -1,3 +1,10 @@
+# [2.44.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.43.0...v2.44.0) (2026-05-31)
+
+
+### Features
+
+* implement WhisperTranscriber with robust GPU/CPU fallback and add soundcard recorder for desktop platforms ([9f7ab8b](https://github.com/ayato-labs/Transform_MovieToText/commit/9f7ab8be47708d617aa266778c7d6e0826aab3ce))
+
 # [2.43.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.42.0...v2.43.0) (2026-05-31)
 
 
