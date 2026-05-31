@@ -179,16 +179,18 @@ class SoundCardRecorder(_BaseRecorder):
                     self._stream.stop_stream()
                     self._stream.close()
                 except Exception:
-                    logger.debug("Stream close failed during cleanup (likely already closed)")
+                    logger.exception("SoundCardRecorder: Stream close failed during cleanup")
             if self._pa:
-                with contextlib.suppress(Exception):
+                try:
                     self._pa.terminate()
+                except Exception:
+                    logger.exception("SoundCardRecorder: Failed to terminate PyAudio")
             if self.ffmpeg_proc:
                 try:
                     self.ffmpeg_proc.stdin.close()
                     self.ffmpeg_proc.wait(timeout=2)
                 except Exception:
-                    logger.debug("FFmpeg cleanup failed (likely already terminated)")
+                    logger.exception("SoundCardRecorder: FFmpeg cleanup failed")
                 logger.info("FFmpeg MP3 encoder terminated.")
             logger.info("SoundCardRecorder loop finished.")
 

@@ -48,18 +48,22 @@ class ModelManager:
         # Unload others
         for name, client in self._clients.items():
             if name != requester_name:
-                with contextlib.suppress(Exception):
+                try:
                     logger.info(f"ModelManager: Unloading '{name}' to make room for '{requester_name}'...")
                     client.unload()
+                except Exception:
+                    logger.exception(f"ModelManager: Failed to unload '{name}'")
 
         self._active_client = requester_name
         logger.info(f"ModelManager: VRAM access granted to '{requester_name}'.")
 
     def release_all(self):
         """Unlocks everything. Useful for app shutdown or low-power modes."""
-        for _name, client in self._clients.items():
-            with contextlib.suppress(Exception):
+        for name, client in self._clients.items():
+            try:
                 client.unload()
+            except Exception:
+                logger.exception(f"ModelManager: Failed to unload '{name}' during release_all")
         self._active_client = None
 
 
