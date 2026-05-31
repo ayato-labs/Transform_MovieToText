@@ -81,14 +81,16 @@ def setup_logger():
         logger.level("SETUP", no=LOG_LEVEL_SETUP, color="<bold><cyan>")
 
     # 3. Console Handler (for humans, colored, not JSON)
-    console_format = (
-        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-        "<level>{level: <8}</level> | "
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
-    )
-    debug_mode = os.environ.get("APP_DEBUG", "0") == "1"
-    console_level = "DEBUG" if debug_mode else "INFO"
-    logger.add(sys.stdout, format=console_format, level=console_level, colorize=True)
+    # NOTE: In windowed EXEs (noconsole), sys.stdout may be None.
+    if sys.stdout is not None:
+        console_format = (
+            "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        )
+        debug_mode = os.environ.get("APP_DEBUG", "0") == "1"
+        console_level = "DEBUG" if debug_mode else "INFO"
+        logger.add(sys.stdout, format=console_format, level=console_level, colorize=True)
 
     # 4. Main Application Log (JSON, last 2 runs)
     # Using {time} in filename creates a new file per run.
