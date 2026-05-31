@@ -130,13 +130,23 @@ jobs:
       - name: Zip Windows EXE (CPU)
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/TransformMovieToText_CPU/*" -DestinationPath "TransformMovieToText-Windows-CPU.zip"
+          # 7z is pre-installed on windows-latest, but we ensure the command is clear
+          # -v1900m splits into 1.9GB chunks if needed
+          & "C:\Program Files\7-Zip\7z.exe" a -t7z -v1900m "TransformMovieToText-Windows-CPU.7z" "./dist/TransformMovieToText_CPU/*"
 
       - name: Upload Windows EXE Artifact (CPU)
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe-cpu
-          path: TransformMovieToText-Windows-CPU.zip
+          path: TransformMovieToText-Windows-CPU.7z*
+
+      - name: Release Assets (CPU)
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: TransformMovieToText-Windows-CPU.7z*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows-exe-gpu:
     name: Windows EXE (GPU)
@@ -182,13 +192,21 @@ jobs:
       - name: Zip Windows EXE (GPU)
         shell: pwsh
         run: |
-          Compress-Archive -Path "dist/TransformMovieToText_GPU/*" -DestinationPath "TransformMovieToText-Windows-GPU.zip"
+          & "C:\Program Files\7-Zip\7z.exe" a -t7z -v1900m "TransformMovieToText-Windows-GPU.7z" "./dist/TransformMovieToText_GPU/*"
 
       - name: Upload Windows EXE Artifact (GPU)
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe-gpu
-          path: TransformMovieToText-Windows-GPU.zip
+          path: TransformMovieToText-Windows-GPU.7z*
+
+      - name: Release Assets (GPU)
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: TransformMovieToText-Windows-GPU.7z*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   distribute:
     name: Attach Artifacts to Release
