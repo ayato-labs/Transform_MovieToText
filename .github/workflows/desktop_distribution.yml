@@ -151,15 +151,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Resolve the Target Tag (Strictly the latest)
-          # We must fetch tags from origin to ensure we have the absolute latest
-          git fetch --tags --force
+          # 1. Resolve the Target Tag
+          # Explicitly fetch tags from origin to ensure they are available
+          git fetch origin 'refs/tags/*:refs/tags/*' --force
           
-          # Get the absolute latest tag created on the repository
-          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          # Priority: 1. New release tag from semantic-release, 2. Latest version-sorted tag
+          TAG="${{ needs.semantic-release.outputs.new_release_git_tag }}"
+          if [ -z "$TAG" ]; then
+            TAG=$(git tag -l --sort=-version:refname | head -n 1)
+          fi
           
           if [ -z "$TAG" ]; then
             echo "ERROR: No release tag found!"
+            git tag -l
             exit 1
           fi
           
