@@ -1,3 +1,10 @@
+## [2.27.1](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.0...v2.27.1) (2026-05-31)
+
+
+### Bug Fixes
+
+* aggressively pre-clean venv to ensure --onefile .exe assets stay under 2GB release limit ([c82b073](https://github.com/ayato-labs/Transform_MovieToText/commit/c82b073d6dc605611b801e10ebc88f7ddc460d90))
+
 # [2.27.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.26.0...v2.27.0) (2026-05-31)
 
 
