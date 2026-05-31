@@ -1,3 +1,15 @@
+# [2.24.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.23.0...v2.24.0) (2026-05-31)
+
+
+### Bug Fixes
+
+* optimize build size for 2GB limit and fix CI blocking issues ([2cfb942](https://github.com/ayato-labs/Transform_MovieToText/commit/2cfb9422c6463cef46b2ff9a25bff86aeea5b78c))
+
+
+### Features
+
+* unify pipeline to Lint -> Test -> Release -> Build ([3bb531f](https://github.com/ayato-labs/Transform_MovieToText/commit/3bb531f06a53ef34037d843649b02e98256df213))
+
 # [2.23.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.22.0...v2.23.0) (2026-05-30)
 
 
