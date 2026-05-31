@@ -136,8 +136,14 @@ class SoundCardRecorder(_BaseRecorder):
                 if self.ffmpeg_proc and self.ffmpeg_proc.stdin:
                     try:
                         self.ffmpeg_proc.stdin.write(raw_bytes)
-                    except Exception as e:
-                        logger.error(f"FFmpeg MP3 pipe error: {e}")
+                        self.ffmpeg_proc.stdin.flush()
+                    except (BrokenPipeError, OSError) as e:
+                        # Errno 22 usually means FFmpeg crashed or closed the pipe.
+                        logger.warning(f"SoundCardRecorder: FFmpeg MP3 pipe broke ({e}). MP3 saving is aborted, but transcription continues.")
+                        try:
+                            self.ffmpeg_proc.stdin.close()
+                        except Exception:
+                            pass
                         self.ffmpeg_proc = None
 
                 # Convert to mono float32

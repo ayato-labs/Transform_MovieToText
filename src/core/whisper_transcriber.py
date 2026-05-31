@@ -219,7 +219,7 @@ class WhisperTranscriber:
             segments = list(segments_gen)
         except RuntimeError as e:
             if "cublas" in str(e).lower() or "cuda" in str(e).lower():
-                logger.error(f"WhisperTranscriber: CUDA execution error during transcription: {e}")
+                logger.warning(f"WhisperTranscriber: CUDA execution error intercepted: {e}")
                 logger.warning("WhisperTranscriber: Force-falling back to CPU mode and retrying...")
                 self.unload()
                 self.model = WhisperModel(model_name, device="cpu", compute_type="int8", download_root=self.cache_dir)
@@ -257,7 +257,7 @@ class WhisperTranscriber:
             segments = list(segments_gen)
         except RuntimeError as e:
             if "cublas" in str(e).lower() or "cuda" in str(e).lower():
-                logger.error(f"WhisperTranscriber: CUDA execution error during numpy transcription: {e}")
+                logger.warning(f"WhisperTranscriber: CUDA execution error intercepted during numpy transcription: {e}")
                 logger.warning("WhisperTranscriber: Force-falling back to CPU mode and retrying...")
                 self.unload()
                 self.model = WhisperModel(model_name or "base", device="cpu", compute_type="int8", download_root=self.cache_dir)
