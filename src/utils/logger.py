@@ -69,7 +69,9 @@ def setup_logger():
     - Interception of standard logging
     - UI buffer for Flet components
     """
-    log_dir = "logs"
+    from src.core.platform_utils import get_log_path
+    log_file_default = get_log_path()
+    log_dir = os.path.dirname(log_file_default)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
