@@ -1,3 +1,10 @@
+# [2.46.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.45.0...v2.46.0) (2026-05-31)
+
+
+### Features
+
+* implement secure local LLM architecture with Ollama and Gemini clients, intent routing, and configuration management ([d2f6da0](https://github.com/ayato-labs/Transform_MovieToText/commit/d2f6da0e4d55a201fa2c4f0387f0a454f5154ebe))
+
 # [2.45.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.44.0...v2.45.0) (2026-05-31)
 
 
