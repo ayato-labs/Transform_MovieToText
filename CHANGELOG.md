@@ -1,3 +1,10 @@
+# [2.30.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.29.0...v2.30.0) (2026-05-31)
+
+
+### Features
+
+* standardize data storage in Windows AppData and implement auto-migration ([32a03c1](https://github.com/ayato-labs/Transform_MovieToText/commit/32a03c12b729fb838baffd8aa885e1df2a4d0582))
+
 # [2.29.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.28.0...v2.29.0) (2026-05-31)
 
 
