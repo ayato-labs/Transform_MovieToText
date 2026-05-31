@@ -35,9 +35,10 @@ jobs:
           ruff check src tests
 
       - name: Run Tests
+        continue-on-error: true
         run: |
-          if (!(Test-Path reports)) { New-Item -ItemType Directory -Path reports }
-          pytest tests/common tests/pc -v --junitxml=reports/junit.xml || echo "Tests failed, but continuing for debugging..."
+          if (!(Test-Path reports)) { New-Item -ItemType Directory -Path reports -Force }
+          pytest tests/common tests/platforms/desktop tests/unit tests/integration tests/system -v --junitxml=reports/junit.xml
 
       - name: Upload Test Results
         if: always()
