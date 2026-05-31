@@ -35,11 +35,11 @@ def _is_cuda_available():
         # Use a tiny check if possible, or just assume success if nvidia-smi passed 
         # and we've successfully imported the base package. 
         # To be even safer, we'll check if 'cuda' is in the supported compute devices.
-        supported = ctranslate2.get_supported_compute_types("whisper")
+        supported = ctranslate2.get_supported_compute_types("cuda")
         # If 'cuda' hardware exists but DLLs are missing, 
         # faster-whisper will still throw RuntimeError later during model load.
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired, ImportError):
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired, ImportError, ValueError):
         return False
 
 
