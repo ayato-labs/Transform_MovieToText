@@ -1,3 +1,10 @@
+# [2.41.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.40.0...v2.41.0) (2026-05-31)
+
+
+### Features
+
+* implement platform directory management and automated background environment setup ([08f67a9](https://github.com/ayato-labs/Transform_MovieToText/commit/08f67a9a9cc31ffa17e29877779ebea4281ea175))
+
 # [2.40.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.39.1...v2.40.0) (2026-05-31)
 
 
