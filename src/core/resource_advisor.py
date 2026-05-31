@@ -1,13 +1,7 @@
 import logging
+import subprocess
 
 import psutil
-
-try:
-    import torch
-
-    HAS_TORCH = True
-except ImportError:
-    HAS_TORCH = False
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +27,20 @@ class ResourceAdvisor:
         total_ram = round(ram_info.total / (1024**3), 1)
 
         total_vram = 0.0
-        if HAS_TORCH and torch.cuda.is_available():
-            vram_bytes = torch.cuda.get_device_properties(0).total_memory
-            total_vram = round(vram_bytes / (1024**3), 1)
+        try:
+            # Run nvidia-smi to get total VRAM in MiB
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=2
+            )
+            # Take the first GPU's memory
+            vram_mb = int(result.stdout.strip().split('\n')[0])
+            total_vram = round(vram_mb / 1024.0, 1)
+        except (subprocess.CalledProcessError, FileNotFoundError, ValueError, IndexError):
+            pass
 
         return total_ram, total_vram
 

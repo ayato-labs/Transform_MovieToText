@@ -1,9 +1,9 @@
 import gc
 import logging
 import os
+import subprocess
 import time
 
-import torch
 from faster_whisper import WhisperModel
 
 from src.core.model_manager import model_manager
@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 WHISPER_CLIENT_NAME = "whisper"
+
+def _is_cuda_available():
+    """Checks for NVIDIA GPU availability via nvidia-smi."""
+    try:
+        subprocess.run(["nvidia-smi"], check=True, capture_output=True, timeout=2)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        return False
 
 
 class WhisperTranscriber:
@@ -67,7 +75,7 @@ class WhisperTranscriber:
 
         # Decide device and compute_type with Hardware Priority (Windows/Desktop Focused)
         # Tier 1: CUDA GPU (Preferred)
-        if torch.cuda.is_available():
+        if _is_cuda_available():
             device = "cuda"
             # int8_float16 is the sweet spot for performance/accuracy on modern NVIDIA GPUs
             compute_type = "int8_float16"
@@ -236,14 +244,22 @@ class WhisperTranscriber:
         vram = 0.0
         device = "cpu"
 
-        if torch is not None and hasattr(torch, "cuda") and torch.cuda.is_available():
+        if _is_cuda_available():
             try:
-                device_id = torch.cuda.current_device()
-                vram_bytes = torch.cuda.get_device_properties(device_id).total_memory
-                vram = round(vram_bytes / (1024**3), 1)
-                device = f"GPU: {torch.cuda.get_device_name(device_id)}"
+                # Run nvidia-smi to get total VRAM and GPU name
+                result = subprocess.run(
+                    ["nvidia-smi", "--query-gpu=memory.total,name", "--format=csv,noheader,nounits"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=2
+                )
+                parts = result.stdout.strip().split(', ')
+                vram_mb = int(parts[0])
+                vram = round(vram_mb / 1024.0, 1)
+                device = f"GPU: {parts[1]}"
             except Exception as e:
-                logger.warning(f"Failed to detect VRAM details: {e}")
+                logger.warning(f"Failed to detect VRAM details via nvidia-smi: {e}")
         elif is_android():
             device = "Android Mobile (Cloud Preferred)"
             ram = 4.0 if ram == 0 else ram  # Guessing if psutil failed

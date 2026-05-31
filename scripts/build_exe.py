@@ -98,9 +98,9 @@ def pre_build_cleanup_venv(build_type):
 def check_gpu():
     """Checks for NVIDIA GPU availability via nvidia-smi."""
     try:
-        subprocess.run(["nvidia-smi"], check=True, capture_output=True)
+        subprocess.run(["nvidia-smi"], check=True, capture_output=True, timeout=2)
         return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         return False
 
 

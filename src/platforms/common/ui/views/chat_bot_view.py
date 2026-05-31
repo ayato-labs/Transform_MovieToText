@@ -177,12 +177,22 @@ class ChatBotView(ft.Column):
 
     def _get_hw_info(self):
         import psutil
-        import torch
+        import subprocess
 
         ram = round(psutil.virtual_memory().total / (1024**3), 1)
         vram = 0.0
-        if torch.cuda.is_available():
-            vram = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 1)
+        try:
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=2
+            )
+            vram_mb = int(result.stdout.strip().split('\n')[0])
+            vram = round(vram_mb / 1024.0, 1)
+        except (subprocess.CalledProcessError, FileNotFoundError, ValueError, IndexError):
+            pass
         return {"ram": ram, "vram": vram}
 
     def _safe_update(self):
