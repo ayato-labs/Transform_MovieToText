@@ -1,3 +1,10 @@
+# [2.29.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.28.0...v2.29.0) (2026-05-31)
+
+
+### Features
+
+* unify CPU and GPU builds into a single Smart Executable ([a75647f](https://github.com/ayato-labs/Transform_MovieToText/commit/a75647f7cc85b50ea00bec5e09eb636a5e6f9fba))
+
 # [2.28.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.27.3...v2.28.0) (2026-05-31)
 
 
