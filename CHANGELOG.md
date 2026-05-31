@@ -1,3 +1,10 @@
+# [2.45.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.44.0...v2.45.0) (2026-05-31)
+
+
+### Features
+
+* implement settings UI with provider configuration, resource management, and legacy data migration utilities. ([2716dbb](https://github.com/ayato-labs/Transform_MovieToText/commit/2716dbbcbc28eeebcc012987fc2fb0c794dd0c26))
+
 # [2.44.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.43.0...v2.44.0) (2026-05-31)
 
 
