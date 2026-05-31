@@ -144,6 +144,6 @@ jobs:
         with:
           tag_name: ${{ needs.semantic-release.outputs.new_release_git_tag || github.ref_name }}
           files: |
-            windows-exe/TransformMovieToText.exe
+            windows-exe/dist/TransformMovieToText.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
