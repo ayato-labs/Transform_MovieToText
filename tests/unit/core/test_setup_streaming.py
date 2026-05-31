@@ -1,6 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
+
 from src.utils.setup_helper import SetupHelper
+
 
 class TestSetupStreaming(unittest.TestCase):
     @patch("ollama.pull")

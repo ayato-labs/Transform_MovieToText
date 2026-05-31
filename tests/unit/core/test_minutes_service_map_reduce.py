@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 from src.core.minutes_service import MinutesService
+
 
 class TestMinutesServiceMapReduce(unittest.TestCase):
     def setUp(self):

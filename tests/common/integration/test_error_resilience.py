@@ -6,6 +6,7 @@ import flet as ft
 from src.core.minutes_service import MinutesService
 from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 
+
 class TestErrorResilience(unittest.TestCase):
     """
     Integration tests focusing on error handling and crash prevention.

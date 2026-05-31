@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
+
 
 class TestLocalSmartSafety(unittest.TestCase):
     def setUp(self):

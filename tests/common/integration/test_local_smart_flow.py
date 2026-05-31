@@ -7,6 +7,7 @@ from src.core.config_manager import ConfigManager
 from src.platforms.desktop.controllers.local_smart_ctrl import LocalSmartController
 from src.platforms.desktop.ui.local_smart_helper import LocalSmartUIHelper
 
+
 class TestLocalSmartIntegration(unittest.TestCase):
     """
     Integration tests for Local Smart flow.

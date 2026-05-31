@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 from src.llm.providers.ollama_client import OllamaLocalClient
+
 
 class TestOllamaLifecycle(unittest.TestCase):
     @patch("src.llm.providers.ollama_client.Client")

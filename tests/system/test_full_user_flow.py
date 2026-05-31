@@ -10,6 +10,7 @@ from src.core.history_mgr import history_mgr
 from src.platforms.desktop.controllers.transcription_ctrl import TranscriptionController
 from src.platforms.desktop.ui.views.live_transcription_view import LiveTranscriptionView
 
+
 class TestFullUserFlow(unittest.TestCase):
     """
     System test for the full user flow: 

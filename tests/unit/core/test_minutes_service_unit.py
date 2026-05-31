@@ -1,6 +1,8 @@
 import unittest
+
 from src.core.minutes_service import MinutesService
 from tests.fixtures.fake_llm import FakeLLMClient
+
 
 class MockConfigManager:
     def get_provider_config(self, provider):

@@ -1,7 +1,10 @@
 import unittest
 from unittest.mock import MagicMock
+
 import flet as ft
+
 from src.platforms.desktop.ui.local_smart_helper import LocalSmartUIHelper
+
 
 class TestLocalSmartUIHelperUnit(unittest.TestCase):
     def setUp(self):

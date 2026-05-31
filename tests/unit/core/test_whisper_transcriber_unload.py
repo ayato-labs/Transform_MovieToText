@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import sys
+
 
 # We will use patch to avoid global side effects
 class TestWhisperTranscriberUnload(unittest.TestCase):
