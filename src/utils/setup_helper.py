@@ -37,15 +37,20 @@ class SetupHelper:
     def has_model(model_name: str = DEFAULT_MODEL) -> bool:
         """Checks if a specific model is already pulled in Ollama."""
         if not SetupHelper.is_ollama_running():
+            logger.debug("SetupHelper: Ollama is not running, skipping has_model check.")
             return False
         try:
             # Force local host for CLI check
             env = os.environ.copy()
+            # Ensure host is set to loopback
             env["OLLAMA_HOST"] = "127.0.0.1:11434"
+            logger.debug(f"SetupHelper: Checking if model '{model_name}' is installed...")
             result = subprocess.run(["ollama", "list"], capture_output=True, text=True, check=True, env=env)
-            return model_name in result.stdout
+            found = model_name in result.stdout
+            logger.debug(f"SetupHelper: Model '{model_name}' found={found}")
+            return found
         except Exception as e:
-            logger.debug(f"SetupHelper: has_model check failed (Ollama command error): {e}")
+            logger.error(f"SetupHelper: has_model check failed (Ollama command error): {e}")
             return False
 
     @staticmethod

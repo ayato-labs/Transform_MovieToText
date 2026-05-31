@@ -30,16 +30,25 @@ class SetupManager:
 
     def check_env(self):
         """Check for missing heavy dependencies."""
+        from src.utils.logger import setup_info
+        setup_info("SetupManager: Checking environment dependencies...")
         self._missing_deps = []
         for dep in HEAVY_DEPS:
             import_name = dep.replace("-", "_")
             try:
                 importlib.import_module(import_name)
+                setup_info(f"SetupManager: Found dependency {dep}")
             except ImportError:
+                setup_info(f"SetupManager: Missing dependency {dep}")
                 self._missing_deps.append(dep)
 
         target_model = self._get_target_model()
-        self._is_ready = (len(self._missing_deps) == 0) and SetupHelper.is_ollama_installed() and SetupHelper.has_model(target_model)
+        ollama_installed = SetupHelper.is_ollama_installed()
+        has_target_model = SetupHelper.has_model(target_model)
+        
+        setup_info(f"SetupManager: Dependencies missing={self._missing_deps}, Ollama installed={ollama_installed}, Has model({target_model})={has_target_model}")
+        
+        self._is_ready = (len(self._missing_deps) == 0) and ollama_installed and has_target_model
         return self._is_ready, self._missing_deps
 
     def start_background_setup(self, on_status_change=None, on_complete=None):
@@ -95,12 +104,15 @@ class SetupManager:
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True, bufsize=1, universal_newlines=True
             )
 
-            setup_info(">>> INSTALLATION PROCESS STARTED (Streaming logs below) <<<")
+            setup_info(f">>> INSTALLATION PROCESS STARTED (Command: {' '.join(cmd)}) <<<")
 
             # Real-time streaming to terminal and UI
             for line in process.stdout:
                 line_strip = line.strip()
                 if line_strip:
+                    # Log internally
+                    setup_info(f"Install progress: {line_strip}")
+                    
                     # Print directly to system terminal for immediate feedback
                     sys.stdout.write(f"  [SETUP] {line_strip}\n")
                     sys.stdout.flush()
