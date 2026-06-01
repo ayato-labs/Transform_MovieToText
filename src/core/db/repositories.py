@@ -76,7 +76,7 @@ class MeetingRepository:
                 conn.execute("""
                     CREATE VIRTUAL TABLE meetings_fts USING fts5(
                         title, transcript, minutes, project_name, category, minutes_model, source_type,
-                        tokenize='unicode61'
+                        tokenize='trigram'
                     )
                 """)
                 conn.execute(

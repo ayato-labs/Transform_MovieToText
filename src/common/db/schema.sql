@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS visual_context (
 );
 
 -- Full Text Search table (FTS5)
+-- Using 'trigram' tokenizer for high-performance substring/partial matching (similar to LIKE but indexed)
 CREATE VIRTUAL TABLE IF NOT EXISTS meetings_fts USING fts5(
     title, transcript, minutes, project_name, category, minutes_model,
-    tokenize='unicode61'
+    tokenize='trigram'
 );

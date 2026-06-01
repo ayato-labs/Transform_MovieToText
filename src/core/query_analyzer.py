@@ -69,17 +69,67 @@ class QueryAnalyzer:
 
     def analyze(self, query: str) -> dict:
         """
-        Extracts metadata candidates using LLM and reconciles them with system data.
+        Extracts metadata candidates and performs query expansion using LLM.
         """
         if not self.client or not self.model_id:
             logger.warning("QueryAnalyzer: No LLM client or model configured. Falling back to keyword-only search.")
             return {"projects": [], "categories": [], "keywords": [query]}
 
-        # 1. Get raw candidates from model (Ultra-Minimal Bullet-point prompt)
+        # 1. Get raw candidates from model (Metadata extraction)
         raw_output = self._get_llm_candidates(query)
 
-        # 2. Parse and reconcile using code-based logic
-        return self._reconcile(raw_output, query)
+        # 2. Get query expansion (Synonyms/Related terms)
+        expanded_keywords = self.expand_query(query)
+
+        # 3. Parse and reconcile using code-based logic
+        result = self._reconcile(raw_output, query)
+        
+        # Merge expanded keywords into result
+        if expanded_keywords:
+            # Combine unique keywords, preserving order (original first)
+            all_keywords = result["keywords"]
+            for ek in expanded_keywords:
+                if ek not in all_keywords:
+                    all_keywords.append(ek)
+            result["keywords"] = all_keywords[:15] # Limit total keywords
+
+        return result
+
+    def expand_query(self, query: str) -> list[str]:
+        """
+        Generates synonyms and related terms for a query to handle transcription variations.
+        """
+        if not self.client or not self.model_id:
+            return []
+
+        prompt = (
+            f"ユーザーの検索クエリ: \"{query}\"\n\n"
+            "このクエリに対する表記揺れ、類義語、または関連するキーワードを3つ〜5つ挙げてください。\n"
+            "出力はカンマ区切りのキーワードのみとしてください。余計な説明は不要です。\n"
+            "例: クエリが「PC」なら -> パソコン, コンピュータ, ノートPC, 端末\n"
+            "例: クエリが「採用」なら -> リクルート, 面接, 人事, 雇用\n\n"
+            "関連キーワード:"
+        )
+        
+        try:
+            raw_output = self.client.generate(prompt=prompt, model_name=self.model_id)
+            if not raw_output:
+                return []
+            
+            # Basic parsing: split by comma, newline, or ideographic comma
+            expanded = []
+            import re
+            parts = re.split(r"[,、\n]", raw_output)
+            for p in parts:
+                p = p.strip().replace('"', '').replace("'", "").replace("*", "")
+                if 2 <= len(p) <= 15:
+                    expanded.append(p)
+            
+            logger.info(f"QueryAnalyzer: Expanded '{query}' -> {expanded}")
+            return expanded
+        except Exception as e:
+            logger.error(f"QueryAnalyzer: Expansion failed: {e}")
+            return []
 
     def _get_llm_candidates(self, query: str) -> str:
         prompt = f"""
