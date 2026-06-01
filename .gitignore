@@ -58,6 +58,7 @@ dist_gpu/
 static/
 temp_chunks/
 recordings/
+logs/
 *.db
 *.duckdb
 

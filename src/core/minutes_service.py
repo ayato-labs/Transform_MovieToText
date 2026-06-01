@@ -149,8 +149,11 @@ class MinutesService:
         """Fetches detailed model information."""
         try:
             conf = self.config_mgr.get_provider_config(provider)
+            logger.info(f"MinutesService: Fetching models for {provider}. Config key: {bool(conf.get('api_key'))}")
             client = LLMFactory.create_client(provider_name=provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
-            return client.get_models_info()
+            models = client.get_models_info()
+            logger.info(f"MinutesService: Found {len(models)} models for {provider}.")
+            return models
         except Exception as e:
             logger.error(f"Failed to fetch models info for {provider}: {e}")
             return []
