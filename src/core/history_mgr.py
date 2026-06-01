@@ -126,7 +126,45 @@ class HistoryManager:
     def get_meetings_filtered(
         self, project_names: list[str] = None, categories: list[str] = None, search_query: str = None, limit: int = 50
     ) -> list[dict]:
-        return self.meetings.search_filtered(project_names, categories, search_query, limit)
+        """
+        Advanced filtering with LLM-powered query expansion and metadata extraction.
+        """
+        final_projects = set(project_names) if project_names else set()
+        final_categories = set(categories) if categories else set()
+        final_query = search_query
+
+        if search_query:
+            try:
+                from src.core.query_analyzer import QueryAnalyzer
+                analyzer = QueryAnalyzer(
+                    projects=self.get_projects(),
+                    categories=self.get_categories()
+                )
+                analysis = analyzer.analyze(search_query)
+                
+                # Merge LLM-detected metadata
+                if analysis.get("projects"):
+                    final_projects.update(analysis["projects"])
+                if analysis.get("categories"):
+                    final_categories.update(analysis["categories"])
+                
+                # Use expanded keywords for FTS5
+                # Join with ' OR ' for maximum hit rate in trigram index
+                if analysis.get("keywords"):
+                    final_query = " OR ".join(analysis["keywords"])
+                    logger.info(f"HistoryManager: Expanded search query -> {final_query}")
+
+            except Exception as e:
+                logger.error(f"HistoryManager: Query expansion failed: {e}")
+                # Fallback to original query
+                final_query = search_query
+
+        return self.meetings.search_filtered(
+            project_names=list(final_projects) if final_projects else None,
+            categories=list(final_categories) if final_categories else None,
+            search_query=final_query,
+            limit=limit
+        )
 
     def reassign_project(self, old_name: str, new_name: str = "その他"):
         """Reassigns all meetings from one project to another."""
