@@ -1,3 +1,10 @@
+# [2.48.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.47.0...v2.48.0) (2026-06-01)
+
+
+### Features
+
+* implement SQLite FTS5 schema with trigram indexing and repository management for meeting data ([2c38ecc](https://github.com/ayato-labs/Transform_MovieToText/commit/2c38ecce34e7e1685944c74eb0520094743dda4c))
+
 # [2.47.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.46.0...v2.47.0) (2026-06-01)
 
 
