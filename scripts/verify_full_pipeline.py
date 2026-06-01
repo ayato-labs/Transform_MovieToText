@@ -153,8 +153,11 @@ def run_diarization(wav_path, seg_model, emb_model):
         
         logger.info(f"Inference completed in {duration:.2f} seconds.")
 
+        # In sherpa-onnx Python API, sort_by_start_time() returns the list of segments
+        segments = result.sort_by_start_time()
+
         print("\n--- Diarization Results ---")
-        for s in result.segments:
+        for s in segments:
             logger.info(f"Segment: Speaker {s.speaker} from {s.start:.2f}s to {s.end:.2f}s")
             print(f"[{s.start:6.2f}s -> {s.end:6.2f}s] Speaker {s.speaker}")
 
