@@ -1,3 +1,11 @@
+# [2.49.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.48.0...v2.49.0) (2026-06-01)
+
+
+### Features
+
+* add quantized int8 ONNX model for pyannote-segmentation-3.0 ([029b682](https://github.com/ayato-labs/Transform_MovieToText/commit/029b682b75c339b4586086406f3d4d8763f9f054))
+* implement HistoryManager service layer for unified database operations and meeting management ([b2e440b](https://github.com/ayato-labs/Transform_MovieToText/commit/b2e440b672f5617c234fc9dcad734528b8beb60c))
+
 # [2.48.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.47.0...v2.48.0) (2026-06-01)
 
 
