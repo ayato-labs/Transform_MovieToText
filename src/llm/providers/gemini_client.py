@@ -14,7 +14,7 @@ class GeminiClient(BaseLLMClient):
         if not api_key:
             raise ValueError("Gemini API Key is required.")
         self.client = genai.Client(api_key=api_key)
-        self._model_name = "gemini-2.0-flash" # Default model
+        self._model_name = "gemma-4-31b-it" # Default model
         self.temperature = float(temperature)
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
@@ -85,6 +85,50 @@ class GeminiClient(BaseLLMClient):
             logger.exception("Gemini title generation failed.")
             return "無題の会議"
 
+    def chat(self, model_name: str, messages: list[dict]) -> str:
+        """Sends a list of messages to Gemini API."""
+        try:
+            # Convert messages to Gemini format
+            contents = []
+            for msg in messages:
+                role = "user" if msg["role"] == "user" else "model"
+                contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
+
+            response = self.client.models.generate_content(
+                model=model_name or self._model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(temperature=self.temperature)
+            )
+            return response.text
+        except Exception as e:
+            logger.error(f"Gemini API chat failed: {e}")
+            raise RuntimeError(f"Chat failed: {str(e)}") from e
+
     def get_available_models(self) -> list[str]:
-        """Returns standard Gemini models."""
-        return ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        """Fetches available models from Gemini API."""
+        try:
+            models = []
+            for m in self.client.models.list():
+                # Correct attribute name in current google-genai SDK is 'supported_actions'
+                # It contains a list of strings like ['generateContent', 'extractCategory', ...]
+                supported_actions = getattr(m, "supported_actions", [])
+                if "generateContent" in supported_actions:
+                    # Strip 'models/' prefix if present
+                    name = m.name.replace("models/", "")
+                    models.append(name)
+            return sorted(models)
+        except Exception as e:
+            logger.error(f"Failed to fetch Gemini models from API: {e}")
+            return []
+
+    def get_models_info(self) -> list[dict]:
+        """Returns detailed information about Gemini models."""
+        return [
+            {"name": model, "size_bytes": 0, "size_gb": 0.0} 
+            for model in self.get_available_models()
+        ]
+
+    def delete_model(self, model_name: str) -> bool:
+        """Gemini models cannot be deleted."""
+        logger.warning(f"GeminiClient: Cannot delete cloud model '{model_name}'.")
+        return False

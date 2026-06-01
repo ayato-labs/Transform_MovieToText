@@ -1,7 +1,7 @@
-# ADR-0002: Speaker Diarization via ECAPA-TDNN Implementation
+# ADR-0002: Speaker Diarization via sherpa-onnx and CAM++
 
-- **Date**: 2026-05-31
-- **Status**: Proposed
+- **Date**: 2026-06-01
+- **Status**: Accepted
 - **Deciders**: ayato-labs, Gemini CLI
 
 ## Context
@@ -9,27 +9,34 @@
 
 議事録作成ツールとしての価値を最大化するためには、文字起こしテキストに話者ラベルを付与する「話者分離（Speaker Diarization）」機能の導入が不可欠である。
 
-## Decision
-次期主要アップデートの技術選定として、**ECAPA-TDNN (Emphasized Channel Attention, Propagation and Aggregation in TDNN)** をベースとした話者特徴量抽出モデルの採用を検討する。
+当初は ECAPA-TDNN (2026-05-31) を検討していたが、ADR-0003（PyTorch依存の分離）および ADR-0005（統合型スマートEXE）の方針を徹底するため、PyTorch を必要とせず、より軽量で高性能な手法への転換が必要となった。
 
-実装上の具体的方針：
-1.  **ライブラリ選定**: SpeechBrain または pyannote-audio をバックエンドとして検討。
-2.  **推論エンジン**: Whisper の推論と競合しないよう、必要に応じて VRAM 管理や ONNX 変換による最適化を行う。
-3.  **ローカルファースト**: すべての解析プロセスをユーザーのローカル環境で完結させ、生体情報（声紋データ）の外部流出を防止する。
+## Decision
+**sherpa-onnx** フレームワークと **CAM++** モデルを組み合わせた話者分離を実装する。
+
+1.  **フレームワーク選定**: `sherpa-onnx` を採用する。これは C++ ベースの推論エンジン（Apache-2.0）であり、PyTorch に依存せず ONNX Runtime のみで動作する。
+2.  **モデル選定（埋め込み）**: Alibaba 3D-Speaker プロジェクトの **CAM++** を採用する。
+    - **効率性**: ECAPA-TDNN と比較してパラメータ数が約半分。
+    - **性能**: VoxCeleb 等のベンチマークで ECAPA-TDNN を凌駕する精度。
+    - **配布サイズ**: ONNX 形式で 15-20MB 程度と極めて軽量。
+3.  **VAD/セグメンテーション**: `sherpa-onnx` エコシステム内で提供されている `pyannote-segmentation-3.0` の ONNX 版等を使用する。
+4.  **ライセンス**: `sherpa-onnx` および `CAM++` モデルはいずれも **Apache-2.0** であり、ADR-0004（GPL回避）の方針に適合する。
+5.  **ローカル実行**: すべての処理をローカルで完結させる。
 
 ## Consequences
 
 ### Positive
-- **劇的なUX向上**: 文字起こし結果が「誰の台詞か」を含んだスクリプト形式になり、議事録としての実用性が飛躍的に高まる。
-- **SOTA精度の採用**: ECAPA-TDNN は話者照合において現在の最高水準（State-of-the-Art）に近い堅牢性を持ち、ノイズのある動画音声でも高い精度が期待できる。
-- **プライバシーの担保**: クラウド型サービスに対する決定的な差別化要因として、機密性の高い会議動画を安全に処理できる。
+- **PyTorch 依存の完全排除**: ADR-0003 と完全に一致し、配布バイナリの肥大化を防ぐことができる。
+- **高速な推論**: CAM++ は CPU 推論でも高速であり、低スペック PC でも「スマート EXE（ADR-0005）」として実用的な速度で動作する。
+- **極小の設置面積**: VAD と埋め込みモデルを合わせても 50MB 以下に収まり、ECAPA-TDNN 採用時よりも大幅に軽量。
 
 ### Negative / Risks
-- **配布サイズと実行負荷**: モデルデータの追加によりバイナリサイズが増大する（数百MB〜1GB程度）。また、Whisper との同時実行時に GPU メモリが不足するリスクがある。
-- **依存関係の複雑化**: PyTorch 関連の依存ライブラリが増え、Windows 環境でのパッケージング（PyInstaller/build_exe.py）の難易度が上昇する。
-- **計算時間の増加**: 文字起こしプロセスに加えて「話者分離」のステップが追加されるため、総処理時間が増加する。
+- **モデル管理の必要性**: モデルファイルを `%LOCALAPPDATA%`（ADR-0006）等に適切に配備・管理する仕組みが必要。
 
 ## References
-- Issue: # (TBD)
-- Related: ADR-0001 (Windows EXE Distribution)
-- Expert Opinion: Speaker Diarization Panel Discussion (2026-05-31)
+- ADR-0003 (Decoupling PyTorch)
+- ADR-0004 (License Compliance)
+- ADR-0005 (Unified Smart EXE)
+- ADR-0006 (Standard App Data Locations)
+- 3D-Speaker Project: [CAM++](https://github.com/alibaba-damo-academy/3D-Speaker)
+- sherpa-onnx: [Diarization Docs](https://k2-fsa.github.io/sherpa/onnx/speaker-diarization/index.html)
