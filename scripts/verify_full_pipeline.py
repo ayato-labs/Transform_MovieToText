@@ -13,6 +13,13 @@ from datetime import datetime
 from loguru import logger
 import numpy as np
 
+# Add project root to sys.path to import from src
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from src.core.model_manager import ModelManager
+
 # --- Logging Configuration ---
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -67,6 +74,7 @@ def extract_audio(video_path, output_wav):
     command = [
         "ffmpeg", "-y",
         "-i", video_path,
+        "-t", "600",
         "-ar", "16000",
         "-ac", "1",
         "-f", "wav",
@@ -114,7 +122,7 @@ def run_diarization(wav_path, seg_model, emb_model):
                     model=seg_model,
                 ),
             ),
-            embedding=sherpa_onnx.SpeakerEmbeddingModelConfig(
+            embedding=sherpa_onnx.SpeakerEmbeddingExtractorConfig(
                 model=emb_model,
             ),
             clustering=sherpa_onnx.FastClusteringConfig(
@@ -140,13 +148,13 @@ def run_diarization(wav_path, seg_model, emb_model):
 
         logger.info("Starting Diarization inference...")
         start_time = datetime.now()
-        segments = sd.process(samples)
+        result = sd.process(samples)
         duration = (datetime.now() - start_time).total_seconds()
         
         logger.info(f"Inference completed in {duration:.2f} seconds.")
 
         print("\n--- Diarization Results ---")
-        for s in segments:
+        for s in result.segments:
             logger.info(f"Segment: Speaker {s.speaker} from {s.start:.2f}s to {s.end:.2f}s")
             print(f"[{s.start:6.2f}s -> {s.end:6.2f}s] Speaker {s.speaker}")
 
@@ -167,10 +175,15 @@ def main():
     
     logger.info("--- Starting Verification Pipeline ---")
     
+    # Initialize ModelManager to ensure AI models are available
+    model_dir = "models"
+    mm = ModelManager(model_dir)
+    mm.ensure_models()
+
     video_input = r"G:\マイドライブ\自己投資\非属人のYouTube運営についての無料セミナー.mp4"
     temp_wav = "temp_test_audio.wav"
-    seg_model_path = "models/pyannote-segmentation-3.0.onnx"
-    emb_model_path = "models/cam++_voxceleb_common.onnx"
+    seg_model_path = os.path.join(model_dir, "sherpa-onnx-pyannote-segmentation-3-0", "model.onnx")
+    emb_model_path = os.path.join(model_dir, "3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx")
 
     try:
         # 1. Extraction
