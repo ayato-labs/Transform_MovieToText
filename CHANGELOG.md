@@ -1,3 +1,18 @@
+# [2.47.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.46.0...v2.47.0) (2026-06-01)
+
+
+### Features
+
+* add ModelManager for local asset management and OllamaClient with cloud model filtering for privacy enforcement ([dbf46a2](https://github.com/ayato-labs/Transform_MovieToText/commit/dbf46a225dc48edffc210deb82750d1e67cf3227))
+* add verification pipeline script and ignore logs directory ([d77793d](https://github.com/ayato-labs/Transform_MovieToText/commit/d77793d1b0b4835ed4b65ef20f96b853e062b14e))
+* add verification scripts for pipeline and speaker diarization along with supporting architectural documentation ([e1eb260](https://github.com/ayato-labs/Transform_MovieToText/commit/e1eb2601829cbb261e34782042c78d210dc13b49))
+* **diarization:** implement PyTorch-free pipeline using sherpa-onnx and CAM++ ([27b596e](https://github.com/ayato-labs/Transform_MovieToText/commit/27b596efbcf8850bb6819c7372e495a3c5337d01))
+* implement automatic model management and add sherpa-onnx diarization models ([fadce97](https://github.com/ayato-labs/Transform_MovieToText/commit/fadce9797b0290a0e5e0f12c84f2132878d82e1d))
+* implement GeminiClient provider and add model verification test script ([7fa1509](https://github.com/ayato-labs/Transform_MovieToText/commit/7fa1509765ab3eb0067d989b2bcaf615d07b1598))
+* implement MinutesService for Map-Reduce generation and add GeminiClient provider support ([282e1ca](https://github.com/ayato-labs/Transform_MovieToText/commit/282e1cacda229b204ab5fd18d0b8d555dacba850))
+* implement pyannote segmentation 3.0 ONNX model export and inference pipeline ([ec1bc21](https://github.com/ayato-labs/Transform_MovieToText/commit/ec1bc216909905030ff95ef37053943fd1794cfb))
+* implement secure local-only Ollama client with multi-layer cloud model filtering ([3d46c5e](https://github.com/ayato-labs/Transform_MovieToText/commit/3d46c5e82225e3bbd780466107c2f135a0224960))
+
 # [2.46.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.45.0...v2.46.0) (2026-05-31)
 
 
