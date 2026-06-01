@@ -2,7 +2,7 @@ import logging
 
 from ollama import Client
 
-from src.core.resource_advisor import model_manager
+from src.core.model_manager import model_manager
 from src.llm.base_client import BaseLLMClient
 
 logger = logging.getLogger(__name__)

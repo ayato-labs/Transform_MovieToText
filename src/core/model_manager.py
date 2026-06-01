@@ -13,6 +13,7 @@ class ModelManager:
     def __init__(self, base_dir):
         self.base_dir = base_dir
         os.makedirs(self.base_dir, exist_ok=True)
+        self.registered_clients = {}
         
         # Manifest of models to download
         self.models = {
@@ -27,6 +28,15 @@ class ModelManager:
                 "expected_file": "cam++_voxceleb_common.onnx"
             }
         }
+
+    def register(self, client_name, client_instance):
+        """Registers a client for VRAM management."""
+        self.registered_clients[client_name] = client_instance
+        logger.info(f"ModelManager: Registered client '{client_name}'")
+
+    def request_vram(self, client_name):
+        """Placeholder for VRAM request logic."""
+        logger.info(f"ModelManager: VRAM requested by '{client_name}'")
 
     def _calculate_sha256(self, file_path):
         sha256_hash = hashlib.sha256()
@@ -94,3 +104,6 @@ class ModelManager:
 if __name__ == "__main__":
     manager = ModelManager("models")
     manager.ensure_models()
+
+# Singleton instance
+model_manager = ModelManager("models")
