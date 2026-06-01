@@ -14,7 +14,7 @@ class GeminiClient(BaseLLMClient):
         if not api_key:
             raise ValueError("Gemini API Key is required.")
         self.client = genai.Client(api_key=api_key)
-        self._model_name = "gemini-2.0-flash" # Default model
+        self._model_name = "gemma-4-31b-it" # Default model
         self.temperature = float(temperature)
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
@@ -109,17 +109,17 @@ class GeminiClient(BaseLLMClient):
         try:
             models = []
             for m in self.client.models.list():
-                # Filter for models that support content generation
-                if "generateContent" in m.supported_generation_methods:
+                # Correct attribute name in current google-genai SDK is 'supported_actions'
+                # It contains a list of strings like ['generateContent', 'extractCategory', ...]
+                supported_actions = getattr(m, "supported_actions", [])
+                if "generateContent" in supported_actions:
                     # Strip 'models/' prefix if present
                     name = m.name.replace("models/", "")
-                    # Only include gemini models to avoid noise
-                    if "gemini" in name.lower():
-                        models.append(name)
-            return sorted(models) if models else ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+                    models.append(name)
+            return sorted(models)
         except Exception as e:
             logger.error(f"Failed to fetch Gemini models from API: {e}")
-            return ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+            return []
 
     def get_models_info(self) -> list[dict]:
         """Returns detailed information about Gemini models."""
