@@ -1,3 +1,10 @@
+# [2.50.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.49.0...v2.50.0) (2026-06-09)
+
+
+### Features
+
+* add Gemini and Ollama providers, implement local smart controller, and remove PyInstaller spec files. ([970d938](https://github.com/ayato-labs/Transform_MovieToText/commit/970d938641cd2b6bb62a694ab17bf20c4b10eaf1))
+
 # [2.49.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.48.0...v2.49.0) (2026-06-01)
 
 
