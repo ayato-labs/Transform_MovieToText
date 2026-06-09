@@ -118,7 +118,11 @@ class GeminiClient(BaseLLMClient):
                     models.append(name)
             return sorted(models)
         except Exception as e:
-            logger.error(f"Failed to fetch Gemini models from API: {e}")
+            error_str = str(e)
+            if "API_KEY_INVALID" in error_str or "API key expired" in error_str or "API key not valid" in error_str:
+                logger.warning("Gemini API key is invalid or expired. Models could not be fetched.")
+            else:
+                logger.error(f"Failed to fetch Gemini models from API: {e}")
             return []
 
     def get_models_info(self) -> list[dict]:

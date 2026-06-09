@@ -139,7 +139,11 @@ class OllamaLocalClient(BaseLLMClient):
             logger.warning(f"Ollama Local: No models found or unknown format: {type(models_info)}")
             return []
         except Exception as e:
-            logger.error(f"Failed to list local Ollama models: {e}")
+            error_str = str(e)
+            if "Failed to connect to Ollama" in error_str or "Connection refused" in error_str:
+                logger.warning("Ollama is not running. Local models could not be fetched.")
+            else:
+                logger.error(f"Failed to list local Ollama models: {e}")
             return []
 
     def get_models_info(self) -> list[dict]:

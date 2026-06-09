@@ -106,8 +106,13 @@ class LocalSmartController:
             logger.info(f"LocalSmart: Successfully pulled and applied {model_name}")
 
         except Exception as e:
-            error_msg = f"モデルの取得に失敗しました: {e}"
-            logger.error(f"LocalSmart: Pull error: {e}")
+            error_str = str(e)
+            if "Failed to connect to Ollama" in error_str or "Connection refused" in error_str:
+                error_msg = "Ollamaが起動していません。Ollamaアプリを起動してください。"
+                logger.warning(f"LocalSmart: Ollama not running: {e}")
+            else:
+                error_msg = f"モデルの取得に失敗しました: {e}"
+                logger.error(f"LocalSmart: Pull error: {e}")
 
             def update_error():
                 status_text.value = f"⚠️ {error_msg}"
