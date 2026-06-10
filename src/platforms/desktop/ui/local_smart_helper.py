@@ -65,9 +65,23 @@ class LocalSmartUIHelper:
 
     def initial_load(self, update_callback=None):
         """Handles initial state on view load."""
+        # Re-read from config in case it was changed globally (e.g., via Settings screen)
+        self.local_smart_enabled = self.config_mgr.get_local_smart_enabled()
+        if self.local_smart_btn:
+            self.local_smart_btn.selected = self.local_smart_enabled
+            safe_update_control(self.local_smart_btn)
+
         if self.local_smart_enabled:
             self.apply_smart()
         else:
             provider = self.config_mgr.get_active_provider()
-            if update_callback:
-                update_callback(provider)
+            if self.dd_provider:
+                self.dd_provider.value = provider
+            
+            self.ctrl.restore_manual_mode(
+                self.dd_provider, 
+                self.dd_llm, 
+                self.status_text, 
+                dd_whisper=self.dd_whisper, 
+                update_callback=update_callback
+            )

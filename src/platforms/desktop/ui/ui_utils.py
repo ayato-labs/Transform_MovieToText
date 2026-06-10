@@ -14,6 +14,16 @@ _model_cache = {}
 CACHE_TTL = 3600  # 1 hour in seconds
 
 
+def clear_model_cache(provider: str = None):
+    """Clears the model cache, forcing a fresh fetch on next request."""
+    if provider and provider in _model_cache:
+        del _model_cache[provider]
+        logger.info(f"Cleared model cache for {provider}")
+    elif not provider:
+        _model_cache.clear()
+        logger.info("Cleared all model caches")
+
+
 def safe_update(page: ft.Page):
     """
     Safely updates the Flet page, logging failures instead of crashing

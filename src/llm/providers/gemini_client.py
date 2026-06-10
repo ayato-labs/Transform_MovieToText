@@ -19,7 +19,7 @@ class GeminiClient(BaseLLMClient):
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
         """Generates structured minutes using Gemini API."""
-        logger.info(f"GeminiClient: Generating minutes for model={model_name}, transcript_len={len(transcript)}")
+        logger.info(f"GeminiClient: Generating minutes for model={model_name or self._model_name}, transcript_len={len(transcript)}")
         
         try:
             prompt = (
@@ -109,12 +109,16 @@ class GeminiClient(BaseLLMClient):
         try:
             models = []
             for m in self.client.models.list():
-                # Correct attribute name in current google-genai SDK is 'supported_actions'
-                # It contains a list of strings like ['generateContent', 'extractCategory', ...]
+                # Correct attribute names in current google-genai SDK
                 supported_actions = getattr(m, "supported_actions", [])
+                
+                # Check for content generation capability
                 if "generateContent" in supported_actions:
                     # Strip 'models/' prefix if present
                     name = m.name.replace("models/", "")
+                    
+                    # Optional: filter out legacy or experimental models if needed
+                    # but for now, we follow the pattern of including all that support generateContent
                     models.append(name)
             return sorted(models)
         except Exception as e:

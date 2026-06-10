@@ -67,7 +67,7 @@ def test_transcribe_file_sync_logic(service, mock_transcriber, tmp_path):
         assert "This is a very long" in title_call["transcript"]
 
         # Verify events were published
-        mock_publish.assert_any_call("status_update", "譁・ｭ苓ｵｷ縺薙＠螳溯｡御ｸｭ...")
+        mock_publish.assert_any_call("status_update", "文字起こし実行中...")
         mock_publish.assert_any_call("transcription_finished", ANY)
 
 
@@ -80,7 +80,7 @@ def test_generate_minutes_for_meeting_unit(service, fake_history):
     with patch("src.llm.factory.LLMFactory.create_client", return_value=fake_llm):
         minutes = service.generate_minutes_for_meeting(m_id, "Some transcription text that is long enough to pass validation.")
 
-        assert "蛛ｽ縺ｮ隴ｰ莠矩鹸" in minutes
+        assert "偽の議事録" in minutes
 
         # Verify DB updated
         meeting = fake_history.get_meeting(m_id)
@@ -97,3 +97,4 @@ def test_stop_live_recording_early_cancellation(service):
 
     assert service._cancel_event.is_set()
     finalize_mock.assert_called_with("", "")
+("", "")

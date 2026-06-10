@@ -4,6 +4,7 @@ import threading
 import flet as ft
 
 from src.core.config_manager import ConfigManager
+from src.platforms.desktop.ui.ui_utils import clear_model_cache
 
 logger = logging.getLogger(__name__)
 
@@ -143,6 +144,11 @@ class SettingsView(ft.Column):
     def _on_provider_change(self, e):
         provider = self.provider_dd.value
         self.config_mgr.set_active_provider(provider)
+        
+        # Turn off Local Smart mode if user manually selects a provider here
+        # to prevent Local Smart from overriding and forcing Ollama when switching tabs back.
+        self.config_mgr.set_local_smart_enabled(False)
+        
         self._update_visibility()
         self._refresh_model_list()
 

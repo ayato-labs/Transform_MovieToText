@@ -369,8 +369,8 @@ class TranscriptionService:
 
     def _get_best_llm_model(self, provider: str) -> str:
         """Helper to find the best available LLM model for the given provider."""
-        # Try to get from config first
-        model = self.config_mgr.get_provider_config(provider).get("model")
+        # Get user's last selected model
+        model = self.config_mgr.get_last_model(provider)
         if model:
             return model
 
@@ -380,12 +380,17 @@ class TranscriptionService:
             client = LLMFactory.create_client(provider, api_key=conf.get("api_key"), base_url=conf.get("base_url"))
             available = client.get_available_models()
             if available:
+                # Prefer known good models if available, otherwise just pick the first
+                if "gemini-2.0-flash" in available:
+                    return "gemini-2.0-flash"
+                if "gemma-4-31b-it" in available:
+                    return "gemma-4-31b-it"
                 return available[0]
         except Exception as e:
             logger.debug(f"_get_best_llm_model: Automated model lookup failed for {provider}: {e}")
 
         # Hardcoded defaults as last resort
-        defaults = {"ollama_local": "gemma4:e2b"}
+        defaults = {"ollama_local": "gemma4:e2b", "gemini_api": "gemini-2.0-flash"}
         return defaults.get(provider, "gemma4:e2b")
 
     def _extract_category_internal(self, text: str) -> str:

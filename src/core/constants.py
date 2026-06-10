@@ -32,10 +32,12 @@ DEFAULT_SAMPLE_RATE = 16000
 # Provider Defaults (Restricted to Local Privacy-First execution)
 DEFAULT_PROVIDERS = {
     "ollama_local": {"api_key": "", "base_url": "http://localhost:11434"},
+    "gemini_api": {"api_key": "", "base_url": None},
 }
 DEFAULT_ACTIVE_PROVIDER = "ollama_local"
 DEFAULT_LLM_MODELS = {
     "ollama_local": ["gemma4:e2b"],
+    "gemini_api": ["gemini-2.0-flash"],
 }
 
 DEFAULT_WHISPER_MODEL = "base"
@@ -51,17 +53,17 @@ class AppEdition(Enum):
 # Legacy Edition Restrictions (Maintaining for UI compatibility)
 EDITION_RESTRICTIONS = {
     AppEdition.FREE: {
-        "allowed_providers": ["ollama_local"],
+        "allowed_providers": ["ollama_local", "gemini_api"],
         "max_transcript_chars": 50000,
         "db_type": "sqlite",
     },
     AppEdition.PRO: {
-        "allowed_providers": ["ollama_local"],
+        "allowed_providers": ["ollama_local", "gemini_api"],
         "max_transcript_chars": 200000,
         "db_type": "sqlite",
     },
     AppEdition.ENTERPRISE: {
-        "allowed_providers": ["ollama_local"],
+        "allowed_providers": ["ollama_local", "gemini_api"],
         "max_transcript_chars": 1000000,
         "db_type": "mysql",
     },

@@ -89,11 +89,14 @@ class WhisperTranscriber:
 
         # Decide device and compute_type with Hardware Priority (Windows/Desktop Focused)
         # Tier 1: CUDA GPU (Preferred)
-        if _is_cuda_available():
+        if force_gpu or _is_cuda_available():
             device = "cuda"
             # int8_float16 is the sweet spot for performance/accuracy on modern NVIDIA GPUs
             compute_type = "int8_float16"
-            logger.info(f"WhisperTranscriber: Using CUDA GPU with {compute_type}.")
+            if force_gpu and not _is_cuda_available():
+                logger.warning("WhisperTranscriber: CUDA is reported unavailable, but force_gpu is True. Forcing CUDA attempt.")
+            else:
+                logger.info(f"WhisperTranscriber: Using CUDA GPU with {compute_type}.")
         else:
             # Tier 3: CPU Fallback
             device = "cpu"
@@ -215,8 +218,18 @@ class WhisperTranscriber:
 
         try:
             segments_gen, info = self.model.transcribe(audio_path, beam_size=5, language=language)
-            # CRITICAL: Convert generator to list to ensure the underlying C++ process finishes 
-            segments = list(segments_gen)
+            
+            full_text_list = []
+            structured_segments = []
+
+            for segment in segments_gen:
+                seg_data = {"start": round(segment.start, 2), "end": round(segment.end, 2), "text": segment.text.strip()}
+                structured_segments.append(seg_data)
+                full_text_list.append(segment.text)
+
+                if progress_callback:
+                    progress_callback(segment.end / info.duration if info.duration > 0 else 0)
+
         except RuntimeError as e:
             if "cublas" in str(e).lower() or "cuda" in str(e).lower():
                 logger.warning(f"WhisperTranscriber: CUDA execution error intercepted: {e}")
@@ -224,21 +237,20 @@ class WhisperTranscriber:
                 self.unload()
                 self.model = WhisperModel(model_name, device="cpu", compute_type="int8", download_root=self.cache_dir)
                 self.current_model_name = model_name
+                
                 segments_gen, info = self.model.transcribe(audio_path, beam_size=5, language=language)
-                segments = list(segments_gen)
+                
+                full_text_list = []
+                structured_segments = []
+                for segment in segments_gen:
+                    seg_data = {"start": round(segment.start, 2), "end": round(segment.end, 2), "text": segment.text.strip()}
+                    structured_segments.append(seg_data)
+                    full_text_list.append(segment.text)
+
+                    if progress_callback:
+                        progress_callback(segment.end / info.duration if info.duration > 0 else 0)
             else:
                 raise
-
-        full_text_list = []
-        structured_segments = []
-
-        for segment in segments:
-            seg_data = {"start": round(segment.start, 2), "end": round(segment.end, 2), "text": segment.text.strip()}
-            structured_segments.append(seg_data)
-            full_text_list.append(segment.text)
-
-            if progress_callback:
-                progress_callback(segment.end / info.duration if info.duration > 0 else 0)
 
         return {"text": "".join(full_text_list).strip(), "segments": structured_segments}
 
