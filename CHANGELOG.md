@@ -1,3 +1,15 @@
+# [2.51.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.50.0...v2.51.0) (2026-06-13)
+
+
+### Bug Fixes
+
+* prevent infinite loop in bundled exe setup ([997eb69](https://github.com/ayato-labs/Transform_MovieToText/commit/997eb6964ad251e5445960e52663f4ee73ae1220))
+
+
+### Features
+
+* implement transcription service with Whisper integration, Gemini API client, and live video context extraction support ([2527e20](https://github.com/ayato-labs/Transform_MovieToText/commit/2527e209e9de81c7dc409eb29e2c9ef48bbbbc53))
+
 # [2.50.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.49.0...v2.50.0) (2026-06-09)
 
 
