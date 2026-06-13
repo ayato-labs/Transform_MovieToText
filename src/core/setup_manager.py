@@ -97,71 +97,84 @@ class SetupManager:
                 return
 
         # 2. Handle Heavy Python Dependencies
-        try:
-            # Try UV first
-            setup_info("Checking if 'uv' is available...")
-            subprocess.run(["uv", "--version"], capture_output=True, check=True, shell=True)
-            cmd = ["uv", "pip", "install"] + missing_deps
-            setup_info(f"Using 'uv' for installation: {' '.join(cmd)}")
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            setup_info("'uv' not found or failed to run. Falling back to 'pip'.")
-            cmd = [sys.executable, "-m", "pip", "install"] + missing_deps
-            setup_info(f"Using 'pip' for installation: {' '.join(cmd)}")
+        if missing_deps:
+            try:
+                # Try UV first
+                setup_info("Checking if 'uv' is available...")
+                subprocess.run(["uv", "--version"], capture_output=True, check=True, shell=True)
+                cmd = ["uv", "pip", "install"] + missing_deps
+                setup_info(f"Using 'uv' for installation: {' '.join(cmd)}")
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                setup_info("'uv' not found or failed to run. Falling back to 'pip'.")
+                cmd = [sys.executable, "-m", "pip", "install"] + missing_deps
+                setup_info(f"Using 'pip' for installation: {' '.join(cmd)}")
 
-        try:
-            process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True, bufsize=1, universal_newlines=True
-            )
+            try:
+                process = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, shell=True, bufsize=1, universal_newlines=True
+                )
 
-            setup_info(f">>> INSTALLATION PROCESS STARTED (Command: {' '.join(cmd)}) <<<")
+                setup_info(f">>> INSTALLATION PROCESS STARTED (Command: {' '.join(cmd)}) <<<")
 
-            # Real-time streaming to terminal and UI
-            for line in process.stdout:
-                line_strip = line.strip()
-                if line_strip:
-                    # Log internally
-                    setup_info(f"Install progress: {line_strip}")
-                    
-                    # Print directly to system terminal for immediate feedback
-                    sys.stdout.write(f"  [SETUP] {line_strip}\n")
-                    sys.stdout.flush()
+                # Real-time streaming to terminal and UI
+                for line in process.stdout:
+                    line_strip = line.strip()
+                    if line_strip:
+                        # Log internally
+                        setup_info(f"Install progress: {line_strip}")
+                        
+                        # Print directly to system terminal for immediate feedback
+                        sys.stdout.write(f"  [SETUP] {line_strip}\n")
+                        sys.stdout.flush()
 
-                    if self._on_status_change:
-                        # Truncate for UI status bar
-                        status = line_strip[:40] + "..." if len(line_strip) > 40 else line_strip
-                        self._on_status_change(status)
-
-            process.wait()
-
-            if process.returncode == 0:
-                setup_info(">>> PYTHON INSTALLATION SUCCESSFUL! <<<")
-
-                # 3. Handle Primary Model Pull (Final Step)
-                target_model = self._get_target_model()
-                if not SetupHelper.has_model(target_model):
-                    from src.core.event_bus import EVENT_TRANSCRIPTION_PROGRESS, event_bus
-                    
-                    def _on_pull_progress(status_text, progress):
                         if self._on_status_change:
-                            self._on_status_change(status_text)
-                        # Also publish to event bus for global listeners (like progress bars)
-                        event_bus.publish(EVENT_TRANSCRIPTION_PROGRESS, progress)
-                    
-                    setup_info(f"Constructing AI Brain: Streaming pull for {target_model}...")
-                    success = SetupHelper.pull_model_streaming(target_model, _on_pull_progress)
-                    
-                    if success:
-                        setup_info(f"Successfully pulled {target_model}")
-                    else:
-                        setup_error(f"Failed to pull {target_model}")
+                            # Truncate for UI status bar
+                            status = line_strip[:40] + "..." if len(line_strip) > 40 else line_strip
+                            self._on_status_change(status)
 
-                self._is_ready = True
-                if self._on_complete:
-                    self._on_complete()
-            else:
-                setup_error(f"Installation failed with exit code {process.returncode}")
+                process.wait()
+
+                if process.returncode != 0:
+                    setup_error(f"Installation failed with exit code {process.returncode}")
+                    if self._on_status_change:
+                        self._on_status_change("Setup failed (see terminal).")
+                    return
+                
+                setup_info(">>> PYTHON INSTALLATION SUCCESSFUL! <<<")
+            except Exception as e:
+                setup_error(f"Unexpected error during pip installation: {e}", exc_info=True)
                 if self._on_status_change:
-                    self._on_status_change("Setup failed (see terminal).")
+                    self._on_status_change(f"Fatal Setup Error: {str(e)}")
+                return
+        else:
+            setup_info(">>> NO PYTHON DEPENDENCIES TO INSTALL <<<")
+
+        # 3. Handle Primary Model Pull (Final Step)
+        try:
+            target_model = self._get_target_model()
+            if not SetupHelper.has_model(target_model):
+                from src.core.event_bus import EVENT_TRANSCRIPTION_PROGRESS, event_bus
+                
+                def _on_pull_progress(status_text, progress):
+                    if self._on_status_change:
+                        self._on_status_change(status_text)
+                    # Also publish to event bus for global listeners (like progress bars)
+                    event_bus.publish(EVENT_TRANSCRIPTION_PROGRESS, progress)
+                
+                setup_info(f"Constructing AI Brain: Streaming pull for {target_model}...")
+                success = SetupHelper.pull_model_streaming(target_model, _on_pull_progress)
+                
+                if success:
+                    setup_info(f"Successfully pulled {target_model}")
+                else:
+                    setup_error(f"Failed to pull {target_model}")
+                    if self._on_status_change:
+                        self._on_status_change(f"Failed to pull AI model: {target_model}")
+                    return
+
+            self._is_ready = True
+            if self._on_complete:
+                self._on_complete()
 
         except Exception as e:
             setup_error(f"Unexpected error during setup: {e}", exc_info=True)
