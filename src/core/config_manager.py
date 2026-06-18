@@ -201,10 +201,10 @@ class ConfigManager:
         from .constants import AppEdition
         return AppEdition.PRO
 
-    def get_llm_client(self):
-        """Factory helper for the active provider."""
+    def get_llm_client(self, provider_name=None):
+        """Factory helper for the specified or active provider."""
         from src.llm.factory import LLMFactory
-        provider = self.get_active_provider()
+        provider = provider_name or self.get_active_provider()
         conf = self.get_provider_config(provider)
         return LLMFactory.create_client(
             provider_name=provider,
