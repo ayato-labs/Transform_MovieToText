@@ -85,6 +85,14 @@ class MinutesService:
                     
         except Exception as e:
             logger.error(f"LLM generation failed: {e}")
+            err_msg = str(e)
+            if "503" in err_msg or "high demand" in err_msg.lower():
+                msg = (
+                    "現在AIモデルが非常に混雑しています（503 UNAVAILABLE）。\n"
+                    "一時的な混雑のため、数分待ってから再試行してください。\n"
+                    "お急ぎの場合は、設定画面からローカルモデル（Local Smart）への切り替えも検討してください。"
+                )
+                raise RuntimeError(msg) from e
             raise RuntimeError(f"Minutes generation failed: {e}") from e
 
         # 4. Update history and config

@@ -13,6 +13,12 @@ def is_transient_error(e: Exception) -> bool:
     Check if the error is transient and should be retried.
     Handles Gemini-specific 503 (high demand) and 429 (rate limit) errors.
     """
+    # Check for google.genai specific error attributes
+    if hasattr(e, "code") and e.code in [429, 503]:
+        return True
+    if hasattr(e, "status") and "UNAVAILABLE" in str(e.status):
+        return True
+
     err_msg = str(e).lower()
     transient_indicators = ["503", "429", "unavailable", "busy", "high demand", "rate limit"]
     return any(indicator in err_msg for indicator in transient_indicators)
@@ -23,16 +29,32 @@ class GeminiClient(BaseLLMClient):
     def __init__(self, api_key: str, temperature: float = 0.7):
         if not api_key:
             raise ValueError("Gemini API Key is required.")
-        self.client = genai.Client(api_key=api_key)
+        
+        # Layer 1: SDK-level retry configuration
+        # This provides the first line of defense with the SDK's internal tenacity loop.
+        retry_options = types.HttpRetryOptions(
+            attempts=5,                    # 1 initial + 4 retries (SDK default is 4)
+            initial_delay=2.0,
+            max_delay=60.0,
+            http_status_codes=[503, 429]
+        )
+        
+        self.client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(
+                retry_options=retry_options,
+                timeout=120 * 1000  # 120 seconds timeout
+            )
+        )
         self._model_name = "gemma-4-31b-it" # Default model
         self.temperature = float(temperature)
 
     @retry(
-        stop=stop_after_attempt(5),
-        wait=wait_exponential(multiplier=2, min=4, max=60),
+        stop=stop_after_attempt(10),
+        wait=wait_exponential(multiplier=2, min=4, max=120),
         retry=retry_if_exception(is_transient_error),
         before_sleep=lambda retry_state: logger.warning(
-            f"Gemini API busy (attempt {retry_state.attempt_number}). "
+            f"Gemini API busy (App-level attempt {retry_state.attempt_number}). "
             f"Retrying in {retry_state.next_action.sleep}s... Error: {retry_state.outcome.exception()}"
         ),
         reraise=True
