@@ -13,22 +13,29 @@ def is_transient_error(e: Exception) -> bool:
     Check if the error is transient and should be retried.
     Handles Gemini-specific 503 (high demand) and 429 (rate limit) errors.
     """
-    # 1. Check by explicit type if available
-    if isinstance(e, errors.ServerError) or isinstance(e, errors.ClientError):
-        # google-genai errors often have a code attribute
+    # 1. Check if it's a known Gemini SDK error type
+    if isinstance(e, (errors.ServerError, errors.ClientError)):
+        # Try to get code from various possible locations in the SDK error object
         code = getattr(e, "code", None)
         if code in [429, 503]:
             return True
-    
-    # 2. Check by attributes (duck typing for resilience)
-    if hasattr(e, "code") and e.code in [429, 503]:
-        return True
-    if hasattr(e, "status") and "UNAVAILABLE" in str(e.status):
-        return True
+        
+        # Sometimes the code is inside a status or error object
+        err_data = getattr(e, "errors", None)
+        if err_data and isinstance(err_data, list) and len(err_data) > 0:
+            first_err = err_data[0]
+            if isinstance(first_err, dict) and first_err.get("code") in [429, 503]:
+                return True
 
-    # 3. Fallback to string matching
-    err_msg = str(e).lower()
-    transient_indicators = ["503", "429", "unavailable", "busy", "high demand", "rate limit"]
+    # 2. Check by attributes (duck typing for resilience)
+    for attr in ["code", "status_code", "status"]:
+        val = getattr(e, attr, None)
+        if val in [429, 503] or val in ["429", "503"]:
+            return True
+
+    # 3. Fallback to string matching (includes '503 UNAVAILABLE' etc.)
+    err_msg = str(e).upper()
+    transient_indicators = ["503", "429", "UNAVAILABLE", "BUSY", "HIGH DEMAND", "RATE LIMIT", "RESOURCE_EXHAUSTED"]
     return any(indicator in err_msg for indicator in transient_indicators)
 
 class GeminiClient(BaseLLMClient):
