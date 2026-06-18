@@ -13,12 +13,20 @@ def is_transient_error(e: Exception) -> bool:
     Check if the error is transient and should be retried.
     Handles Gemini-specific 503 (high demand) and 429 (rate limit) errors.
     """
-    # Check for google.genai specific error attributes
+    # 1. Check by explicit type if available
+    if isinstance(e, errors.ServerError) or isinstance(e, errors.ClientError):
+        # google-genai errors often have a code attribute
+        code = getattr(e, "code", None)
+        if code in [429, 503]:
+            return True
+    
+    # 2. Check by attributes (duck typing for resilience)
     if hasattr(e, "code") and e.code in [429, 503]:
         return True
     if hasattr(e, "status") and "UNAVAILABLE" in str(e.status):
         return True
 
+    # 3. Fallback to string matching
     err_msg = str(e).lower()
     transient_indicators = ["503", "429", "unavailable", "busy", "high demand", "rate limit"]
     return any(indicator in err_msg for indicator in transient_indicators)
@@ -33,7 +41,7 @@ class GeminiClient(BaseLLMClient):
         # Layer 1: SDK-level retry configuration
         # This provides the first line of defense with the SDK's internal tenacity loop.
         retry_options = types.HttpRetryOptions(
-            attempts=5,                    # 1 initial + 4 retries (SDK default is 4)
+            attempts=5,                    # 1 initial + 4 retries
             initial_delay=2.0,
             max_delay=60.0,
             http_status_codes=[503, 429]
@@ -66,6 +74,16 @@ class GeminiClient(BaseLLMClient):
             contents=contents,
             config=config
         )
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=2, min=2, max=10),
+        retry=retry_if_exception(is_transient_error),
+        reraise=True
+    )
+    def _list_models_with_retry(self):
+        """Helper to call models.list with retries."""
+        return list(self.client.models.list())
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
         """Generates structured minutes using Gemini API."""
@@ -151,14 +169,16 @@ class GeminiClient(BaseLLMClient):
             )
             return response.text
         except Exception as e:
-            logger.error(f"Gemini API chat failed after retries: {e}")
+            logger.exception(f"Gemini API chat failed after retries: {e}")
             raise RuntimeError(f"Chat failed: {str(e)}") from e
 
     def get_available_models(self) -> list[str]:
         """Fetches available models from Gemini API."""
         try:
             models = []
-            for m in self.client.models.list():
+            # Use retry for listing models too
+            model_list = self._list_models_with_retry()
+            for m in model_list:
                 # Correct attribute names in current google-genai SDK
                 supported_actions = getattr(m, "supported_actions", [])
                 
