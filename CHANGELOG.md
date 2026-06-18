@@ -1,3 +1,11 @@
+# [2.56.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.55.0...v2.56.0) (2026-06-18)
+
+
+### Features
+
+* add executable build script and implement CUDA DLL initialization for Windows in Whisper transcriber ([f9f2d57](https://github.com/ayato-labs/Transform_MovieToText/commit/f9f2d57c8392fbd3e07f97891be32195d7379dc1))
+* implement WhisperTranscriber with automatic GPU/CPU fallback and add GPU diagnostic scripts ([858f216](https://github.com/ayato-labs/Transform_MovieToText/commit/858f2165753bd71b332c5b794bc2a804b52e01f8))
+
 # [2.55.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.54.0...v2.55.0) (2026-06-18)
 
 
