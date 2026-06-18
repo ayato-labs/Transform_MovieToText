@@ -1,3 +1,11 @@
+# [2.54.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.53.0...v2.54.0) (2026-06-18)
+
+
+### Features
+
+* implement GeminiClient with robust retry logic for Google GenAI SDK ([aa3a623](https://github.com/ayato-labs/Transform_MovieToText/commit/aa3a6237d442b0b0ebadb84fccf57a495d6d8ad4))
+* implement MinutesService with map-reduce logic and add Gemini provider client ([aaff706](https://github.com/ayato-labs/Transform_MovieToText/commit/aaff70694982f7b29ae993182a2de2caced6a7d5))
+
 # [2.53.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.52.0...v2.53.0) (2026-06-18)
 
 
