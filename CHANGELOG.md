@@ -1,3 +1,11 @@
+# [2.55.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.54.0...v2.55.0) (2026-06-18)
+
+
+### Features
+
+* add GeminiClient implementation with automatic retry logic for transient API errors ([d9a2a8c](https://github.com/ayato-labs/Transform_MovieToText/commit/d9a2a8c40a89a3861eb34907765ef09d47a018f8))
+* add GeminiClient implementation with built-in SDK and application-level retry logic ([ec1a79f](https://github.com/ayato-labs/Transform_MovieToText/commit/ec1a79f83dfba93afe91d69d1c0dc21dbbc35872))
+
 # [2.54.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.53.0...v2.54.0) (2026-06-18)
 
 
