@@ -1,3 +1,10 @@
+# [2.52.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.51.0...v2.52.0) (2026-06-18)
+
+
+### Features
+
+* implement desktop application boot sequence with automated environment setup management ([b86046b](https://github.com/ayato-labs/Transform_MovieToText/commit/b86046b82a11329905a755a7a517b1afcf3d384e))
+
 # [2.51.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.50.0...v2.51.0) (2026-06-13)
 
 
