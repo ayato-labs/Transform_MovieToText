@@ -85,6 +85,24 @@ class GeminiClient(BaseLLMClient):
         """Helper to call models.list with retries."""
         return list(self.client.models.list())
 
+    def transform(self, transcript: str, model_name: str, system_instruction: str, visual_contexts: list = None) -> str:
+        """Unified transformation method using Gemini's system_instruction."""
+        logger.info(f"GeminiClient: Transforming with model={model_name or self._model_name}")
+        try:
+            # Use generate_content with system_instruction and retry
+            response = self._generate_content_with_retry(
+                model=model_name or self._model_name,
+                contents=[transcript],
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=self.temperature
+                )
+            )
+            return response.text
+        except Exception as e:
+            logger.exception(f"Gemini API transform failed after retries: {e}")
+            raise RuntimeError(f"Transform failed: {str(e)}") from e
+
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
         """Generates structured minutes using Gemini API."""
         logger.info(f"GeminiClient: Generating minutes for model={model_name or self._model_name}, transcript_len={len(transcript)}")
