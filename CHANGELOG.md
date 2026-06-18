@@ -1,3 +1,10 @@
+# [2.57.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.56.0...v2.57.0) (2026-06-18)
+
+
+### Features
+
+* implement ConfigManager to handle application settings and persist configurations ([d3743bf](https://github.com/ayato-labs/Transform_MovieToText/commit/d3743bfdfbf80d34725d3f654ab4398d5c27b960))
+
 # [2.56.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.55.0...v2.56.0) (2026-06-18)
 
 
