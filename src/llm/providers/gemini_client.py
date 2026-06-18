@@ -1,11 +1,21 @@
 import logging
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
 
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 
 from src.llm.base_client import BaseLLMClient
 
 logger = logging.getLogger(__name__)
+
+def is_transient_error(e: Exception) -> bool:
+    """
+    Check if the error is transient and should be retried.
+    Handles Gemini-specific 503 (high demand) and 429 (rate limit) errors.
+    """
+    err_msg = str(e).lower()
+    transient_indicators = ["503", "429", "unavailable", "busy", "high demand", "rate limit"]
+    return any(indicator in err_msg for indicator in transient_indicators)
 
 class GeminiClient(BaseLLMClient):
     """Client for Google Gemini API via google-genai SDK."""
@@ -16,6 +26,24 @@ class GeminiClient(BaseLLMClient):
         self.client = genai.Client(api_key=api_key)
         self._model_name = "gemma-4-31b-it" # Default model
         self.temperature = float(temperature)
+
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=4, max=60),
+        retry=retry_if_exception(is_transient_error),
+        before_sleep=lambda retry_state: logger.warning(
+            f"Gemini API busy (attempt {retry_state.attempt_number}). "
+            f"Retrying in {retry_state.next_action.sleep}s... Error: {retry_state.outcome.exception()}"
+        ),
+        reraise=True
+    )
+    def _generate_content_with_retry(self, model, contents, config=None):
+        """Helper to call generate_content with exponential backoff."""
+        return self.client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=config
+        )
 
     def generate_minutes(self, transcript: str, model_name: str, visual_contexts: list = None) -> str:
         """Generates structured minutes using Gemini API."""
@@ -41,7 +69,7 @@ class GeminiClient(BaseLLMClient):
                             with open(img_path, "rb") as f:
                                 contents.append(types.Part.from_bytes(data=f.read(), mime_type="image/jpeg"))
 
-            response = self.client.models.generate_content(
+            response = self._generate_content_with_retry(
                 model=model_name or self._model_name,
                 contents=contents,
                 config=types.GenerateContentConfig(temperature=self.temperature)
@@ -49,7 +77,7 @@ class GeminiClient(BaseLLMClient):
             
             return response.text
         except Exception as e:
-            logger.exception(f"Gemini API generation failed: {e}")
+            logger.exception(f"Gemini API generation failed after retries: {e}")
             raise RuntimeError(f"Gemini API Error: {str(e)}") from e
 
     def extract_category(self, transcript: str, model_name: str) -> str:
@@ -60,7 +88,7 @@ class GeminiClient(BaseLLMClient):
                 "例: 技術会議, 営業進捗, デザインレビュー\n\n"
                 f"内容: {transcript[:2000]}"
             )
-            response = self.client.models.generate_content(
+            response = self._generate_content_with_retry(
                 model=model_name or self._model_name,
                 contents=prompt
             )
@@ -76,7 +104,7 @@ class GeminiClient(BaseLLMClient):
                 "以下のテキストの内容を簡潔に表すタイトルを1行で作成してください。\n\n"
                 f"内容: {transcript[:2000]}"
             )
-            response = self.client.models.generate_content(
+            response = self._generate_content_with_retry(
                 model=model_name or self._model_name,
                 contents=prompt
             )
@@ -94,14 +122,14 @@ class GeminiClient(BaseLLMClient):
                 role = "user" if msg["role"] == "user" else "model"
                 contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
 
-            response = self.client.models.generate_content(
+            response = self._generate_content_with_retry(
                 model=model_name or self._model_name,
                 contents=contents,
                 config=types.GenerateContentConfig(temperature=self.temperature)
             )
             return response.text
         except Exception as e:
-            logger.error(f"Gemini API chat failed: {e}")
+            logger.error(f"Gemini API chat failed after retries: {e}")
             raise RuntimeError(f"Chat failed: {str(e)}") from e
 
     def get_available_models(self) -> list[str]:
