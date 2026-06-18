@@ -1,3 +1,10 @@
+# [2.53.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.52.0...v2.53.0) (2026-06-18)
+
+
+### Features
+
+* implement Gemini API client with exponential backoff retries and unit tests ([144d2ce](https://github.com/ayato-labs/Transform_MovieToText/commit/144d2ce9ba770ccc1d4ccf7dd6258e9b0f6e9ca0))
+
 # [2.52.0](https://github.com/ayato-labs/Transform_MovieToText/compare/v2.51.0...v2.52.0) (2026-06-18)
 
 
