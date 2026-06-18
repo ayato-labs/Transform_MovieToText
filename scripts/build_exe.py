@@ -102,6 +102,8 @@ def main():
         '--icon "assets/icon.ico" '
         '--add-data "assets;assets" '
         "--collect-all whisper --collect-all tiktoken --collect-all flet "
+        "--collect-all nvidia_cublas_cu12 --collect-all nvidia_cudnn_cu12 "
+        "--collect-all nvidia_cuda_runtime_cu12 --collect-all nvidia_cuda_nvrtc_cu12 "
         "--exclude-module matplotlib --exclude-module notebook --exclude-module jedi "
         "--exclude-module IPython --exclude-module PIL.ImageQt "
         "main.py"

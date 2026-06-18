@@ -43,13 +43,21 @@ def _setup_cuda_dlls():
                     if "bin" in dirs:
                         bin_path = os.path.abspath(os.path.join(root, "bin"))
                         if os.path.exists(bin_path):
-                            # os.add_dll_directory is only available on Python 3.8+
+                            # Add to DLL directory (Python 3.8+)
                             if hasattr(os, "add_dll_directory"):
-                                os.add_dll_directory(bin_path)
-                                added_paths.append(bin_path)
+                                try:
+                                    os.add_dll_directory(bin_path)
+                                except Exception as e:
+                                    logger.debug(f"Failed to add_dll_directory {bin_path}: {e}")
+                            
+                            # Also add to PATH as fallback for some C++ libraries
+                            if bin_path not in os.environ["PATH"]:
+                                os.environ["PATH"] = bin_path + os.pathsep + os.environ["PATH"]
+                            
+                            added_paths.append(bin_path)
                 
                 if added_paths:
-                    logger.info(f"WhisperTranscriber: Added CUDA DLL directories to path: {added_paths}")
+                    logger.info(f"WhisperTranscriber: Initialized CUDA DLLs from: {added_paths}")
                     # Once we find the nvidia folder in one site-packages, we usually don't need to check others
                     break
     except Exception as e:
