@@ -85,7 +85,11 @@ class SetupManager:
             self._on_status_change(f"Preparing to install {len(missing_deps)} components...")
 
         # 1. Handle External Binaries (Ollama)
-        if not SetupHelper.is_ollama_installed():
+        ollama_installed = SetupHelper.is_ollama_installed()
+        ollama_running = SetupHelper.is_ollama_running()
+
+        if not ollama_installed:
+            setup_info("SetupManager: Ollama not found. Attempting installation...")
             if self._on_status_change:
                 self._on_status_change("AI Engine missing. Installing Ollama (Remote)...")
 
@@ -95,9 +99,32 @@ class SetupManager:
                 if self._on_status_change:
                     self._on_status_change("Ollama Setup Failed. Please install manually.")
                 return
+            # Give it a moment to initialize after install
+            import time
+            time.sleep(2)
+        elif not ollama_running:
+            setup_info("SetupManager: Ollama is installed but not running. Attempting to start...")
+            if self._on_status_change:
+                self._on_status_change("AI Engine is sleeping. Waking up...")
+            
+            SetupHelper.start_ollama_background()
+            # Give it a moment to wake up
+            import time
+            time.sleep(3)
 
         # 2. Handle Heavy Python Dependencies
-        if missing_deps:
+        # CRITICAL: Never attempt to install dependencies in a bundled EXE.
+        # Even if missing_deps is truthy (e.g. ['']), we MUST skip this in production.
+        is_bundled = getattr(sys, 'frozen', False)
+        
+        should_install_python_deps = False
+        if missing_deps and not is_bundled:
+            # Filter out any accidentally empty dependencies
+            missing_deps = [d for d in missing_deps if d.strip()]
+            if missing_deps:
+                should_install_python_deps = True
+
+        if should_install_python_deps:
             try:
                 # Try UV first
                 setup_info("Checking if 'uv' is available...")
@@ -147,7 +174,7 @@ class SetupManager:
                     self._on_status_change(f"Fatal Setup Error: {str(e)}")
                 return
         else:
-            setup_info(">>> NO PYTHON DEPENDENCIES TO INSTALL <<<")
+            setup_info(">>> NO PYTHON DEPENDENCIES TO INSTALL (SKIPPED OR BUNDLED) <<<")
 
         # 3. Handle Primary Model Pull (Final Step)
         try:

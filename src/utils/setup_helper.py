@@ -34,6 +34,26 @@ class SetupHelper:
         return shutil.which("ollama") is not None
 
     @staticmethod
+    def start_ollama_background() -> bool:
+        """Attempts to start Ollama in the background."""
+        if SetupHelper.is_ollama_running():
+            return True
+        try:
+            logger.info("Attempting to start Ollama in background...")
+            # On Windows, 'ollama serve' starts the server. 
+            # We use Popen to keep it running in background.
+            subprocess.Popen(
+                ["ollama", "serve"], 
+                stdout=subprocess.DEVNULL, 
+                stderr=subprocess.DEVNULL, 
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to start Ollama: {e}")
+            return False
+
+    @staticmethod
     def has_model(model_name: str = DEFAULT_MODEL) -> bool:
         """Checks if a specific model is already pulled in Ollama."""
         if not SetupHelper.is_ollama_running():

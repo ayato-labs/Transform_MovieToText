@@ -90,10 +90,8 @@ class DesktopApp:
                     self.main_window.update_setup_progress(progress)
 
             # Start background setup immediately if needed
-            setup_manager.check_env()
-            if not setup_manager.is_fully_ready:
-                logger.warning("DesktopApp: Environment incomplete. Starting AI orchestration.")
-                setup_manager.start_background_setup(on_status_change=self._on_setup_status_change, on_complete=self._on_setup_complete)
+            # start_background_setup will internally call check_env and only start if needed.
+            setup_manager.start_background_setup(on_status_change=self._on_setup_status_change, on_complete=self._on_setup_complete)
 
             self.config_mgr = ConfigManager()
 
