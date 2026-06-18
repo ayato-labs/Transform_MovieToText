@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import time
+import sys
 
 from faster_whisper import WhisperModel
 
@@ -20,6 +21,42 @@ logger = logging.getLogger(__name__)
 
 
 WHISPER_CLIENT_NAME = "whisper"
+
+def _setup_cuda_dlls():
+    """
+    On Windows, ensures that NVIDIA CUDA DLLs from pip packages are in the search path.
+    These packages (nvidia-cublas-cu12, etc.) provide the necessary DLLs for CTranslate2.
+    """
+    if sys.platform != "win32":
+        return
+
+    try:
+        # 1. Check site-packages for nvidia-* directories
+        for p in sys.path:
+            if not p or "site-packages" not in p:
+                continue
+            
+            nvidia_base = os.path.join(p, "nvidia")
+            if os.path.exists(nvidia_base):
+                added_paths = []
+                for root, dirs, files in os.walk(nvidia_base):
+                    if "bin" in dirs:
+                        bin_path = os.path.abspath(os.path.join(root, "bin"))
+                        if os.path.exists(bin_path):
+                            # os.add_dll_directory is only available on Python 3.8+
+                            if hasattr(os, "add_dll_directory"):
+                                os.add_dll_directory(bin_path)
+                                added_paths.append(bin_path)
+                
+                if added_paths:
+                    logger.info(f"WhisperTranscriber: Added CUDA DLL directories to path: {added_paths}")
+                    # Once we find the nvidia folder in one site-packages, we usually don't need to check others
+                    break
+    except Exception as e:
+        logger.debug(f"WhisperTranscriber: Optional CUDA DLL setup skipped/failed: {e}")
+
+# Initialize DLLs on import
+_setup_cuda_dlls()
 
 def _is_cuda_available():
     """
